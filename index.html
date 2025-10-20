@@ -3,44 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepSeek Chat</title>
+    <title>AI Assistant Hub</title>
     <link rel="stylesheet" href="general.css">
 </head>
 <body>
-    <div class="api-setup" id="apiSetup">
-        <div class="api-setup-content">
-            <h2>🔑 Налаштування</h2>
-            <p>Введи свій Groq API ключ. Отримати можна на <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a></p>
-            <input type="password" id="apiKeyInput" placeholder="gsk_...">
-            <button onclick="saveApiKey()">Почати роботу</button>
-        </div>
-    </div>
-
-    <div class="container hidden" id="mainContainer">
-        <div class="chat-section">
-            <div class="header">
-                <h1>💬 DeepSeek Chat</h1>
-                <p>Розумний асистент для програмування</p>
+    <div class="container" id="mainContainer">
+        <!-- Бічне меню -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 AI Hub</h2>
             </div>
-            <div class="messages" id="messages"></div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <textarea id="userInput" placeholder="Опиши що потрібно створити..." rows="1"></textarea>
-                    <button id="sendBtn" onclick="sendMessage()">Надіслати</button>
+            <div class="sidebar-menu">
+                <button class="menu-btn active" onclick="switchMode('gemini')">
+                    <span class="menu-icon">✨</span>
+                    <span class="menu-text">Gemini Chat</span>
+                </button>
+                <button class="menu-btn" onclick="switchMode('deepseek')">
+                    <span class="menu-icon">💻</span>
+                    <span class="menu-text">DeepSeek Coder</span>
+                </button>
+                <button class="menu-btn" onclick="switchMode('settings')">
+                    <span class="menu-icon">⚙️</span>
+                    <span class="menu-text">Налаштування</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Gemini Chat -->
+        <div class="mode-content active" id="geminiMode">
+            <div class="chat-section full-width">
+                <div class="header">
+                    <h1>✨ Gemini Chat</h1>
+                    <p>Розмовляй з Gemini 2.5 Flash</p>
+                </div>
+                <div class="messages" id="geminiMessages"></div>
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <textarea id="geminiInput" placeholder="Задай питання..." rows="1"></textarea>
+                        <button id="geminiSendBtn" onclick="sendGeminiMessage()">Надіслати</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="code-section">
-            <div class="code-header">
-                <h2>📁 Файли проєкту</h2>
+        <!-- DeepSeek Coder -->
+        <div class="mode-content" id="deepseekMode">
+            <div class="chat-section">
+                <div class="header">
+                    <h1>💻 DeepSeek Coder</h1>
+                    <p>Розумний асистент для програмування</p>
+                </div>
+                <div class="messages" id="deepseekMessages"></div>
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити..." rows="1"></textarea>
+                        <button id="deepseekSendBtn" onclick="sendDeepseekMessage()">Надіслати</button>
+                    </div>
+                </div>
             </div>
-            <div class="file-tabs" id="fileTabs"></div>
-            <div class="code-content" id="codeContent">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📝</div>
-                    <h3>Немає файлів</h3>
-                    <p>Код з'явиться тут після відповіді AI</p>
+
+            <div class="code-section">
+                <div class="code-header">
+                    <h2>📁 Файли проєкту</h2>
+                </div>
+                <div class="file-tabs" id="fileTabs"></div>
+                <div class="code-content" id="codeContent">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <h3>Немає файлів</h3>
+                        <p>Код з'явиться тут після відповіді AI</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Налаштування -->
+        <div class="mode-content" id="settingsMode">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <h1>⚙️ Налаштування</h1>
+                    <p>Конфігурація API ключів та системних промптів</p>
+                </div>
+                
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h2>🔑 API Ключі</h2>
+                        <div class="setting-item">
+                            <label>Gemini API Key</label>
+                            <input type="password" id="geminiApiKey" placeholder="AIza...">
+                            <small>Отримати на <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                        </div>
+                        <div class="setting-item">
+                            <label>Groq API Key (DeepSeek)</label>
+                            <input type="password" id="groqApiKey" placeholder="gsk_...">
+                            <small>Отримати на <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h2>📝 Системні Промпти</h2>
+                        <div class="setting-item">
+                            <label>Gemini System Prompt</label>
+                            <textarea id="geminiSystemPrompt" rows="4" placeholder="Ти корисний асистент...">Ти корисний AI асистент. Відповідай чітко, стисло та по суті. Говори українською мовою.</textarea>
+                        </div>
+                        <div class="setting-item">
+                            <label>DeepSeek System Prompt</label>
+                            <textarea id="deepseekSystemPrompt" rows="4" placeholder="Ти експерт програміст...">Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Створюй окремі файли для HTML, CSS, JS. Говори українською мовою.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button class="save-btn" onclick="saveSettings()">💾 Зберегти налаштування</button>
+                        <button class="clear-btn" onclick="clearAllData()">🗑️ Очистити всі дані</button>
+                    </div>
                 </div>
             </div>
         </div>
