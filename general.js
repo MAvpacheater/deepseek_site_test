@@ -19,18 +19,15 @@ function loadSettings() {
     const geminiPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент. Відповідай чітко, стисло та по суті. Говори українською мовою.';
     const deepseekPrompt = localStorage.getItem('deepseek_system_prompt') || 'Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Створюй окремі файли для HTML, CSS, JS. Говори українською мовою.';
 
-    if (document.getElementById('geminiApiKey')) {
-        document.getElementById('geminiApiKey').value = geminiKey;
-    }
-    if (document.getElementById('groqApiKey')) {
-        document.getElementById('groqApiKey').value = groqKey;
-    }
-    if (document.getElementById('geminiSystemPrompt')) {
-        document.getElementById('geminiSystemPrompt').value = geminiPrompt;
-    }
-    if (document.getElementById('deepseekSystemPrompt')) {
-        document.getElementById('deepseekSystemPrompt').value = deepseekPrompt;
-    }
+    const geminiApiKeyInput = document.getElementById('geminiApiKey');
+    const groqApiKeyInput = document.getElementById('groqApiKey');
+    const geminiSystemPromptInput = document.getElementById('geminiSystemPrompt');
+    const deepseekSystemPromptInput = document.getElementById('deepseekSystemPrompt');
+
+    if (geminiApiKeyInput) geminiApiKeyInput.value = geminiKey;
+    if (groqApiKeyInput) groqApiKeyInput.value = groqKey;
+    if (geminiSystemPromptInput) geminiSystemPromptInput.value = geminiPrompt;
+    if (deepseekSystemPromptInput) deepseekSystemPromptInput.value = deepseekPrompt;
 }
 
 // Збереження налаштувань
@@ -56,16 +53,23 @@ function clearAllData() {
         deepseekHistory = [];
         codeFiles = {};
         
-        document.getElementById('geminiMessages').innerHTML = '';
-        document.getElementById('deepseekMessages').innerHTML = '';
-        document.getElementById('fileTabs').innerHTML = '';
-        document.getElementById('codeContent').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
-                <h3>Немає файлів</h3>
-                <p>Код з'явиться тут після відповіді AI</p>
-            </div>
-        `;
+        const geminiMessages = document.getElementById('geminiMessages');
+        const deepseekMessages = document.getElementById('deepseekMessages');
+        const fileTabs = document.getElementById('fileTabs');
+        const codeContent = document.getElementById('codeContent');
+
+        if (geminiMessages) geminiMessages.innerHTML = '';
+        if (deepseekMessages) deepseekMessages.innerHTML = '';
+        if (fileTabs) fileTabs.innerHTML = '';
+        if (codeContent) {
+            codeContent.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3>Немає файлів</h3>
+                    <p>Код з'явиться тут після відповіді AI</p>
+                </div>
+            `;
+        }
         
         loadSettings();
         alert('🗑️ Всі дані видалено!');
@@ -80,13 +84,22 @@ function switchMode(mode) {
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.closest('.menu-btn').classList.add('active');
+    
+    // Знаходимо кнопку яка була натиснута
+    const clickedButton = event?.target?.closest('.menu-btn');
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
     
     // Оновлення контенту
     document.querySelectorAll('.mode-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`${mode}Mode`).classList.add('active');
+    
+    const modeElement = document.getElementById(`${mode}Mode`);
+    if (modeElement) {
+        modeElement.classList.add('active');
+    }
 }
 
 // Ініціалізація полів вводу
@@ -118,6 +131,8 @@ function initializeInputs() {
 // Додавання повідомлення в чат
 function addMessage(text, sender, messagesId) {
     const messagesDiv = document.getElementById(messagesId);
+    if (!messagesDiv) return;
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
     
@@ -138,6 +153,8 @@ function addMessage(text, sender, messagesId) {
 // Gemini Message
 async function sendGeminiMessage() {
     const input = document.getElementById('geminiInput');
+    if (!input) return;
+    
     const message = input.value.trim();
     
     if (!message) return;
@@ -161,8 +178,10 @@ async function sendGeminiMessage() {
     }
 
     const sendBtn = document.getElementById('geminiSendBtn');
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    }
 
     try {
         const systemPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент.';
@@ -199,14 +218,18 @@ async function sendGeminiMessage() {
         console.error('Помилка:', error);
         addMessage('❌ Помилка: ' + error.message, 'assistant', 'geminiMessages');
     } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Надіслати';
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Надіслати';
+        }
     }
 }
 
 // DeepSeek Message
 async function sendDeepseekMessage() {
     const input = document.getElementById('deepseekInput');
+    if (!input) return;
+    
     const message = input.value.trim();
     
     if (!message) return;
@@ -233,8 +256,10 @@ async function sendDeepseekMessage() {
     }
 
     const sendBtn = document.getElementById('deepseekSendBtn');
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+    }
 
     try {
         const messages = [
@@ -275,8 +300,10 @@ async function sendDeepseekMessage() {
         console.error('Помилка:', error);
         addMessage('❌ Помилка: ' + error.message, 'assistant', 'deepseekMessages');
     } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Надіслати';
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Надіслати';
+        }
     }
 }
 
@@ -351,6 +378,8 @@ function displayCodeFiles() {
     const tabsDiv = document.getElementById('fileTabs');
     const contentDiv = document.getElementById('codeContent');
     
+    if (!tabsDiv || !contentDiv) return;
+    
     tabsDiv.innerHTML = '';
     contentDiv.innerHTML = '';
     
@@ -411,7 +440,10 @@ function switchFile(filename) {
 
 // Копіювання коду в буфер обміну
 function copyCode(filename) {
-    const code = document.getElementById(`code-${filename}`).textContent;
+    const codeElement = document.getElementById(`code-${filename}`);
+    if (!codeElement) return;
+    
+    const code = codeElement.textContent;
     navigator.clipboard.writeText(code).then(() => {
         const btn = event.target;
         const originalText = btn.textContent;
@@ -426,6 +458,8 @@ function copyCode(filename) {
 
 // Завантаження файлу
 function downloadFile(filename) {
+    if (!codeFiles[filename]) return;
+    
     const code = codeFiles[filename].code;
     const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
