@@ -377,11 +377,18 @@
                     })
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Помилка API');
+                    if (response.status === 401) {
+                        throw new Error('Невірний API ключ! Перевір ключ на console.groq.com');
+                    } else if (response.status === 429) {
+                        throw new Error('Забагато запитів. Почекай хвилину.');
+                    } else {
+                        throw new Error(data.error?.message || 'Помилка API: ' + response.status);
+                    }
                 }
 
-                const data = await response.json();
                 const aiMessage = data.choices[0].message.content;
                 
                 conversationHistory.push({ role: 'assistant', content: aiMessage });
@@ -389,7 +396,17 @@
                 extractCode(aiMessage);
 
             } catch (error) {
+                console.error('Детальна помилка:', error);
                 addMessage('❌ Помилка: ' + error.message, 'assistant');
+                
+                if (error.message.includes('API ключ')) {
+                    setTimeout(() => {
+                        if (confirm('Хочеш ввести новий API ключ?')) {
+                            localStorage.removeItem('groq_api_key');
+                            location.reload();
+                        }
+                    }, 500);
+                }
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.textContent = 'Надіслати';
