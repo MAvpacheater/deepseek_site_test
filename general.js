@@ -1,48 +1,123 @@
 // Глобальні змінні
 let codeFiles = {};
 let activeFile = null;
+let currentMode = 'gemini';
 
-// Перевірка наявності API ключа при завантаженні
+let geminiHistory = [];
+let deepseekHistory = [];
+
+// Ініціалізація при завантаженні
 window.addEventListener('DOMContentLoaded', function() {
-    const apiKey = localStorage.getItem('groq_api_key');
-    if (apiKey) {
-        document.getElementById('apiSetup').classList.add('hidden');
-        document.getElementById('mainContainer').classList.remove('hidden');
-    }
+    loadSettings();
+    initializeInputs();
 });
 
-// Збереження API ключа
-function saveApiKey() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (key) {
-        localStorage.setItem('groq_api_key', key);
-        document.getElementById('apiSetup').classList.add('hidden');
-        document.getElementById('mainContainer').classList.remove('hidden');
-    } else {
-        alert('Введи API ключ!');
+// Завантаження налаштувань
+function loadSettings() {
+    const geminiKey = localStorage.getItem('gemini_api_key') || '';
+    const groqKey = localStorage.getItem('groq_api_key') || '';
+    const geminiPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент. Відповідай чітко, стисло та по суті. Говори українською мовою.';
+    const deepseekPrompt = localStorage.getItem('deepseek_system_prompt') || 'Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Створюй окремі файли для HTML, CSS, JS. Говори українською мовою.';
+
+    if (document.getElementById('geminiApiKey')) {
+        document.getElementById('geminiApiKey').value = geminiKey;
+    }
+    if (document.getElementById('groqApiKey')) {
+        document.getElementById('groqApiKey').value = groqKey;
+    }
+    if (document.getElementById('geminiSystemPrompt')) {
+        document.getElementById('geminiSystemPrompt').value = geminiPrompt;
+    }
+    if (document.getElementById('deepseekSystemPrompt')) {
+        document.getElementById('deepseekSystemPrompt').value = deepseekPrompt;
     }
 }
 
-// Автоматичне розширення textarea
-document.addEventListener('DOMContentLoaded', function() {
-    const input = document.getElementById('userInput');
-    
-    input.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 150) + 'px';
-    });
+// Збереження налаштувань
+function saveSettings() {
+    const geminiKey = document.getElementById('geminiApiKey').value.trim();
+    const groqKey = document.getElementById('groqApiKey').value.trim();
+    const geminiPrompt = document.getElementById('geminiSystemPrompt').value.trim();
+    const deepseekPrompt = document.getElementById('deepseekSystemPrompt').value.trim();
 
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
+    localStorage.setItem('gemini_api_key', geminiKey);
+    localStorage.setItem('groq_api_key', groqKey);
+    localStorage.setItem('gemini_system_prompt', geminiPrompt);
+    localStorage.setItem('deepseek_system_prompt', deepseekPrompt);
+
+    alert('✅ Налаштування збережено!');
+}
+
+// Очищення всіх даних
+function clearAllData() {
+    if (confirm('⚠️ Видалити всі дані (історію, налаштування, ключі)? Цю дію не можна скасувати!')) {
+        localStorage.clear();
+        geminiHistory = [];
+        deepseekHistory = [];
+        codeFiles = {};
+        
+        document.getElementById('geminiMessages').innerHTML = '';
+        document.getElementById('deepseekMessages').innerHTML = '';
+        document.getElementById('fileTabs').innerHTML = '';
+        document.getElementById('codeContent').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <h3>Немає файлів</h3>
+                <p>Код з'явиться тут після відповіді AI</p>
+            </div>
+        `;
+        
+        loadSettings();
+        alert('🗑️ Всі дані видалено!');
+    }
+}
+
+// Перемикання режимів
+function switchMode(mode) {
+    currentMode = mode;
+    
+    // Оновлення активної кнопки
+    document.querySelectorAll('.menu-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
-});
+    event.target.closest('.menu-btn').classList.add('active');
+    
+    // Оновлення контенту
+    document.querySelectorAll('.mode-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${mode}Mode`).classList.add('active');
+}
+
+// Ініціалізація полів вводу
+function initializeInputs() {
+    const inputs = ['geminiInput', 'deepseekInput'];
+    
+    inputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        input.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (inputId === 'geminiInput') {
+                    sendGeminiMessage();
+                } else if (inputId === 'deepseekInput') {
+                    sendDeepseekMessage();
+                }
+            }
+        });
+    });
+}
 
 // Додавання повідомлення в чат
-function addMessage(text, sender) {
-    const messagesDiv = document.getElementById('messages');
+function addMessage(text, sender, messagesId) {
+    const messagesDiv = document.getElementById(messagesId);
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
     
@@ -58,6 +133,151 @@ function addMessage(text, sender) {
     messageDiv.appendChild(contentDiv);
     messagesDiv.appendChild(messageDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Gemini Message
+async function sendGeminiMessage() {
+    const input = document.getElementById('geminiInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+        alert('⚠️ Введи Gemini API ключ у налаштуваннях!');
+        switchMode('settings');
+        return;
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+
+    addMessage(message, 'user', 'geminiMessages');
+    geminiHistory.push({ role: 'user', parts: [{ text: message }] });
+
+    // Обмеження історії до 10 повідомлень
+    if (geminiHistory.length > 10) {
+        geminiHistory = geminiHistory.slice(-10);
+    }
+
+    const sendBtn = document.getElementById('geminiSendBtn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+
+    try {
+        const systemPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент.';
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: geminiHistory,
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || 'Помилка API');
+        }
+
+        const aiMessage = data.candidates[0].content.parts[0].text;
+        
+        geminiHistory.push({ role: 'model', parts: [{ text: aiMessage }] });
+        addMessage(aiMessage, 'assistant', 'geminiMessages');
+
+    } catch (error) {
+        console.error('Помилка:', error);
+        addMessage('❌ Помилка: ' + error.message, 'assistant', 'geminiMessages');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Надіслати';
+    }
+}
+
+// DeepSeek Message
+async function sendDeepseekMessage() {
+    const input = document.getElementById('deepseekInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+
+    const apiKey = localStorage.getItem('groq_api_key');
+    if (!apiKey) {
+        alert('⚠️ Введи Groq API ключ у налаштуваннях!');
+        switchMode('settings');
+        return;
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+
+    addMessage(message, 'user', 'deepseekMessages');
+    
+    const systemPrompt = localStorage.getItem('deepseek_system_prompt') || 'Ти експерт-програміст.';
+    
+    deepseekHistory.push({ role: 'user', content: message });
+
+    // Обмеження історії до 20 повідомлень
+    if (deepseekHistory.length > 20) {
+        deepseekHistory = deepseekHistory.slice(-20);
+    }
+
+    const sendBtn = document.getElementById('deepseekSendBtn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+
+    try {
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...deepseekHistory
+        ];
+
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 4000
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || `Помилка API: ${response.status}`);
+        }
+
+        const aiMessage = data.choices[0].message.content;
+        
+        deepseekHistory.push({ role: 'assistant', content: aiMessage });
+        
+        const textOnly = removeCodeBlocks(aiMessage);
+        addMessage(textOnly, 'assistant', 'deepseekMessages');
+        
+        extractAndDisplayCode(aiMessage);
+
+    } catch (error) {
+        console.error('Помилка:', error);
+        addMessage('❌ Помилка: ' + error.message, 'assistant', 'deepseekMessages');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Надіслати';
+    }
 }
 
 // Видалення блоків коду з тексту
@@ -155,7 +375,10 @@ function displayCodeFiles() {
                         <span class="code-block-lang">${file.language}</span>
                         <span class="code-block-name">${filename}</span>
                     </div>
-                    <button class="copy-btn" onclick="copyCode('${filename}')">Копіювати</button>
+                    <div>
+                        <button onclick="copyCode('${filename}')">📋 Копіювати</button>
+                        <button onclick="downloadFile('${filename}')">💾 Завантажити</button>
+                    </div>
                 </div>
                 <pre><code id="code-${filename}">${escapeHtml(file.code)}</code></pre>
             </div>
@@ -191,13 +414,28 @@ function copyCode(filename) {
     const code = document.getElementById(`code-${filename}`).textContent;
     navigator.clipboard.writeText(code).then(() => {
         const btn = event.target;
+        const originalText = btn.textContent;
         btn.textContent = '✓ Скопійовано!';
         btn.classList.add('copied');
         setTimeout(() => {
-            btn.textContent = 'Копіювати';
+            btn.textContent = originalText;
             btn.classList.remove('copied');
         }, 2000);
     });
+}
+
+// Завантаження файлу
+function downloadFile(filename) {
+    const code = codeFiles[filename].code;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 // Екранування HTML
