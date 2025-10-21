@@ -1,0 +1,63 @@
+/* Image Gallery Styles */
+.image-gallery {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    align-content: start;
+}
+
+.image-item {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.5s ease;
+}
+
+.image-item img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+}
+
+.image-item-footer {
+    padding: 15px;
+}
+
+.image-item-prompt {
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.image-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.image-item-actions button {
+    flex: 1;
+    padding: 8px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.image-item-actions button:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
