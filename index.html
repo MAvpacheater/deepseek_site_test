@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant Hub</title>
+    <title>AI Agent Hub - Розумний асистент</title>
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/general.css">
     <link rel="stylesheet" href="css/chats.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/photo.css">
+    <link rel="stylesheet" href="css/planner.css">
     
     <!-- Prism.js for syntax highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
@@ -19,7 +20,8 @@
         <!-- Бічне меню -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>🤖 AI Hub</h2>
+                <h2>🤖 AI Agent Hub</h2>
+                <p style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Розумний автономний асистент</p>
             </div>
             <div class="sidebar-menu">
                 <button class="menu-btn active" onclick="switchMode('gemini')">
@@ -34,6 +36,15 @@
                     <span class="menu-icon">🖼️</span>
                     <span class="menu-text">Image Generator</span>
                 </button>
+                <button class="menu-btn" onclick="switchMode('planner')">
+                    <span class="menu-icon">📅</span>
+                    <span class="menu-text">Планувальник</span>
+                    <span class="badge" id="plansBadge">0</span>
+                </button>
+                <button class="menu-btn" onclick="switchMode('memory')">
+                    <span class="menu-icon">🧠</span>
+                    <span class="menu-text">Пам'ять агента</span>
+                </button>
                 <button class="menu-btn" onclick="switchMode('library')">
                     <span class="menu-icon">📚</span>
                     <span class="menu-text">Бібліотека</span>
@@ -42,6 +53,18 @@
                     <span class="menu-icon">⚙️</span>
                     <span class="menu-text">Налаштування</span>
                 </button>
+            </div>
+            
+            <!-- Agent Status -->
+            <div class="agent-status" id="agentStatus">
+                <div class="status-indicator">
+                    <div class="pulse"></div>
+                    <span>Агент активний</span>
+                </div>
+                <div class="status-info">
+                    <div>🎯 Активних завдань: <span id="activeTasks">0</span></div>
+                    <div>💾 Спогадів: <span id="memoryCount">0</span></div>
+                </div>
             </div>
             
             <div class="sidebar-footer">
@@ -57,13 +80,16 @@
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>✨ Gemini Chat</h1>
+                        <h1>✨ Gemini Agent</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="save-chat-btn" onclick="saveConversation('gemini')" title="Зберегти розмову">
+                        <button class="header-btn" onclick="enableAgentMode()" title="Автономний режим">
+                            🤖 Агент
+                        </button>
+                        <button class="header-btn" onclick="saveConversation('gemini')">
                             💾
                         </button>
-                        <button class="clear-chat-btn" onclick="clearChat('gemini')" title="Очистити чат">
+                        <button class="header-btn" onclick="clearChat('gemini')">
                             🗑️
                         </button>
                     </div>
@@ -71,11 +97,11 @@
                 <div class="messages" id="geminiMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="geminiInput" placeholder="Задай питання... (Ctrl+Enter для відправки)" rows="1"></textarea>
+                        <textarea id="geminiInput" placeholder="Задай питання або дай завдання агенту... (Ctrl+Enter)" rows="1"></textarea>
                         <button id="geminiSendBtn" onclick="sendGeminiMessage()">Надіслати</button>
                     </div>
                     <div class="shortcuts-hint">
-                        💡 <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити | <kbd>Ctrl</kbd> + <kbd>S</kbd> - Зберегти
+                        💡 <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити | <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук
                     </div>
                 </div>
             </div>
@@ -87,16 +113,22 @@
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>💻 DeepSeek Coder</h1>
+                        <h1>💻 DeepSeek Coder Agent</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Попередній перегляд HTML">
+                        <button class="header-btn" onclick="uploadLocalFile()" title="Завантажити файл з пристрою">
+                            📁 Файл
+                        </button>
+                        <button class="header-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">
+                            🐙 GitHub
+                        </button>
+                        <button class="header-btn" onclick="togglePreview()">
                             👁️
                         </button>
-                        <button class="save-chat-btn" onclick="saveConversation('deepseek')" title="Зберегти проект">
+                        <button class="header-btn" onclick="saveConversation('deepseek')">
                             💾
                         </button>
-                        <button class="clear-chat-btn" onclick="clearChat('deepseek')" title="Очистити чат">
+                        <button class="header-btn" onclick="clearChat('deepseek')">
                             🗑️
                         </button>
                     </div>
@@ -104,11 +136,8 @@
                 <div class="messages" id="deepseekMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити... (Ctrl+Enter для відправки)" rows="1"></textarea>
+                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити або відредагувати... (Ctrl+Enter)" rows="1"></textarea>
                         <button id="deepseekSendBtn" onclick="sendDeepseekMessage()">Надіслати</button>
-                    </div>
-                    <div class="shortcuts-hint">
-                        💡 <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити
                     </div>
                 </div>
             </div>
@@ -117,12 +146,8 @@
                 <div class="code-header">
                     <h2>📁 Файли проєкту</h2>
                     <div class="code-actions">
-                        <button onclick="downloadAllAsZip()" title="Завантажити всі файли як ZIP">
-                            📦 ZIP
-                        </button>
-                        <button onclick="showDiffViewer()" title="Порівняти версії">
-                            🔄 Diff
-                        </button>
+                        <button onclick="analyzeCodeForErrors()">🔍 Аналіз</button>
+                        <button onclick="downloadAllAsZip()">📦 ZIP</button>
                     </div>
                 </div>
                 <div class="file-tabs" id="fileTabs"></div>
@@ -130,7 +155,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">📝</div>
                         <h3>Немає файлів</h3>
-                        <p>Код з'явиться тут після відповіді AI</p>
+                        <p>Завантаж файли або створи новий проект</p>
                     </div>
                 </div>
             </div>
@@ -153,7 +178,7 @@
                         <h1>🖼️ Image Generator</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="clearChat('image')" title="Очистити історію">
+                        <button class="header-btn" onclick="clearChat('image')">
                             🗑️
                         </button>
                     </div>
@@ -162,7 +187,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">🎨</div>
                         <h3>Генерація зображень</h3>
-                        <p>Опиши що хочеш згенерувати (використовує DALL-E 3 через Pollinations.ai)</p>
+                        <p>Опиши що хочеш згенерувати</p>
                     </div>
                 </div>
                 <div class="input-area">
@@ -170,20 +195,95 @@
                         <textarea id="imageInput" placeholder="Опиши зображення англійською... (наприклад: a cat in space)" rows="1"></textarea>
                         <button id="imageSendBtn" onclick="generateImage()">Генерувати</button>
                     </div>
-                    <div class="shortcuts-hint">
-                        💡 Безкоштовна генерація через Pollinations.ai • Підтримка різних стилів
+                </div>
+            </div>
+        </div>
+
+        <!-- Planner -->
+        <div class="mode-content" id="plannerMode">
+            <div class="planner-container">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                        <h1>📅 Розумний планувальник</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="header-btn" onclick="createPlan()">
+                            ➕ Створити план
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="planner-content">
+                    <div class="plans-grid" id="plansGrid">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>Немає планів</h3>
+                            <p>Створи свій перший план або попроси AI згенерувати його</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Бібліотека -->
+        <!-- Memory -->
+        <div class="mode-content" id="memoryMode">
+            <div class="memory-container">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                        <h1>🧠 Пам'ять агента</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="header-btn" onclick="addMemory()">
+                            ➕ Додати спогад
+                        </button>
+                        <button class="header-btn" onclick="clearMemories()">
+                            🗑️ Очистити
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="memory-content">
+                    <div class="memory-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">💭</div>
+                            <div class="stat-info">
+                                <div class="stat-label">Всього спогадів</div>
+                                <div class="stat-value" id="totalMemories">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-info">
+                                <div class="stat-label">Важливих</div>
+                                <div class="stat-value" id="importantMemories">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="memory-search">
+                        <input type="text" id="memorySearch" placeholder="🔍 Пошук в пам'яті..." oninput="searchMemories()">
+                    </div>
+                    
+                    <div class="memories-list" id="memoriesList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧠</div>
+                            <h3>Пам'ять порожня</h3>
+                            <p>Агент запам'ятає важливу інформацію автоматично</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Library -->
         <div class="mode-content" id="libraryMode">
             <div class="library-container">
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>📚 Бібліотека збережених проектів</h1>
+                        <h1>📚 Бібліотека</h1>
                     </div>
                     <div class="header-actions">
                         <input type="text" id="librarySearch" placeholder="🔍 Пошук..." oninput="filterLibrary()">
@@ -194,7 +294,6 @@
                     <button class="filter-btn active" onclick="filterByType('all')">Всі</button>
                     <button class="filter-btn" onclick="filterByType('gemini')">✨ Gemini</button>
                     <button class="filter-btn" onclick="filterByType('deepseek')">💻 DeepSeek</button>
-                    <button class="filter-btn" onclick="filterByType('image')">🖼️ Images</button>
                     <button class="filter-btn" onclick="filterByType('favorites')">⭐ Улюблені</button>
                 </div>
 
@@ -202,21 +301,21 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">📚</div>
                         <h3>Бібліотека порожня</h3>
-                        <p>Збережені розмови та проекти з'являться тут</p>
+                        <p>Збережені проекти з'являться тут</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Налаштування -->
+        <!-- Settings -->
         <div class="mode-content" id="settingsMode">
             <div class="settings-container">
-                <div class="settings-header">
+                <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                         <div>
                             <h1>⚙️ Налаштування</h1>
-                            <p>Конфігурація API ключів та системних промптів</p>
+                            <p>Конфігурація AI агента</p>
                         </div>
                     </div>
                 </div>
@@ -234,22 +333,37 @@
                             <input type="password" id="groqApiKey" placeholder="gsk_...">
                             <small>Отримати на <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
                         </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h2>📝 Системні Промпти</h2>
                         <div class="setting-item">
-                            <label>Gemini System Prompt</label>
-                            <textarea id="geminiSystemPrompt" rows="4" placeholder="Ти корисний асистент...">Ти корисний AI асістент. Відповідай чітко, стисло та по суті. Говори українською мовою.</textarea>
-                        </div>
-                        <div class="setting-item">
-                            <label>DeepSeek System Prompt</label>
-                            <textarea id="deepseekSystemPrompt" rows="4" placeholder="Ти експерт програміст...">Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Створюй окремі файли для HTML, CSS, JS. Говори українською мовою.</textarea>
+                            <label>GitHub Token (опціонально)</label>
+                            <input type="password" id="githubToken" placeholder="ghp_...">
+                            <small>Для приватних репозиторіїв</small>
                         </div>
                     </div>
 
                     <div class="settings-section">
-                        <h2>📊 Статистика використання</h2>
+                        <h2>🤖 Режим агента</h2>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="agentAutonomous"> 
+                                Автономний режим (агент сам виконує завдання)
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="agentMemory" checked> 
+                                Автоматично запам'ятовувати важливе
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="agentReminders" checked> 
+                                Нагадування про плани
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h2>📊 Статистика</h2>
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-icon">✨</div>
@@ -279,26 +393,11 @@
                                     <div class="stat-value" id="statSaved">0</div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📝</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Приблизно токенів</div>
-                                    <div class="stat-value" id="statTokens">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📅</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Днів використання</div>
-                                    <div class="stat-value" id="statDays">0</div>
-                                </div>
-                            </div>
                         </div>
-                        <button class="reset-stats-btn" onclick="resetStats()">🔄 Скинути статистику</button>
                     </div>
 
                     <div class="settings-actions">
-                        <button class="save-btn" onclick="saveSettings()">💾 Зберегти налаштування</button>
+                        <button class="save-btn" onclick="saveSettings()">💾 Зберегти</button>
                         <button class="clear-btn" onclick="clearAllData()">🗑️ Очистити всі дані</button>
                     </div>
                 </div>
@@ -306,49 +405,45 @@
         </div>
     </div>
 
-    <!-- Search Modal -->
-    <div class="search-modal" id="searchModal">
-        <div class="search-modal-content">
-            <input type="text" id="searchInput" placeholder="🔍 Шукати в історії..." autofocus>
-            <div class="search-results" id="searchResults"></div>
-        </div>
-    </div>
+    <!-- File Upload Input (hidden) -->
+    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java" multiple onchange="handleFileUpload(event)">
 
-    <!-- Diff Viewer Modal -->
-    <div class="diff-modal" id="diffModal">
-        <div class="diff-modal-content">
-            <div class="diff-header">
-                <h3>🔄 Порівняння версій коду</h3>
-                <button onclick="closeDiffViewer()">✕</button>
-            </div>
-            <div class="diff-controls">
-                <select id="diffFile1">
-                    <option value="">Версія 1</option>
-                </select>
-                <span>↔️</span>
-                <select id="diffFile2">
-                    <option value="">Версія 2</option>
-                </select>
-                <button onclick="compareDiff()">Порівняти</button>
-            </div>
-            <div class="diff-result" id="diffResult"></div>
-        </div>
-    </div>
-
-    <!-- Save Conversation Modal -->
-    <div class="save-modal" id="saveModal">
-        <div class="save-modal-content">
-            <h3>💾 Зберегти розмову</h3>
-            <input type="text" id="saveTitle" placeholder="Назва проекту...">
-            <textarea id="saveTags" placeholder="Теги (через кому): react, website, tutorial" rows="2"></textarea>
-            <div class="save-actions">
-                <button onclick="confirmSave()">Зберегти</button>
-                <button onclick="closeSaveModal()">Скасувати</button>
+    <!-- Modals -->
+    <div class="modal" id="planModal">
+        <div class="modal-content">
+            <h3>📅 Створити план</h3>
+            <input type="text" id="planTitle" placeholder="Назва плану...">
+            <textarea id="planDescription" placeholder="Опис завдання..." rows="3"></textarea>
+            <input type="datetime-local" id="planDeadline">
+            <select id="planPriority">
+                <option value="low">🟢 Низький пріоритет</option>
+                <option value="medium" selected>🟡 Середній пріоритет</option>
+                <option value="high">🔴 Високий пріоритет</option>
+            </select>
+            <div class="modal-actions">
+                <button onclick="savePlan()">Створити</button>
+                <button onclick="closeModal('planModal')">Скасувати</button>
             </div>
         </div>
     </div>
 
-    <!-- External Libraries -->
+    <div class="modal" id="memoryModal">
+        <div class="modal-content">
+            <h3>🧠 Додати спогад</h3>
+            <input type="text" id="memoryTitle" placeholder="Про що запам'ятати...">
+            <textarea id="memoryContent" placeholder="Детальна інформація..." rows="4"></textarea>
+            <label>
+                <input type="checkbox" id="memoryImportant">
+                ⭐ Важливо
+            </label>
+            <div class="modal-actions">
+                <button onclick="saveMemory()">Зберегти</button>
+                <button onclick="closeModal('memoryModal')">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -356,30 +451,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
-    <!-- Application Scripts -->
     <script src="js/general.js"></script>
-    <script src="js/settings.js"></script>
+    <script src="js/agent-core.js"></script>
+    <script src="js/agent-tools.js"></script>
     <script src="js/gemini.js"></script>
     <script src="js/deepseek.js"></script>
     <script src="js/photo.js"></script>
-    <script src="js/integrations.js"></script>
-    <script src="js/coder-enhancements.js"></script>
-    <script src="js/security.js"></script>
-    
-    <!-- Initialize on load -->
-    <script>
-        window.addEventListener('DOMContentLoaded', function() {
-            // Ініціалізувати всі модулі
-            if (typeof initializeSecurity === 'function') {
-                initializeSecurity();
-            }
-            if (typeof initializeIntegrations === 'function') {
-                initializeIntegrations();
-            }
-            if (typeof initializeCoderEnhancements === 'function') {
-                initializeCoderEnhancements();
-            }
-        });
-    </script>
+    <script src="js/planner.js"></script>
+    <script src="js/memory.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/file-upload.js"></script>
+    <script src="js/github-integration.js"></script>
 </body>
 </html>
