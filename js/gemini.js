@@ -10,7 +10,8 @@ async function sendGeminiMessage() {
     
     if (!message) return;
 
-    const apiKey = localStorage.getItem('gemini_api_key');
+    // Використовувати безпечну функцію отримання ключа
+    const apiKey = typeof getGeminiApiKey === 'function' ? getGeminiApiKey() : localStorage.getItem('gemini_api_key');
     if (!apiKey) {
         alert('⚠️ Введи Gemini API ключ у налаштуваннях!');
         switchMode('settings');
