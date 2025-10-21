@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent Hub - Розумний асистент</title>
+    <title>🤖 AI Agent Hub - Розумний асистент</title>
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/general.css">
@@ -12,17 +12,18 @@
     <link rel="stylesheet" href="css/photo.css">
     <link rel="stylesheet" href="css/planner.css">
     
-    <!-- Prism.js for syntax highlighting -->
+    <!-- Prism.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container" id="mainContainer">
-        <!-- Бічне меню -->
+        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>🤖 AI Agent Hub</h2>
                 <p style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Розумний автономний асистент</p>
             </div>
+            
             <div class="sidebar-menu">
                 <button class="menu-btn active" onclick="switchMode('gemini')">
                     <span class="menu-icon">✨</span>
@@ -62,7 +63,7 @@
                     <span>Агент активний</span>
                 </div>
                 <div class="status-info">
-                    <div>🎯 Активних завдань: <span id="activeTasks">0</span></div>
+                    <div>🎯 Завдань: <span id="activeTasks">0</span></div>
                     <div>💾 Спогадів: <span id="memoryCount">0</span></div>
                 </div>
             </div>
@@ -80,28 +81,19 @@
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>✨ Gemini Agent</h1>
+                        <h1>✨ Gemini Chat</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="enableAgentMode()" title="Автономний режим">
-                            🤖 Агент
-                        </button>
-                        <button class="header-btn" onclick="saveConversation('gemini')">
-                            💾
-                        </button>
-                        <button class="header-btn" onclick="clearChat('gemini')">
-                            🗑️
-                        </button>
+                        <button class="header-btn" onclick="enableAgentMode()" title="Автономний режим">🤖 Агент</button>
+                        <button class="header-btn" onclick="saveConversation('gemini')">💾</button>
+                        <button class="header-btn" onclick="clearChat('gemini')">🗑️</button>
                     </div>
                 </div>
                 <div class="messages" id="geminiMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="geminiInput" placeholder="Задай питання або дай завдання агенту... (Ctrl+Enter)" rows="1"></textarea>
+                        <textarea id="geminiInput" placeholder="Задай питання (Ctrl+Enter)..." rows="1"></textarea>
                         <button id="geminiSendBtn" onclick="sendGeminiMessage()">Надіслати</button>
-                    </div>
-                    <div class="shortcuts-hint">
-                        💡 <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити | <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук
                     </div>
                 </div>
             </div>
@@ -113,30 +105,19 @@
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>💻 DeepSeek Coder Agent</h1>
+                        <h1>💻 DeepSeek Coder</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="uploadLocalFile()" title="Завантажити файл з пристрою">
-                            📁 Файл
-                        </button>
-                        <button class="header-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">
-                            🐙 GitHub
-                        </button>
-                        <button class="header-btn" onclick="togglePreview()">
-                            👁️
-                        </button>
-                        <button class="header-btn" onclick="saveConversation('deepseek')">
-                            💾
-                        </button>
-                        <button class="header-btn" onclick="clearChat('deepseek')">
-                            🗑️
-                        </button>
+                        <button class="header-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
+                        <button class="header-btn" onclick="togglePreview()">👁️ Preview</button>
+                        <button class="header-btn" onclick="saveConversation('deepseek')">💾</button>
+                        <button class="header-btn" onclick="clearChat('deepseek')">🗑️</button>
                     </div>
                 </div>
                 <div class="messages" id="deepseekMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити або відредагувати... (Ctrl+Enter)" rows="1"></textarea>
+                        <textarea id="deepseekInput" placeholder="Опиши що створити... (Ctrl+Enter)" rows="1"></textarea>
                         <button id="deepseekSendBtn" onclick="sendDeepseekMessage()">Надіслати</button>
                     </div>
                 </div>
@@ -144,9 +125,8 @@
 
             <div class="code-section" id="codeSection">
                 <div class="code-header">
-                    <h2>📁 Файли проєкту</h2>
+                    <h2>📁 Файли проекту</h2>
                     <div class="code-actions">
-                        <button onclick="analyzeCodeForErrors()">🔍 Аналіз</button>
                         <button onclick="downloadAllAsZip()">📦 ZIP</button>
                     </div>
                 </div>
@@ -155,7 +135,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">📝</div>
                         <h3>Немає файлів</h3>
-                        <p>Завантаж файли або створи новий проект</p>
+                        <p>Завантаж або створи новий проект</p>
                     </div>
                 </div>
             </div>
@@ -178,9 +158,7 @@
                         <h1>🖼️ Image Generator</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="clearChat('image')">
-                            🗑️
-                        </button>
+                        <button class="header-btn" onclick="clearChat('image')">🗑️</button>
                     </div>
                 </div>
                 <div class="image-gallery" id="imageGallery">
@@ -192,7 +170,7 @@
                 </div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="imageInput" placeholder="Опиши зображення англійською... (наприклад: a cat in space)" rows="1"></textarea>
+                        <textarea id="imageInput" placeholder="Опиши зображення англійською..." rows="1"></textarea>
                         <button id="imageSendBtn" onclick="generateImage()">Генерувати</button>
                     </div>
                 </div>
@@ -208,9 +186,7 @@
                         <h1>📅 Розумний планувальник</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="createPlan()">
-                            ➕ Створити план
-                        </button>
+                        <button class="header-btn" onclick="createPlan()">➕ Новий план</button>
                     </div>
                 </div>
                 
@@ -219,7 +195,7 @@
                         <div class="empty-state">
                             <div class="empty-state-icon">📋</div>
                             <h3>Немає планів</h3>
-                            <p>Створи свій перший план або попроси AI згенерувати його</p>
+                            <p>Створи свій перший план</p>
                         </div>
                     </div>
                 </div>
@@ -235,12 +211,9 @@
                         <h1>🧠 Пам'ять агента</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="addMemory()">
-                            ➕ Додати спогад
-                        </button>
-                        <button class="header-btn" onclick="clearMemories()">
-                            🗑️ Очистити
-                        </button>
+                        <button class="header-btn" onclick="addMemory()">➕ Додати</button>
+                        <button class="header-btn" onclick="exportMemories()">📤 Експорт</button>
+                        <button class="header-btn" onclick="clearMemories()">🗑️ Очистити</button>
                     </div>
                 </div>
                 
@@ -249,7 +222,7 @@
                         <div class="stat-card">
                             <div class="stat-icon">💭</div>
                             <div class="stat-info">
-                                <div class="stat-label">Всього спогадів</div>
+                                <div class="stat-label">Спогадів</div>
                                 <div class="stat-value" id="totalMemories">0</div>
                             </div>
                         </div>
@@ -263,14 +236,14 @@
                     </div>
                     
                     <div class="memory-search">
-                        <input type="text" id="memorySearch" placeholder="🔍 Пошук в пам'яті..." oninput="searchMemories()">
+                        <input type="text" id="memorySearch" placeholder="🔍 Пошук..." oninput="searchMemories()">
                     </div>
                     
                     <div class="memories-list" id="memoriesList">
                         <div class="empty-state">
                             <div class="empty-state-icon">🧠</div>
                             <h3>Пам'ять порожня</h3>
-                            <p>Агент запам'ятає важливу інформацію автоматично</p>
+                            <p>Додай перший спогад</p>
                         </div>
                     </div>
                 </div>
@@ -313,10 +286,7 @@
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <div>
-                            <h1>⚙️ Налаштування</h1>
-                            <p>Конфігурація AI агента</p>
-                        </div>
+                        <h1>⚙️ Налаштування</h1>
                     </div>
                 </div>
                 
@@ -333,25 +303,20 @@
                             <input type="password" id="groqApiKey" placeholder="gsk_...">
                             <small>Отримати на <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
                         </div>
-                        <div class="setting-item">
-                            <label>GitHub Token (опціонально)</label>
-                            <input type="password" id="githubToken" placeholder="ghp_...">
-                            <small>Для приватних репозиторіїв</small>
-                        </div>
                     </div>
 
                     <div class="settings-section">
-                        <h2>🤖 Режим агента</h2>
+                        <h2>🤖 Налаштування агента</h2>
                         <div class="setting-item">
                             <label>
                                 <input type="checkbox" id="agentAutonomous"> 
-                                Автономний режим (агент сам виконує завдання)
+                                Автономний режим
                             </label>
                         </div>
                         <div class="setting-item">
                             <label>
                                 <input type="checkbox" id="agentMemory" checked> 
-                                Автоматично запам'ятовувати важливе
+                                Автоматично запам'ятовувати
                             </label>
                         </div>
                         <div class="setting-item">
@@ -382,14 +347,14 @@
                             <div class="stat-card">
                                 <div class="stat-icon">🖼️</div>
                                 <div class="stat-info">
-                                    <div class="stat-label">Згенеровано зображень</div>
+                                    <div class="stat-label">Зображень</div>
                                     <div class="stat-value" id="statImages">0</div>
                                 </div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon">💾</div>
+                                <div class="stat-icon">📚</div>
                                 <div class="stat-info">
-                                    <div class="stat-label">Збережено проектів</div>
+                                    <div class="stat-label">Проектів</div>
                                     <div class="stat-value" id="statSaved">0</div>
                                 </div>
                             </div>
@@ -398,15 +363,15 @@
 
                     <div class="settings-actions">
                         <button class="save-btn" onclick="saveSettings()">💾 Зберегти</button>
-                        <button class="clear-btn" onclick="clearAllData()">🗑️ Очистити всі дані</button>
+                        <button class="clear-btn" onclick="clearAllData()">🗑️ Очистити все</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- File Upload Input (hidden) -->
-    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java" multiple onchange="handleFileUpload(event)">
+    <!-- File Input -->
+    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb" multiple onchange="handleFileUpload(event)">
 
     <!-- Modals -->
     <div class="modal" id="planModal">
@@ -416,9 +381,9 @@
             <textarea id="planDescription" placeholder="Опис завдання..." rows="3"></textarea>
             <input type="datetime-local" id="planDeadline">
             <select id="planPriority">
-                <option value="low">🟢 Низький пріоритет</option>
-                <option value="medium" selected>🟡 Середній пріоритет</option>
-                <option value="high">🔴 Високий пріоритет</option>
+                <option value="low">🟢 Низький</option>
+                <option value="medium" selected>🟡 Середній</option>
+                <option value="high">🔴 Високий</option>
             </select>
             <div class="modal-actions">
                 <button onclick="savePlan()">Створити</button>
@@ -439,6 +404,18 @@
             <div class="modal-actions">
                 <button onclick="saveMemory()">Зберегти</button>
                 <button onclick="closeModal('memoryModal')">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <h3>💾 Зберегти розмову</h3>
+            <input type="text" id="saveTitle" placeholder="Назва проекту...">
+            <textarea id="saveTags" placeholder="Теги (через кому)..." rows="2"></textarea>
+            <div class="modal-actions">
+                <button onclick="confirmSave()">Зберегти</button>
+                <button onclick="closeSaveModal()">Скасувати</button>
             </div>
         </div>
     </div>
