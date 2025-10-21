@@ -397,7 +397,7 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts - ПРАВИЛЬНИЙ ПОРЯДОК -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -405,14 +405,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
+    <!-- Core scripts спочатку -->
     <script src="js/general.js"></script>
+    <script src="js/settings.js"></script>
+    
+    <!-- Agent система -->
     <script src="js/agent-core.js"></script>
+    
+    <!-- Основні модулі -->
     <script src="js/gemini.js"></script>
     <script src="js/deepseek.js"></script>
     <script src="js/photo.js"></script>
     <script src="js/planner.js"></script>
     <script src="js/memory.js"></script>
-    <script src="js/settings.js"></script>
+    
+    <!-- Додаткові функції -->
     <script src="js/file-upload.js"></script>
     <script src="js/github-integration.js"></script>
 </body>
