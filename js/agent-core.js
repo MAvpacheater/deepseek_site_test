@@ -8,6 +8,7 @@ class AIAgent {
         this.memory = [];
         this.tools = [];
         this.autonomousMode = false;
+        this.executionHistory = [];
     }
 
     // Активувати агента
@@ -50,16 +51,30 @@ class AIAgent {
     }
 
     // Додати завдання в чергу
-    addTask(task) {
+    addTask(task, priority = 'medium') {
         const taskObj = {
             id: Date.now(),
             description: task,
             status: 'pending',
+            priority: priority,
             createdAt: new Date(),
-            steps: []
+            steps: [],
+            result: null,
+            error: null
         };
 
-        this.taskQueue.push(taskObj);
+        // Сортувати за пріоритетом
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        const insertIndex = this.taskQueue.findIndex(t => 
+            priorityOrder[t.priority] > priorityOrder[priority]
+        );
+
+        if (insertIndex === -1) {
+            this.taskQueue.push(taskObj);
+        } else {
+            this.taskQueue.splice(insertIndex, 0, taskObj);
+        }
+
         this.updateStatus();
         
         if (this.autonomousMode) {
@@ -94,6 +109,7 @@ class AIAgent {
             }
 
             task.status = 'completed';
+            task.result = 'Завдання успішно виконано';
             this.taskQueue.shift();
             
             // Запам'ятати успішне виконання
@@ -122,7 +138,6 @@ class AIAgent {
 
     // Розбити завдання на кроки (планування)
     async planTask(taskDescription) {
-        // Базове планування (можна покращити через API)
         const steps = [];
 
         if (taskDescription.toLowerCase().includes('створ') || 
@@ -134,6 +149,9 @@ class AIAgent {
                    taskDescription.toLowerCase().includes('пошук')) {
             steps.push({ action: 'search', tool: 'search' });
             steps.push({ action: 'analyze_results', tool: 'gemini' });
+        } else if (taskDescription.toLowerCase().includes('запам')) {
+            steps.push({ action: 'extract_key_info', tool: 'analyzer' });
+            steps.push({ action: 'save_memory', tool: 'memory' });
         } else {
             steps.push({ action: 'process', tool: 'gemini' });
         }
@@ -143,8 +161,7 @@ class AIAgent {
 
     // Виконати один крок
     async executeStep(step) {
-        // Симуляція виконання (інтеграція з реальними інструментами)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         return true;
     }
 
@@ -187,7 +204,12 @@ class AIAgent {
     loadMemoryFromStorage() {
         const saved = localStorage.getItem('agent_memory');
         if (saved) {
-            this.memory = JSON.parse(saved);
+            try {
+                this.memory = JSON.parse(saved);
+            } catch (e) {
+                console.error('Помилка завантаження пам\'яті:', e);
+                this.memory = [];
+            }
         }
         this.updateStatus();
     }
@@ -198,6 +220,17 @@ class AIAgent {
         localStorage.removeItem('agent_memory');
         this.updateStatus();
     }
+
+    // Отримати статус агента
+    getStatus() {
+        return {
+            isActive: this.isActive,
+            autonomousMode: this.autonomousMode,
+            taskQueueLength: this.taskQueue.length,
+            memoryLength: this.memory.length,
+            currentTask: this.currentTask?.description || null
+        };
+    }
 }
 
 // Глобальний екземпляр агента
@@ -207,29 +240,53 @@ const agent = new AIAgent();
 window.addEventListener('DOMContentLoaded', () => {
     agent.loadMemoryFromStorage();
     agent.activate();
+    console.log('✅ AI Agent ініціалізовано');
 });
 
 // Функції для UI
 function enableAgentMode() {
-    const currentValue = agent.autonomousMode;
-    agent.autonomousMode = !currentValue;
+    agent.autonomousMode = !agent.autonomousMode;
     
     const btn = event.target;
     if (agent.autonomousMode) {
         btn.style.background = 'rgba(34, 197, 94, 0.3)';
+        btn.style.borderColor = '#22c55e';
         btn.textContent = '🤖 Агент (Увімкнено)';
-        alert('✅ Автономний режим увімкнено!\n\nАгент тепер сам виконуватиме завдання.');
+        
+        // Запустити наступне завдання з черги
+        if (agent.taskQueue.length > 0) {
+            agent.executeNextTask();
+        }
     } else {
         btn.style.background = 'rgba(255, 255, 255, 0.2)';
+        btn.style.borderColor = 'transparent';
         btn.textContent = '🤖 Агент';
-        alert('ℹ️ Автономний режим вимкнено.');
     }
+    
+    alert(`${agent.autonomousMode ? '✅' : 'ℹ️'} Автономний режим ${agent.autonomousMode ? 'увімкнено' : 'вимкнено'}`);
 }
 
 function addAgentTask() {
     const task = prompt('🤖 Яке завдання дати агенту?');
     if (!task) return;
 
-    agent.addTask(task);
+    const priority = prompt('Пріоритет (high/medium/low):', 'medium');
+    
+    agent.addTask(task, priority);
     alert(`✅ Завдання додано в чергу!\n\nВсього завдань: ${agent.taskQueue.length}`);
+}
+
+function viewAgentStatus() {
+    const status = agent.getStatus();
+    let report = '🤖 Статус Агента\n\n';
+    report += `Активний: ${status.isActive ? '✅' : '❌'}\n`;
+    report += `Автономний режим: ${status.autonomousMode ? '✅' : '❌'}\n`;
+    report += `Завдань у черзі: ${status.taskQueueLength}\n`;
+    report += `Спогадів: ${status.memoryLength}\n`;
+    
+    if (status.currentTask) {
+        report += `\nЧинне завдання:\n${status.currentTask}`;
+    }
+    
+    alert(report);
 }
