@@ -1,4 +1,4 @@
-// DeepSeek Coder Logic
+// 💻 DeepSeek Coder Logic - Оновлено з GitHub та файл-менеджментом
 let deepseekHistory = [];
 let codeFiles = {};
 let codeHistory = {};
@@ -13,7 +13,6 @@ async function sendDeepseekMessage() {
     
     if (!message) return;
 
-    // Використовувати безпечну функцію отримання ключа
     const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
     if (!apiKey) {
         alert('⚠️ Введи Groq API ключ у налаштуваннях!');
@@ -26,7 +25,8 @@ async function sendDeepseekMessage() {
 
     addMessage(message, 'user', 'deepseekMessages');
     
-    const systemPrompt = localStorage.getItem('deepseek_system_prompt') || 'Ти експерт-програміст.';
+    const systemPrompt = localStorage.getItem('deepseek_system_prompt') || 
+        'Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Говори українською.';
     
     deepseekHistory.push({ role: 'user', content: message });
 
@@ -75,7 +75,7 @@ async function sendDeepseekMessage() {
         
         extractAndDisplayCode(aiMessage);
         
-        // Оновити статистику
+        // Статистика
         stats.deepseekRequests++;
         stats.totalTokens += estimateTokens(message + aiMessage);
         saveStats();
@@ -91,12 +91,12 @@ async function sendDeepseekMessage() {
     }
 }
 
-// Видалення блоків коду з тексту
+// Видалення блоків коду
 function removeCodeBlocks(text) {
     return text.replace(/```[\s\S]*?```/g, '').trim();
 }
 
-// Витягування та відображення коду
+// Витяг та відображення коду
 function extractAndDisplayCode(text) {
     const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
     let match;
@@ -130,7 +130,7 @@ function extractAndDisplayCode(text) {
     }
 }
 
-// Визначення імені файлу з коду
+// Визначення імені файлу
 function detectFilename(code, lang) {
     const lines = code.split('\n');
     for (let line of lines.slice(0, 5)) {
@@ -142,29 +142,18 @@ function detectFilename(code, lang) {
     return null;
 }
 
-// Отримання розширення файлу за мовою
+// Розширення за мовою
 function getExtension(lang) {
     const extensions = {
-        'javascript': 'js',
-        'python': 'py',
-        'html': 'html',
-        'css': 'css',
-        'java': 'java',
-        'cpp': 'cpp',
-        'c': 'c',
-        'go': 'go',
-        'rust': 'rs',
-        'php': 'php',
-        'ruby': 'rb',
-        'swift': 'swift',
-        'kotlin': 'kt',
-        'typescript': 'ts',
-        'json': 'json'
+        'javascript': 'js', 'python': 'py', 'html': 'html', 'css': 'css',
+        'java': 'java', 'cpp': 'cpp', 'c': 'c', 'go': 'go', 'rust': 'rs',
+        'php': 'php', 'ruby': 'rb', 'swift': 'swift', 'kotlin': 'kt',
+        'typescript': 'ts', 'json': 'json', 'xml': 'xml', 'sql': 'sql'
     };
     return extensions[lang.toLowerCase()] || 'txt';
 }
 
-// Відображення файлів з кодом
+// Відображення файлів
 function displayCodeFiles() {
     const tabsDiv = document.getElementById('fileTabs');
     const contentDiv = document.getElementById('codeContent');
@@ -189,9 +178,12 @@ function displayCodeFiles() {
         
         const file = codeFiles[filename];
         
-        // Підсвічування синтаксису з Prism.js
         const languageClass = `language-${file.language}`;
-        const highlightedCode = Prism.highlight(file.code, Prism.languages[file.language] || Prism.languages.plaintext, file.language);
+        const highlightedCode = Prism.highlight(
+            file.code, 
+            Prism.languages[file.language] || Prism.languages.plaintext, 
+            file.language
+        );
         
         fileDiv.innerHTML = `
             <div class="code-block">
@@ -201,11 +193,11 @@ function displayCodeFiles() {
                         <span class="code-block-name">${filename}</span>
                     </div>
                     <div>
-                        <button onclick="copyCode('${filename}')">📋 Копіювати</button>
-                        <button onclick="downloadFile('${filename}')">💾 Завантажити</button>
+                        <button onclick="copyCode('${escapeHtml(filename)}')">📋 Копіювати</button>
+                        <button onclick="downloadFile('${escapeHtml(filename)}')">💾 Завантажити</button>
                     </div>
                 </div>
-                <pre><code class="${languageClass}" id="code-${filename}">${highlightedCode}</code></pre>
+                <pre><code class="${languageClass}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
             </div>
         `;
         
@@ -213,9 +205,15 @@ function displayCodeFiles() {
     });
     
     activeFile = filenames[0];
+    
+    // Ініціалізувати покращення та GitHub кнопки
+    setTimeout(() => {
+        initializeCoderEnhancements();
+        initializeGitHubButtons();
+    }, 100);
 }
 
-// Перемикання між файлами
+// Перемикання файлів
 function switchFile(filename) {
     document.querySelectorAll('.file-tab').forEach(tab => {
         tab.classList.remove('active');
@@ -234,9 +232,11 @@ function switchFile(filename) {
     activeFile = filename;
 }
 
-// Копіювання коду в буфер обміну
+// Копіювання коду
 function copyCode(filename) {
-    const code = codeFiles[filename].code;
+    const code = codeFiles[filename]?.code;
+    if (!code) return;
+    
     navigator.clipboard.writeText(code).then(() => {
         const btn = event.target;
         const originalText = btn.textContent;
@@ -305,7 +305,7 @@ function closePreview() {
     panel.classList.remove('active');
 }
 
-// Завантаження всіх файлів як ZIP
+// Завантаження як ZIP
 async function downloadAllAsZip() {
     if (Object.keys(codeFiles).length === 0) {
         alert('⚠️ Немає файлів для завантаження!');
@@ -329,80 +329,270 @@ async function downloadAllAsZip() {
     URL.revokeObjectURL(url);
 }
 
-// Diff Viewer
-function showDiffViewer() {
-    if (Object.keys(codeHistory).length < 1) {
-        alert('⚠️ Потрібно мінімум 2 версії файлу для порівняння!');
+// Аналіз помилок
+async function analyzeCodeForErrors() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає коду для аналізу!');
         return;
     }
     
-    const modal = document.getElementById('diffModal');
-    const select1 = document.getElementById('diffFile1');
-    const select2 = document.getElementById('diffFile2');
+    const activeFileName = activeFile || Object.keys(codeFiles)[0];
+    const code = codeFiles[activeFileName].code;
+    const language = codeFiles[activeFileName].language;
     
-    select1.innerHTML = '<option value="">Виберіть версію 1</option>';
-    select2.innerHTML = '<option value="">Виберіть версію 2</option>';
+    const errors = [];
     
-    Object.keys(codeHistory).forEach((filename) => {
-        const versions = codeHistory[filename];
-        if (versions.length < 2) return;
+    if (language === 'javascript' || language === 'js') {
+        if (code.match(/console\.log/g)?.length > 5) {
+            errors.push('⚠️ Забагато console.log (production)');
+        }
+        if (code.includes('var ')) {
+            errors.push('💡 Використовується var - краще let/const');
+        }
+        if (code.match(/[^=!]==(?!=)/g)) {
+            errors.push('❌ Використовується == замість ===');
+        }
+    }
+    
+    if (language === 'css') {
+        const importantCount = (code.match(/!important/g) || []).length;
+        if (importantCount > 3) {
+            errors.push(`⚠️ Надто багато !important (${importantCount})`);
+        }
+    }
+    
+    if (language === 'html') {
+        const openTags = code.match(/<(\w+)[^>]*>/g) || [];
+        const closeTags = code.match(/<\/(\w+)>/g) || [];
         
-        versions.forEach((version, vIndex) => {
-            const option = `<option value="${filename}-${vIndex}">${filename} (v${vIndex + 1})</option>`;
-            select1.innerHTML += option;
-            select2.innerHTML += option;
+        if (openTags.length !== closeTags.length) {
+            errors.push('❌ Проблема з незакритими тегами');
+        }
+        
+        if (code.includes('<img') && !code.match(/<img[^>]+alt=/)) {
+            errors.push('♿ Зображення без alt атрибуту (accessibility)');
+        }
+    }
+    
+    if (errors.length === 0) {
+        alert('✅ Помилок не знайдено! Код виглядає добре.');
+    } else {
+        alert('🔍 Результати аналізу:\n\n' + errors.map(e => e).join('\n'));
+    }
+}
+
+// Генерація тестів
+async function generateTests() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає коду для тестів!');
+        return;
+    }
+    
+    const jsFiles = Object.keys(codeFiles).filter(name => 
+        name.endsWith('.js') && !name.includes('test')
+    );
+    
+    if (jsFiles.length === 0) {
+        alert('⚠️ Не знайдено JS файлів!');
+        return;
+    }
+    
+    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
+    if (!apiKey) {
+        alert('⚠️ Введи Groq API ключ!');
+        return;
+    }
+    
+    const filename = jsFiles[0];
+    const code = codeFiles[filename].code;
+    
+    const prompt = `Створи unit тести для цього JavaScript коду (Jest):\n\n${code}`;
+    
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'Ти експерт тестування. Створюй чисті тести.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 2000
+            })
         });
-    });
-    
-    modal.classList.add('active');
+        
+        const data = await response.json();
+        const tests = data.choices[0].message.content;
+        
+        const testFilename = filename.replace('.js', '.test.js');
+        const testCode = tests.replace(/```javascript\n?/g, '').replace(/```\n?/g, '');
+        
+        codeFiles[testFilename] = {
+            language: 'javascript',
+            code: testCode
+        };
+        
+        displayCodeFiles();
+        alert(`✅ Тести створено: ${testFilename}`);
+        
+    } catch (error) {
+        alert('❌ Помилка: ' + error.message);
+    }
 }
 
-function closeDiffViewer() {
-    const modal = document.getElementById('diffModal');
-    modal.classList.remove('active');
-}
-
-function compareDiff() {
-    const file1 = document.getElementById('diffFile1').value;
-    const file2 = document.getElementById('diffFile2').value;
-    
-    if (!file1 || !file2) {
-        alert('⚠️ Виберіть обидві версії!');
+// Генерація документації
+async function generateDocumentation() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає коду для документації!');
         return;
     }
     
-    const [filename1, version1] = file1.split('-');
-    const [filename2, version2] = file2.split('-');
+    let documentation = '# 📚 Документація проекту\n\n';
+    documentation += `Згенеровано: ${new Date().toLocaleString('uk-UA')}\n\n`;
+    documentation += '---\n\n';
     
-    const code1 = codeHistory[filename1][version1].split('\n');
-    const code2 = codeHistory[filename2][version2].split('\n');
-    
-    const result = document.getElementById('diffResult');
-    result.innerHTML = '';
-    
-    const maxLines = Math.max(code1.length, code2.length);
-    
-    for (let i = 0; i < maxLines; i++) {
-        const line1 = code1[i] || '';
-        const line2 = code2[i] || '';
+    Object.keys(codeFiles).forEach(filename => {
+        const file = codeFiles[filename];
+        documentation += `## 📄 ${filename}\n\n`;
+        documentation += `**Мова:** ${file.language}\n`;
+        documentation += `**Розмір:** ${file.code.length} символів\n\n`;
         
-        let className = 'unchanged';
-        let content = escapeHtml(line2 || line1);
-        
-        if (line1 !== line2) {
-            if (!line1) {
-                className = 'added';
-                content = '+ ' + escapeHtml(line2);
-            } else if (!line2) {
-                className = 'removed';
-                content = '- ' + escapeHtml(line1);
-            } else {
-                className = 'added';
-                result.innerHTML += `<div class="diff-line removed">- ${escapeHtml(line1)}</div>`;
-                content = '+ ' + escapeHtml(line2);
+        if (file.language === 'javascript' || file.language === 'js') {
+            const functions = file.code.match(/function\s+(\w+)|const\s+(\w+)\s*=/g);
+            if (functions) {
+                documentation += '### Функції:\n\n';
+                functions.slice(0, 10).forEach(func => {
+                    documentation += `- \`${func}\`\n`;
+                });
             }
         }
         
-        result.innerHTML += `<div class="diff-line ${className}">${content}</div>`;
+        documentation += '\n---\n\n';
+    });
+    
+    const blob = new Blob([documentation], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'DOCUMENTATION.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Документація експортована!');
+}
+
+// Рефакторинг
+async function refactorCode() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає коду!');
+        return;
     }
+    
+    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
+    if (!apiKey) {
+        alert('⚠️ Введи Groq API ключ!');
+        return;
+    }
+    
+    const activeFileName = activeFile || Object.keys(codeFiles)[0];
+    const code = codeFiles[activeFileName].code;
+    
+    const refactorType = prompt(
+        'Тип рефакторингу:\n\n' +
+        '1 - Оптимізація\n' +
+        '2 - Читабельність\n' +
+        '3 - DRY принцип\n' +
+        '4 - Модернізація',
+        '2'
+    );
+    
+    const prompts = {
+        '1': 'Оптимізуй цей код для продуктивності',
+        '2': 'Покращи читабельність, додай коментарі',
+        '3': 'Видали дублювання (DRY)',
+        '4': 'Модернізуй використовуючи ES6+'
+    };
+    
+    const promptText = prompts[refactorType] || prompts['2'];
+    
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: 'Ти експерт рефакторингу' },
+                    { role: 'user', content: `${promptText}:\n\n${code}` }
+                ],
+                temperature: 0.3,
+                max_tokens: 10000
+            })
+        });
+        
+        const data = await response.json();
+        const refactoredCode = data.choices[0].message.content;
+        
+        const newFilename = activeFileName.replace(/\.(\w+)$/, '_refactored.$1');
+        const cleanCode = refactoredCode.replace(/```[\w]*\n?/g, '').replace(/```\n?/g, '');
+        
+        codeFiles[newFilename] = {
+            language: codeFiles[activeFileName].language,
+            code: cleanCode
+        };
+        
+        displayCodeFiles();
+        alert(`✅ Рефакторинг готов: ${newFilename}`);
+        
+    } catch (error) {
+        alert('❌ Помилка: ' + error.message);
+    }
+}
+
+// Ініціалізація кнопок покращень
+function initializeCoderEnhancements() {
+    const codeHeader = document.querySelector('.code-header');
+    if (!codeHeader || document.getElementById('coder-enhancements')) return;
+    
+    const enhancementsDiv = document.createElement('div');
+    enhancementsDiv.id = 'coder-enhancements';
+    enhancementsDiv.style.cssText = 'display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;';
+    
+    enhancementsDiv.innerHTML = `
+        <button onclick="analyzeCodeForErrors()" title="Аналіз помилок" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔍 Аналіз</button>
+        <button onclick="generateTests()" title="Генерація тестів" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🧪 Тести</button>
+        <button onclick="generateDocumentation()" title="Документація" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">📚 Docs</button>
+        <button onclick="refactorCode()" title="Рефакторинг" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🎯 Рефактор</button>
+    `;
+    
+    codeHeader.appendChild(enhancementsDiv);
+}
+
+// Ініціалізація GitHub кнопок
+function initializeGitHubButtons() {
+    const codeActions = document.querySelector('.code-actions');
+    if (!codeActions || document.getElementById('github-quick-actions')) return;
+    
+    const githubDiv = document.createElement('div');
+    githubDiv.id = 'github-quick-actions';
+    githubDiv.style.cssText = 'display: flex; gap: 8px; margin-left: 10px;';
+    
+    githubDiv.innerHTML = `
+        <button onclick="importFromGitHub()" title="Імпорт з GitHub" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🐙 Імпорт</button>
+        <button onclick="analyzeImportedCode()" title="Аналізувати" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔍 Аналіз</button>
+        <button onclick="exportToGitHub()" title="Експорт" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">📤 Експорт</button>
+        <button onclick="setupGitHubToken()" title="GitHub Token" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔑 Token</button>
+    `;
+    
+    codeActions.appendChild(githubDiv);
 }
