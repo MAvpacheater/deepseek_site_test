@@ -6,10 +6,10 @@
     <title>AI Assistant Hub</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/general.css">
-    <link rel="stylesheet" href="css/chats.css">
-    <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/photo.css">
+    <link rel="stylesheet" href="general.css">
+    <link rel="stylesheet" href="chats.css">
+    <link rel="stylesheet" href="settings.css">
+    <link rel="stylesheet" href="photo.css">
     
     <!-- Prism.js for syntax highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
@@ -357,10 +357,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <!-- Application Scripts -->
-    <script src="js/general.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/gemini.js"></script>
-    <script src="js/deepseek.js"></script>
-    <script src="js/photo.js"></script>
+    <script src="general.js"></script>
+    <script src="settings.js"></script>
+    <script src="gemini.js"></script>
+    <script src="deepseek.js"></script>
+    <script src="photo.js"></script>
+    <script src="integrations.js"></script>
+    <script src="coder-enhancements.js"></script>
+    <script src="security.js"></script>
+    
+    <!-- Initialize on load -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            // Ініціалізувати всі модулі
+            if (typeof initializeSecurity === 'function') {
+                initializeSecurity();
+            }
+            if (typeof initializeIntegrations === 'function') {
+                initializeIntegrations();
+            }
+            if (typeof initializeCoderEnhancements === 'function') {
+                initializeCoderEnhancements();
+            }
+        });
+    </script>
 </body>
 </html>
