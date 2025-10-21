@@ -13,7 +13,8 @@ async function sendDeepseekMessage() {
     
     if (!message) return;
 
-    const apiKey = localStorage.getItem('groq_api_key');
+    // Використовувати безпечну функцію отримання ключа
+    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
     if (!apiKey) {
         alert('⚠️ Введи Groq API ключ у налаштуваннях!');
         switchMode('settings');
