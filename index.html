@@ -40,7 +40,7 @@
                 <button class="menu-btn" onclick="switchMode('planner')">
                     <span class="menu-icon">📅</span>
                     <span class="menu-text">Планувальник</span>
-                    <span class="badge" id="plansBadge">0</span>
+                    <span class="badge" id="plansBadge" style="display: none;">0</span>
                 </button>
                 <button class="menu-btn" onclick="switchMode('memory')">
                     <span class="menu-icon">🧠</span>
@@ -84,9 +84,8 @@
                         <h1>✨ Gemini Chat</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="enableAgentMode()" title="Автономний режим">🤖 Агент</button>
-                        <button class="header-btn" onclick="saveConversation('gemini')">💾</button>
-                        <button class="header-btn" onclick="clearChat('gemini')">🗑️</button>
+                        <button class="clear-chat-btn" onclick="saveConversation('gemini')">💾</button>
+                        <button class="clear-chat-btn" onclick="clearChat('gemini')">🗑️</button>
                     </div>
                 </div>
                 <div class="messages" id="geminiMessages"></div>
@@ -108,10 +107,10 @@
                         <h1>💻 DeepSeek Coder</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
-                        <button class="header-btn" onclick="togglePreview()">👁️ Preview</button>
-                        <button class="header-btn" onclick="saveConversation('deepseek')">💾</button>
-                        <button class="header-btn" onclick="clearChat('deepseek')">🗑️</button>
+                        <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
+                        <button class="preview-toggle-btn" onclick="togglePreview()">👁️ Preview</button>
+                        <button class="save-chat-btn" onclick="saveConversation('deepseek')">💾</button>
+                        <button class="clear-chat-btn" onclick="clearChat('deepseek')">🗑️</button>
                     </div>
                 </div>
                 <div class="messages" id="deepseekMessages"></div>
@@ -158,7 +157,7 @@
                         <h1>🖼️ Image Generator</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="clearChat('image')">🗑️</button>
+                        <button class="clear-chat-btn" onclick="clearChat('image')">🗑️</button>
                     </div>
                 </div>
                 <div class="image-gallery" id="imageGallery">
@@ -186,7 +185,7 @@
                         <h1>📅 Розумний планувальник</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="createPlan()">➕ Новий план</button>
+                        <button class="clear-chat-btn" onclick="createPlan()">➕ Новий план</button>
                     </div>
                 </div>
                 
@@ -211,9 +210,9 @@
                         <h1>🧠 Пам'ять агента</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="header-btn" onclick="addMemory()">➕ Додати</button>
-                        <button class="header-btn" onclick="exportMemories()">📤 Експорт</button>
-                        <button class="header-btn" onclick="clearMemories()">🗑️ Очистити</button>
+                        <button class="clear-chat-btn" onclick="addMemory()">➕ Додати</button>
+                        <button class="clear-chat-btn" onclick="exportMemories()">📤 Експорт</button>
+                        <button class="clear-chat-btn" onclick="clearMemories()">🗑️ Очистити</button>
                     </div>
                 </div>
                 
@@ -302,28 +301,6 @@
                             <label>Groq API Key (DeepSeek)</label>
                             <input type="password" id="groqApiKey" placeholder="gsk_...">
                             <small>Отримати на <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h2>🤖 Налаштування агента</h2>
-                        <div class="setting-item">
-                            <label>
-                                <input type="checkbox" id="agentAutonomous"> 
-                                Автономний режим
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label>
-                                <input type="checkbox" id="agentMemory" checked> 
-                                Автоматично запам'ятовувати
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label>
-                                <input type="checkbox" id="agentReminders" checked> 
-                                Нагадування про плани
-                            </label>
                         </div>
                     </div>
 
@@ -430,7 +407,6 @@
     
     <script src="js/general.js"></script>
     <script src="js/agent-core.js"></script>
-    <script src="js/agent-tools.js"></script>
     <script src="js/gemini.js"></script>
     <script src="js/deepseek.js"></script>
     <script src="js/photo.js"></script>
