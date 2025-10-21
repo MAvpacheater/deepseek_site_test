@@ -1,5 +1,6 @@
 // Глобальні змінні
 let codeFiles = {};
+let codeHistory = {}; // Для зберігання версій
 let activeFile = null;
 let currentMode = 'gemini';
 
@@ -10,7 +11,299 @@ let deepseekHistory = [];
 window.addEventListener('DOMContentLoaded', function() {
     loadSettings();
     initializeInputs();
+    initializeShortcuts();
+    loadTheme();
 });
+
+// Завантаження теми
+function loadTheme() {
+    const theme = localStorage.getItem('theme') || 'dark';
+    if (theme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('themeIcon').textContent = '☀️';
+    }
+}
+
+// Перемикання теми
+function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById('themeIcon');
+    
+    if (body.classList.contains('light-theme')) {
+        body.classList.remove('light-theme');
+        icon.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.add('light-theme');
+        icon.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Перемикання sidebar (мобільна версія)
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('mobile-open');
+}
+
+// Ініціалізація гарячих клавіш
+function initializeShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+K - Пошук
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            openSearch();
+        }
+        
+        // Ctrl+Enter - Відправити повідомлення
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            if (currentMode === 'gemini') {
+                sendGeminiMessage();
+            } else if (currentMode === 'deepseek') {
+                sendDeepseekMessage();
+            }
+        }
+        
+        // Escape - Закрити модальні вікна
+        if (e.key === 'Escape') {
+            closeSearch();
+            closeDiffViewer();
+            closePreview();
+        }
+    });
+}
+
+// Пошук в історії
+function openSearch() {
+    const modal = document.getElementById('searchModal');
+    const input = document.getElementById('searchInput');
+    modal.classList.add('active');
+    input.focus();
+    
+    input.oninput = function() {
+        searchMessages(this.value);
+    };
+}
+
+function closeSearch() {
+    const modal = document.getElementById('searchModal');
+    modal.classList.remove('active');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+}
+
+function searchMessages(query) {
+    const results = document.getElementById('searchResults');
+    if (!query.trim()) {
+        results.innerHTML = '';
+        return;
+    }
+    
+    const history = currentMode === 'gemini' ? geminiHistory : deepseekHistory;
+    const matches = [];
+    
+    history.forEach((msg, index) => {
+        const content = msg.content || msg.parts?.[0]?.text || '';
+        if (content.toLowerCase().includes(query.toLowerCase())) {
+            matches.push({ index, content, role: msg.role });
+        }
+    });
+    
+    if (matches.length === 0) {
+        results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Нічого не знайдено</div>';
+        return;
+    }
+    
+    results.innerHTML = matches.map(match => {
+        const preview = match.content.substring(0, 150) + '...';
+        return `
+            <div class="search-result-item" onclick="scrollToMessage(${match.index})">
+                <div class="search-result-text">${escapeHtml(preview)}</div>
+                <div class="search-result-meta">${match.role === 'user' ? '👤 Ви' : '🤖 AI'} • Повідомлення #${match.index + 1}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function scrollToMessage(index) {
+    closeSearch();
+    const messagesDiv = document.getElementById(currentMode === 'gemini' ? 'geminiMessages' : 'deepseekMessages');
+    const messages = messagesDiv.querySelectorAll('.message');
+    if (messages[index]) {
+        messages[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        messages[index].style.animation = 'highlight 2s ease';
+    }
+}
+
+// Очищення чату
+function clearChat(mode) {
+    if (!confirm('⚠️ Очистити історію цього чату?')) return;
+    
+    if (mode === 'gemini') {
+        geminiHistory = [];
+        document.getElementById('geminiMessages').innerHTML = '';
+    } else if (mode === 'deepseek') {
+        deepseekHistory = [];
+        document.getElementById('deepseekMessages').innerHTML = '';
+        codeFiles = {};
+        codeHistory = {};
+        document.getElementById('fileTabs').innerHTML = '';
+        document.getElementById('codeContent').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <h3>Немає файлів</h3>
+                <p>Код з'явиться тут після відповіді AI</p>
+            </div>
+        `;
+    }
+    
+    alert('✅ Чат очищено!');
+}
+
+// Preview HTML
+function togglePreview() {
+    const panel = document.getElementById('previewPanel');
+    const isActive = panel.classList.contains('active');
+    
+    if (isActive) {
+        closePreview();
+    } else {
+        // Знайти HTML файл
+        const htmlFile = Object.keys(codeFiles).find(name => name.endsWith('.html'));
+        if (!htmlFile) {
+            alert('⚠️ HTML файл не знайдено!');
+            return;
+        }
+        
+        const frame = document.getElementById('previewFrame');
+        const htmlContent = codeFiles[htmlFile].code;
+        
+        // Додати CSS та JS якщо є
+        let fullHtml = htmlContent;
+        const cssFile = Object.keys(codeFiles).find(name => name.endsWith('.css'));
+        const jsFile = Object.keys(codeFiles).find(name => name.endsWith('.js'));
+        
+        if (cssFile) {
+            const cssContent = codeFiles[cssFile].code;
+            fullHtml = fullHtml.replace('</head>', `<style>${cssContent}</style></head>`);
+        }
+        
+        if (jsFile) {
+            const jsContent = codeFiles[jsFile].code;
+            fullHtml = fullHtml.replace('</body>', `<script>${jsContent}</script></body>`);
+        }
+        
+        frame.srcdoc = fullHtml;
+        panel.classList.add('active');
+    }
+}
+
+function closePreview() {
+    const panel = document.getElementById('previewPanel');
+    panel.classList.remove('active');
+}
+
+// Завантаження всіх файлів як ZIP
+async function downloadAllAsZip() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає файлів для завантаження!');
+        return;
+    }
+    
+    const zip = new JSZip();
+    
+    Object.keys(codeFiles).forEach(filename => {
+        zip.file(filename, codeFiles[filename].code);
+    });
+    
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'project.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Diff Viewer
+function showDiffViewer() {
+    if (Object.keys(codeHistory).length < 2) {
+        alert('⚠️ Потрібно мінімум 2 версії файлу для порівняння!');
+        return;
+    }
+    
+    const modal = document.getElementById('diffModal');
+    const select1 = document.getElementById('diffFile1');
+    const select2 = document.getElementById('diffFile2');
+    
+    // Заповнити селекти
+    select1.innerHTML = '<option value="">Виберіть версію 1</option>';
+    select2.innerHTML = '<option value="">Виберіть версію 2</option>';
+    
+    Object.keys(codeHistory).forEach((filename, index) => {
+        const versions = codeHistory[filename];
+        versions.forEach((version, vIndex) => {
+            const option = `<option value="${filename}-${vIndex}">${filename} (v${vIndex + 1})</option>`;
+            select1.innerHTML += option;
+            select2.innerHTML += option;
+        });
+    });
+    
+    modal.classList.add('active');
+}
+
+function closeDiffViewer() {
+    const modal = document.getElementById('diffModal');
+    modal.classList.remove('active');
+}
+
+function compareDiff() {
+    const file1 = document.getElementById('diffFile1').value;
+    const file2 = document.getElementById('diffFile2').value;
+    
+    if (!file1 || !file2) {
+        alert('⚠️ Виберіть обидві версії!');
+        return;
+    }
+    
+    const [filename1, version1] = file1.split('-');
+    const [filename2, version2] = file2.split('-');
+    
+    const code1 = codeHistory[filename1][version1].split('\n');
+    const code2 = codeHistory[filename2][version2].split('\n');
+    
+    const result = document.getElementById('diffResult');
+    result.innerHTML = '';
+    
+    const maxLines = Math.max(code1.length, code2.length);
+    
+    for (let i = 0; i < maxLines; i++) {
+        const line1 = code1[i] || '';
+        const line2 = code2[i] || '';
+        
+        let className = 'unchanged';
+        let content = escapeHtml(line2 || line1);
+        
+        if (line1 !== line2) {
+            if (!line1) {
+                className = 'added';
+                content = '+ ' + escapeHtml(line2);
+            } else if (!line2) {
+                className = 'removed';
+                content = '- ' + escapeHtml(line1);
+            } else {
+                className = 'added';
+                result.innerHTML += `<div class="diff-line removed">- ${escapeHtml(line1)}</div>`;
+                content = '+ ' + escapeHtml(line2);
+            }
+        }
+        
+        result.innerHTML += `<div class="diff-line ${className}">${content}</div>`;
+    }
+}
 
 // Завантаження налаштувань
 function loadSettings() {
@@ -52,6 +345,7 @@ function clearAllData() {
         geminiHistory = [];
         deepseekHistory = [];
         codeFiles = {};
+        codeHistory = {};
         
         const geminiMessages = document.getElementById('geminiMessages');
         const deepseekMessages = document.getElementById('deepseekMessages');
@@ -80,18 +374,15 @@ function clearAllData() {
 function switchMode(mode) {
     currentMode = mode;
     
-    // Оновлення активної кнопки
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Знаходимо кнопку яка була натиснута
     const clickedButton = event?.target?.closest('.menu-btn');
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
     
-    // Оновлення контенту
     document.querySelectorAll('.mode-content').forEach(content => {
         content.classList.remove('active');
     });
@@ -116,7 +407,7 @@ function initializeInputs() {
         });
 
         input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
                 e.preventDefault();
                 if (inputId === 'geminiInput') {
                     sendGeminiMessage();
@@ -172,9 +463,8 @@ async function sendGeminiMessage() {
     addMessage(message, 'user', 'geminiMessages');
     geminiHistory.push({ role: 'user', parts: [{ text: message }] });
 
-    // Обмеження історії до 10 повідомлень
-    if (geminiHistory.length > 10) {
-        geminiHistory = geminiHistory.slice(-10);
+    if (geminiHistory.length > 20) {
+        geminiHistory = geminiHistory.slice(-20);
     }
 
     const sendBtn = document.getElementById('geminiSendBtn');
@@ -250,9 +540,8 @@ async function sendDeepseekMessage() {
     
     deepseekHistory.push({ role: 'user', content: message });
 
-    // Обмеження історії до 20 повідомлень
-    if (deepseekHistory.length > 20) {
-        deepseekHistory = deepseekHistory.slice(-20);
+    if (deepseekHistory.length > 40) {
+        deepseekHistory = deepseekHistory.slice(-40);
     }
 
     const sendBtn = document.getElementById('deepseekSendBtn');
@@ -329,6 +618,12 @@ function extractAndDisplayCode(text) {
             filename = `file_${fileIndex}.${getExtension(lang)}`;
         }
         
+        // Зберегти версію для diff
+        if (!codeHistory[filename]) {
+            codeHistory[filename] = [];
+        }
+        codeHistory[filename].push(code);
+        
         codeFiles[filename] = {
             language: lang,
             code: code
@@ -347,6 +642,7 @@ function detectFilename(code, lang) {
         if (line.includes('<!DOCTYPE') || line.includes('<html')) return 'index.html';
         if (line.includes('def ') && lang === 'python') return 'main.py';
         if (line.includes('function ') || line.includes('const ') || line.includes('let ')) return 'script.js';
+        if (line.includes('body {') || line.includes('* {')) return 'styles.css';
     }
     return null;
 }
@@ -397,6 +693,11 @@ function displayCodeFiles() {
         fileDiv.dataset.filename = filename;
         
         const file = codeFiles[filename];
+        
+        // Підсвічування синтаксису з Prism.js
+        const languageClass = `language-${file.language}`;
+        const highlightedCode = Prism.highlight(file.code, Prism.languages[file.language] || Prism.languages.plaintext, file.language);
+        
         fileDiv.innerHTML = `
             <div class="code-block">
                 <div class="code-block-header">
@@ -409,7 +710,7 @@ function displayCodeFiles() {
                         <button onclick="downloadFile('${filename}')">💾 Завантажити</button>
                     </div>
                 </div>
-                <pre><code id="code-${filename}">${escapeHtml(file.code)}</code></pre>
+                <pre><code class="${languageClass}" id="code-${filename}">${highlightedCode}</code></pre>
             </div>
         `;
         
@@ -440,10 +741,7 @@ function switchFile(filename) {
 
 // Копіювання коду в буфер обміну
 function copyCode(filename) {
-    const codeElement = document.getElementById(`code-${filename}`);
-    if (!codeElement) return;
-    
-    const code = codeElement.textContent;
+    const code = codeFiles[filename].code;
     navigator.clipboard.writeText(code).then(() => {
         const btn = event.target;
         const originalText = btn.textContent;
@@ -478,3 +776,13 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Анімація виділення
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes highlight {
+        0%, 100% { background: transparent; }
+        50% { background: rgba(102, 126, 234, 0.3); }
+    }
+`;
+document.head.appendChild(style);
