@@ -535,8 +535,8 @@ async function refactorCode() {
                     { role: 'system', content: 'Ти експерт рефакторингу' },
                     { role: 'user', content: `${promptText}:\n\n${code}` }
                 ],
-                temperature: 0.3,
-                max_tokens: 10000
+                temperature: 2.0,
+                max_tokens: 4000
             })
         });
         
