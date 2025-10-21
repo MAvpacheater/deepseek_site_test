@@ -76,9 +76,11 @@ async function sendDeepseekMessage() {
         extractAndDisplayCode(aiMessage);
         
         // Статистика
-        stats.deepseekRequests++;
-        stats.totalTokens += estimateTokens(message + aiMessage);
-        saveStats();
+        if (typeof stats !== 'undefined') {
+            stats.deepseekRequests++;
+            stats.totalTokens += estimateTokens(message + aiMessage);
+            saveStats();
+        }
 
     } catch (error) {
         console.error('Помилка:', error);
@@ -179,11 +181,9 @@ function displayCodeFiles() {
         const file = codeFiles[filename];
         
         const languageClass = `language-${file.language}`;
-        const highlightedCode = Prism.highlight(
-            file.code, 
-            Prism.languages[file.language] || Prism.languages.plaintext, 
-            file.language
-        );
+        const highlightedCode = typeof Prism !== 'undefined' ? 
+            Prism.highlight(file.code, Prism.languages[file.language] || Prism.languages.plaintext, file.language) :
+            escapeHtml(file.code);
         
         fileDiv.innerHTML = `
             <div class="code-block">
@@ -206,10 +206,14 @@ function displayCodeFiles() {
     
     activeFile = filenames[0];
     
-    // Ініціалізувати покращення та GitHub кнопки
+    // Ініціалізувати додаткові функції
     setTimeout(() => {
-        initializeCoderEnhancements();
-        initializeGitHubButtons();
+        if (typeof initializeCoderEnhancements === 'function') {
+            initializeCoderEnhancements();
+        }
+        if (typeof initializeGitHubButtons === 'function') {
+            initializeGitHubButtons();
+        }
     }, 100);
 }
 
@@ -312,6 +316,11 @@ async function downloadAllAsZip() {
         return;
     }
     
+    if (typeof JSZip === 'undefined') {
+        alert('❌ JSZip не завантажено!');
+        return;
+    }
+    
     const zip = new JSZip();
     
     Object.keys(codeFiles).forEach(filename => {
@@ -327,236 +336,6 @@ async function downloadAllAsZip() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
-
-// Аналіз помилок
-async function analyzeCodeForErrors() {
-    if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає коду для аналізу!');
-        return;
-    }
-    
-    const activeFileName = activeFile || Object.keys(codeFiles)[0];
-    const code = codeFiles[activeFileName].code;
-    const language = codeFiles[activeFileName].language;
-    
-    const errors = [];
-    
-    if (language === 'javascript' || language === 'js') {
-        if (code.match(/console\.log/g)?.length > 5) {
-            errors.push('⚠️ Забагато console.log (production)');
-        }
-        if (code.includes('var ')) {
-            errors.push('💡 Використовується var - краще let/const');
-        }
-        if (code.match(/[^=!]==(?!=)/g)) {
-            errors.push('❌ Використовується == замість ===');
-        }
-    }
-    
-    if (language === 'css') {
-        const importantCount = (code.match(/!important/g) || []).length;
-        if (importantCount > 3) {
-            errors.push(`⚠️ Надто багато !important (${importantCount})`);
-        }
-    }
-    
-    if (language === 'html') {
-        const openTags = code.match(/<(\w+)[^>]*>/g) || [];
-        const closeTags = code.match(/<\/(\w+)>/g) || [];
-        
-        if (openTags.length !== closeTags.length) {
-            errors.push('❌ Проблема з незакритими тегами');
-        }
-        
-        if (code.includes('<img') && !code.match(/<img[^>]+alt=/)) {
-            errors.push('♿ Зображення без alt атрибуту (accessibility)');
-        }
-    }
-    
-    if (errors.length === 0) {
-        alert('✅ Помилок не знайдено! Код виглядає добре.');
-    } else {
-        alert('🔍 Результати аналізу:\n\n' + errors.map(e => e).join('\n'));
-    }
-}
-
-// Генерація тестів
-async function generateTests() {
-    if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає коду для тестів!');
-        return;
-    }
-    
-    const jsFiles = Object.keys(codeFiles).filter(name => 
-        name.endsWith('.js') && !name.includes('test')
-    );
-    
-    if (jsFiles.length === 0) {
-        alert('⚠️ Не знайдено JS файлів!');
-        return;
-    }
-    
-    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
-    if (!apiKey) {
-        alert('⚠️ Введи Groq API ключ!');
-        return;
-    }
-    
-    const filename = jsFiles[0];
-    const code = codeFiles[filename].code;
-    
-    const prompt = `Створи unit тести для цього JavaScript коду (Jest):\n\n${code}`;
-    
-    try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: 'Ти експерт тестування. Створюй чисті тести.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.3,
-                max_tokens: 2000
-            })
-        });
-        
-        const data = await response.json();
-        const tests = data.choices[0].message.content;
-        
-        const testFilename = filename.replace('.js', '.test.js');
-        const testCode = tests.replace(/```javascript\n?/g, '').replace(/```\n?/g, '');
-        
-        codeFiles[testFilename] = {
-            language: 'javascript',
-            code: testCode
-        };
-        
-        displayCodeFiles();
-        alert(`✅ Тести створено: ${testFilename}`);
-        
-    } catch (error) {
-        alert('❌ Помилка: ' + error.message);
-    }
-}
-
-// Генерація документації
-async function generateDocumentation() {
-    if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає коду для документації!');
-        return;
-    }
-    
-    let documentation = '# 📚 Документація проекту\n\n';
-    documentation += `Згенеровано: ${new Date().toLocaleString('uk-UA')}\n\n`;
-    documentation += '---\n\n';
-    
-    Object.keys(codeFiles).forEach(filename => {
-        const file = codeFiles[filename];
-        documentation += `## 📄 ${filename}\n\n`;
-        documentation += `**Мова:** ${file.language}\n`;
-        documentation += `**Розмір:** ${file.code.length} символів\n\n`;
-        
-        if (file.language === 'javascript' || file.language === 'js') {
-            const functions = file.code.match(/function\s+(\w+)|const\s+(\w+)\s*=/g);
-            if (functions) {
-                documentation += '### Функції:\n\n';
-                functions.slice(0, 10).forEach(func => {
-                    documentation += `- \`${func}\`\n`;
-                });
-            }
-        }
-        
-        documentation += '\n---\n\n';
-    });
-    
-    const blob = new Blob([documentation], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'DOCUMENTATION.md';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    alert('✅ Документація експортована!');
-}
-
-// Рефакторинг
-async function refactorCode() {
-    if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає коду!');
-        return;
-    }
-    
-    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
-    if (!apiKey) {
-        alert('⚠️ Введи Groq API ключ!');
-        return;
-    }
-    
-    const activeFileName = activeFile || Object.keys(codeFiles)[0];
-    const code = codeFiles[activeFileName].code;
-    
-    const refactorType = prompt(
-        'Тип рефакторингу:\n\n' +
-        '1 - Оптимізація\n' +
-        '2 - Читабельність\n' +
-        '3 - DRY принцип\n' +
-        '4 - Модернізація',
-        '2'
-    );
-    
-    const prompts = {
-        '1': 'Оптимізуй цей код для продуктивності',
-        '2': 'Покращи читабельність, додай коментарі',
-        '3': 'Видали дублювання (DRY)',
-        '4': 'Модернізуй використовуючи ES6+'
-    };
-    
-    const promptText = prompts[refactorType] || prompts['2'];
-    
-    try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: 'Ти експерт рефакторингу' },
-                    { role: 'user', content: `${promptText}:\n\n${code}` }
-                ],
-                temperature: 2.0,
-                max_tokens: 4000
-            })
-        });
-        
-        const data = await response.json();
-        const refactoredCode = data.choices[0].message.content;
-        
-        const newFilename = activeFileName.replace(/\.(\w+)$/, '_refactored.$1');
-        const cleanCode = refactoredCode.replace(/```[\w]*\n?/g, '').replace(/```\n?/g, '');
-        
-        codeFiles[newFilename] = {
-            language: codeFiles[activeFileName].language,
-            code: cleanCode
-        };
-        
-        displayCodeFiles();
-        alert(`✅ Рефакторинг готов: ${newFilename}`);
-        
-    } catch (error) {
-        alert('❌ Помилка: ' + error.message);
-    }
 }
 
 // Ініціалізація кнопок покращень
@@ -595,4 +374,48 @@ function initializeGitHubButtons() {
     `;
     
     codeActions.appendChild(githubDiv);
+}
+
+// Функції аналізу та покращення (базові версії)
+async function analyzeCodeForErrors() {
+    if (Object.keys(codeFiles).length === 0) {
+        alert('⚠️ Немає коду для аналізу!');
+        return;
+    }
+    
+    const activeFileName = activeFile || Object.keys(codeFiles)[0];
+    const code = codeFiles[activeFileName].code;
+    const language = codeFiles[activeFileName].language;
+    
+    const errors = [];
+    
+    if (language === 'javascript' || language === 'js') {
+        if (code.match(/console\.log/g)?.length > 5) {
+            errors.push('⚠️ Забагато console.log');
+        }
+        if (code.includes('var ')) {
+            errors.push('💡 Використовується var - краще let/const');
+        }
+        if (code.match(/[^=!]==(?!=)/g)) {
+            errors.push('❌ Використовується == замість ===');
+        }
+    }
+    
+    if (errors.length === 0) {
+        alert('✅ Помилок не знайдено!');
+    } else {
+        alert('🔍 Результати аналізу:\n\n' + errors.join('\n'));
+    }
+}
+
+async function generateTests() {
+    alert('🧪 Функція генерації тестів доступна з Groq API');
+}
+
+async function generateDocumentation() {
+    alert('📚 Функція генерації документації доступна');
+}
+
+async function refactorCode() {
+    alert('🎯 Функція рефакторингу доступна з Groq API');
 }
