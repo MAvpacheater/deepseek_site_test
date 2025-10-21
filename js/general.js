@@ -6,6 +6,8 @@ window.addEventListener('DOMContentLoaded', function() {
     loadSettings();
     loadStats();
     loadSavedConversations();
+    loadPlans();
+    loadMemories();
     initializeInputs();
     initializeShortcuts();
     loadTheme();
@@ -20,10 +22,7 @@ function switchMode(mode) {
         btn.classList.remove('active');
     });
     
-    const clickedButton = event?.target?.closest('.menu-btn');
-    if (clickedButton) {
-        clickedButton.classList.add('active');
-    }
+    event?.target?.closest('.menu-btn')?.classList.add('active');
     
     document.querySelectorAll('.mode-content').forEach(content => {
         content.classList.remove('active');
@@ -34,9 +33,12 @@ function switchMode(mode) {
         modeElement.classList.add('active');
     }
     
-    // Якщо переходимо в бібліотеку - відобразити її
     if (mode === 'library') {
         displayLibrary();
+    } else if (mode === 'planner') {
+        displayPlans();
+    } else if (mode === 'memory') {
+        displayMemories();
     }
 }
 
@@ -45,7 +47,8 @@ function loadTheme() {
     const theme = localStorage.getItem('theme') || 'dark';
     if (theme === 'light') {
         document.body.classList.add('light-theme');
-        document.getElementById('themeIcon').textContent = '☀️';
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '☀️';
     }
 }
 
@@ -56,11 +59,11 @@ function toggleTheme() {
     
     if (body.classList.contains('light-theme')) {
         body.classList.remove('light-theme');
-        icon.textContent = '🌙';
+        if (icon) icon.textContent = '🌙';
         localStorage.setItem('theme', 'dark');
     } else {
         body.classList.add('light-theme');
-        icon.textContent = '☀️';
+        if (icon) icon.textContent = '☀️';
         localStorage.setItem('theme', 'light');
     }
 }
@@ -68,7 +71,9 @@ function toggleTheme() {
 // Перемикання sidebar (мобільна версія)
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('mobile-open');
+    if (sidebar) {
+        sidebar.classList.toggle('mobile-open');
+    }
 }
 
 // Ініціалізація полів вводу
@@ -85,7 +90,7 @@ function initializeInputs() {
         });
 
         input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+            if (e.key === 'Enter' && e.ctrlKey) {
                 e.preventDefault();
                 if (inputId === 'geminiInput') {
                     sendGeminiMessage();
@@ -102,13 +107,6 @@ function initializeInputs() {
 // Ініціалізація гарячих клавіш
 function initializeShortcuts() {
     document.addEventListener('keydown', function(e) {
-        // Ctrl+K - Пошук
-        if (e.ctrlKey && e.key === 'k') {
-            e.preventDefault();
-            openSearch();
-        }
-        
-        // Ctrl+S - Зберегти
         if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             if (currentMode === 'gemini' || currentMode === 'deepseek') {
@@ -116,24 +114,12 @@ function initializeShortcuts() {
             }
         }
         
-        // Ctrl+Enter - Відправити повідомлення
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            if (currentMode === 'gemini') {
-                sendGeminiMessage();
-            } else if (currentMode === 'deepseek') {
-                sendDeepseekMessage();
-            } else if (currentMode === 'image') {
-                generateImage();
-            }
-        }
-        
-        // Escape - Закрити модальні вікна
         if (e.key === 'Escape') {
-            closeSearch();
-            closeDiffViewer();
-            closePreview();
-            closeSaveModal();
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            const preview = document.getElementById('previewPanel');
+            if (preview) preview.classList.remove('active');
         }
     });
 }
@@ -162,7 +148,6 @@ function addMessage(text, sender, messagesId) {
 
 // Підрахунок токенів (приблизний)
 function estimateTokens(text) {
-    // Приблизно 1 токен = 4 символи для англійської, ~2 для української
     return Math.ceil(text.length / 3);
 }
 
@@ -171,110 +156,59 @@ function clearChat(mode) {
     if (!confirm('⚠️ Очистити історію цього чату?')) return;
     
     if (mode === 'gemini') {
-        geminiHistory = [];
-        document.getElementById('geminiMessages').innerHTML = '';
+        if (typeof geminiHistory !== 'undefined') geminiHistory = [];
+        const msgs = document.getElementById('geminiMessages');
+        if (msgs) msgs.innerHTML = '';
     } else if (mode === 'deepseek') {
-        deepseekHistory = [];
-        document.getElementById('deepseekMessages').innerHTML = '';
-        codeFiles = {};
-        codeHistory = {};
-        document.getElementById('fileTabs').innerHTML = '';
-        document.getElementById('codeContent').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
-                <h3>Немає файлів</h3>
-                <p>Код з'явиться тут після відповіді AI</p>
-            </div>
-        `;
+        if (typeof deepseekHistory !== 'undefined') deepseekHistory = [];
+        if (typeof codeFiles !== 'undefined') window.codeFiles = {};
+        if (typeof codeHistory !== 'undefined') window.codeHistory = {};
+        
+        const msgs = document.getElementById('deepseekMessages');
+        if (msgs) msgs.innerHTML = '';
+        
+        const tabs = document.getElementById('fileTabs');
+        if (tabs) tabs.innerHTML = '';
+        
+        const content = document.getElementById('codeContent');
+        if (content) {
+            content.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3>Немає файлів</h3>
+                    <p>Код з'явиться тут після відповіді AI</p>
+                </div>
+            `;
+        }
     } else if (mode === 'image') {
-        imageHistory = [];
-        document.getElementById('imageGallery').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">🎨</div>
-                <h3>Генерація зображень</h3>
-                <p>Опиши що хочеш згенерувати (використовує DALL-E 3 через Pollinations.ai)</p>
-            </div>
-        `;
+        if (typeof imageHistory !== 'undefined') imageHistory = [];
+        const gallery = document.getElementById('imageGallery');
+        if (gallery) {
+            gallery.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎨</div>
+                    <h3>Генерація зображень</h3>
+                    <p>Опиши що хочеш згенерувати</p>
+                </div>
+            `;
+        }
     }
     
     alert('✅ Чат очищено!');
 }
 
-// Пошук в історії
-function openSearch() {
-    const modal = document.getElementById('searchModal');
-    const input = document.getElementById('searchInput');
-    modal.classList.add('active');
-    input.focus();
-    
-    input.oninput = function() {
-        searchMessages(this.value);
-    };
-}
-
-function closeSearch() {
-    const modal = document.getElementById('searchModal');
-    modal.classList.remove('active');
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchResults').innerHTML = '';
-}
-
-function searchMessages(query) {
-    const results = document.getElementById('searchResults');
-    if (!query.trim()) {
-        results.innerHTML = '';
-        return;
-    }
-    
-    const history = currentMode === 'gemini' ? geminiHistory : deepseekHistory;
-    const matches = [];
-    
-    history.forEach((msg, index) => {
-        const content = msg.content || msg.parts?.[0]?.text || '';
-        if (content.toLowerCase().includes(query.toLowerCase())) {
-            matches.push({ index, content, role: msg.role });
-        }
-    });
-    
-    if (matches.length === 0) {
-        results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Нічого не знайдено</div>';
-        return;
-    }
-    
-    results.innerHTML = matches.map(match => {
-        const preview = match.content.substring(0, 150) + '...';
-        return `
-            <div class="search-result-item" onclick="scrollToMessage(${match.index})">
-                <div class="search-result-text">${escapeHtml(preview)}</div>
-                <div class="search-result-meta">${match.role === 'user' ? '👤 Ви' : '🤖 AI'} • Повідомлення #${match.index + 1}</div>
-            </div>
-        `;
-    }).join('');
-}
-
-function scrollToMessage(index) {
-    closeSearch();
-    const messagesDiv = document.getElementById(currentMode === 'gemini' ? 'geminiMessages' : 'deepseekMessages');
-    const messages = messagesDiv.querySelectorAll('.message');
-    if (messages[index]) {
-        messages[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        messages[index].style.animation = 'highlight 2s ease';
-    }
-}
-
 // Екранування HTML
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Анімація виділення
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes highlight {
-        0%, 100% { background: transparent; }
-        50% { background: rgba(102, 126, 234, 0.3); }
+// Закрити модальне вікно
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
     }
-`;
-document.head.appendChild(style);
+}
