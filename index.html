@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Assistant Hub</title>
     <link rel="stylesheet" href="general.css">
+    <!-- Prism.js для підсвічування синтаксису -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container" id="mainContainer">
         <!-- Бічне меню -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>🤖 AI Hub</h2>
             </div>
@@ -27,20 +29,34 @@
                     <span class="menu-text">Налаштування</span>
                 </button>
             </div>
+            
+            <div class="sidebar-footer">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Перемкнути тему">
+                    <span id="themeIcon">🌙</span>
+                </button>
+            </div>
         </div>
 
         <!-- Gemini Chat -->
         <div class="mode-content active" id="geminiMode">
             <div class="chat-section full-width">
                 <div class="header">
-                    <h1>✨ Gemini Chat</h1>
-                    <p>Розмовляй з Gemini 2.5 Flash</p>
+                    <div class="header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                        <h1>✨ Gemini Chat</h1>
+                    </div>
+                    <button class="clear-chat-btn" onclick="clearChat('gemini')" title="Очистити чат">
+                        🗑️ Очистити
+                    </button>
                 </div>
                 <div class="messages" id="geminiMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="geminiInput" placeholder="Задай питання..." rows="1"></textarea>
+                        <textarea id="geminiInput" placeholder="Задай питання... (Ctrl+Enter для відправки)" rows="1"></textarea>
                         <button id="geminiSendBtn" onclick="sendGeminiMessage()">Надіслати</button>
+                    </div>
+                    <div class="shortcuts-hint">
+                        💡 <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити
                     </div>
                 </div>
             </div>
@@ -50,21 +66,42 @@
         <div class="mode-content" id="deepseekMode">
             <div class="chat-section">
                 <div class="header">
-                    <h1>💻 DeepSeek Coder</h1>
-                    <p>Розумний асистент для програмування</p>
+                    <div class="header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                        <h1>💻 DeepSeek Coder</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Попередній перегляд HTML">
+                            👁️ Preview
+                        </button>
+                        <button class="clear-chat-btn" onclick="clearChat('deepseek')" title="Очистити чат">
+                            🗑️ Очистити
+                        </button>
+                    </div>
                 </div>
                 <div class="messages" id="deepseekMessages"></div>
                 <div class="input-area">
                     <div class="input-wrapper">
-                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити..." rows="1"></textarea>
+                        <textarea id="deepseekInput" placeholder="Опиши що потрібно створити... (Ctrl+Enter для відправки)" rows="1"></textarea>
                         <button id="deepseekSendBtn" onclick="sendDeepseekMessage()">Надіслати</button>
+                    </div>
+                    <div class="shortcuts-hint">
+                        💡 <kbd>Ctrl</kbd> + <kbd>K</kbd> - Пошук | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Відправити
                     </div>
                 </div>
             </div>
 
-            <div class="code-section">
+            <div class="code-section" id="codeSection">
                 <div class="code-header">
                     <h2>📁 Файли проєкту</h2>
+                    <div class="code-actions">
+                        <button onclick="downloadAllAsZip()" title="Завантажити всі файли як ZIP">
+                            📦 ZIP
+                        </button>
+                        <button onclick="showDiffViewer()" title="Порівняти версії">
+                            🔄 Diff
+                        </button>
+                    </div>
                 </div>
                 <div class="file-tabs" id="fileTabs"></div>
                 <div class="code-content" id="codeContent">
@@ -75,14 +112,28 @@
                     </div>
                 </div>
             </div>
+
+            <!-- HTML Preview Panel -->
+            <div class="preview-panel" id="previewPanel">
+                <div class="preview-header">
+                    <h3>👁️ Попередній перегляд</h3>
+                    <button onclick="closePreview()">✕</button>
+                </div>
+                <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
         </div>
 
         <!-- Налаштування -->
         <div class="mode-content" id="settingsMode">
             <div class="settings-container">
                 <div class="settings-header">
-                    <h1>⚙️ Налаштування</h1>
-                    <p>Конфігурація API ключів та системних промптів</p>
+                    <div class="header-left">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                        <div>
+                            <h1>⚙️ Налаштування</h1>
+                            <p>Конфігурація API ключів та системних промптів</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="settings-content">
@@ -121,7 +172,41 @@
         </div>
     </div>
 
+    <!-- Search Modal -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-modal-content">
+            <input type="text" id="searchInput" placeholder="🔍 Шукати в історії..." autofocus>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Diff Viewer Modal -->
+    <div class="diff-modal" id="diffModal">
+        <div class="diff-modal-content">
+            <div class="diff-header">
+                <h3>🔄 Порівняння версій коду</h3>
+                <button onclick="closeDiffViewer()">✕</button>
+            </div>
+            <div class="diff-controls">
+                <select id="diffFile1">
+                    <option value="">Версія 1</option>
+                </select>
+                <span>↔️</span>
+                <select id="diffFile2">
+                    <option value="">Версія 2</option>
+                </select>
+                <button onclick="compareDiff()">Порівняти</button>
+            </div>
+            <div class="diff-result" id="diffResult"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="general.js"></script>
-    <script src="deepseek.js"></script>
 </body>
 </html>
