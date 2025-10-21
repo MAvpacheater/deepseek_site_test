@@ -1,19 +1,420 @@
 // Глобальні змінні
 let codeFiles = {};
-let codeHistory = {}; // Для зберігання версій
+let codeHistory = {};
 let activeFile = null;
 let currentMode = 'gemini';
 
 let geminiHistory = [];
 let deepseekHistory = [];
+let imageHistory = [];
+let savedConversations = [];
+
+let stats = {
+    geminiRequests: 0,
+    deepseekRequests: 0,
+    imagesGenerated: 0,
+    savedProjects: 0,
+    totalTokens: 0,
+    firstUse: null
+};
+
+let currentSaveMode = null;
 
 // Ініціалізація при завантаженні
 window.addEventListener('DOMContentLoaded', function() {
     loadSettings();
+    loadStats();
+    loadSavedConversations();
     initializeInputs();
     initializeShortcuts();
     loadTheme();
+    updateStats();
 });
+
+// Завантаження статистики
+function loadStats() {
+    const saved = localStorage.getItem('user_stats');
+    if (saved) {
+        stats = JSON.parse(saved);
+    }
+    if (!stats.firstUse) {
+        stats.firstUse = Date.now();
+        saveStats();
+    }
+}
+
+// Збереження статистики
+function saveStats() {
+    localStorage.setItem('user_stats', JSON.stringify(stats));
+    updateStats();
+}
+
+// Оновлення відображення статистики
+function updateStats() {
+    document.getElementById('statGemini').textContent = stats.geminiRequests || 0;
+    document.getElementById('statDeepseek').textContent = stats.deepseekRequests || 0;
+    document.getElementById('statImages').textContent = stats.imagesGenerated || 0;
+    document.getElementById('statSaved').textContent = savedConversations.length;
+    document.getElementById('statTokens').textContent = (stats.totalTokens || 0).toLocaleString();
+    
+    if (stats.firstUse) {
+        const days = Math.floor((Date.now() - stats.firstUse) / (1000 * 60 * 60 * 24));
+        document.getElementById('statDays').textContent = days + 1;
+    }
+}
+
+// Скидання статистики
+function resetStats() {
+    if (!confirm('⚠️ Скинути всю статистику?')) return;
+    
+    stats = {
+        geminiRequests: 0,
+        deepseekRequests: 0,
+        imagesGenerated: 0,
+        savedProjects: 0,
+        totalTokens: 0,
+        firstUse: Date.now()
+    };
+    saveStats();
+    alert('✅ Статистику скинуто!');
+}
+
+// Завантаження збережених розмов
+function loadSavedConversations() {
+    const saved = localStorage.getItem('saved_conversations');
+    if (saved) {
+        savedConversations = JSON.parse(saved);
+    }
+}
+
+// Збереження розмов
+function saveSavedConversations() {
+    localStorage.setItem('saved_conversations', JSON.stringify(savedConversations));
+    updateStats();
+}
+
+// Відкрити модальне вікно збереження
+function saveConversation(mode) {
+    currentSaveMode = mode;
+    document.getElementById('saveModal').classList.add('active');
+    document.getElementById('saveTitle').focus();
+}
+
+// Закрити модальне вікно збереження
+function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('active');
+    document.getElementById('saveTitle').value = '';
+    document.getElementById('saveTags').value = '';
+}
+
+// Підтвердити збереження
+function confirmSave() {
+    const title = document.getElementById('saveTitle').value.trim();
+    const tagsInput = document.getElementById('saveTags').value.trim();
+    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
+    
+    if (!title) {
+        alert('⚠️ Введи назву проекту!');
+        return;
+    }
+    
+    let history, preview;
+    
+    if (currentSaveMode === 'gemini') {
+        history = [...geminiHistory];
+        preview = geminiHistory[geminiHistory.length - 1]?.parts?.[0]?.text || 'Немає попереднього перегляду';
+    } else if (currentSaveMode === 'deepseek') {
+        history = [...deepseekHistory];
+        preview = deepseekHistory[deepseekHistory.length - 1]?.content || 'Немає попереднього перегляду';
+    }
+    
+    const conversation = {
+        id: Date.now(),
+        title: title,
+        mode: currentSaveMode,
+        tags: tags,
+        history: history,
+        codeFiles: currentSaveMode === 'deepseek' ? {...codeFiles} : null,
+        preview: preview.substring(0, 200),
+        date: new Date().toLocaleDateString('uk-UA'),
+        favorite: false
+    };
+    
+    savedConversations.unshift(conversation);
+    saveSavedConversations();
+    closeSaveModal();
+    
+    alert('✅ Розмову збережено!');
+}
+
+// Відобразити бібліотеку
+function displayLibrary() {
+    const content = document.getElementById('libraryContent');
+    
+    if (savedConversations.length === 0) {
+        content.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <h3>Бібліотека порожня</h3>
+                <p>Збережені розмови та проекти з'являться тут</p>
+            </div>
+        `;
+        return;
+    }
+    
+    content.innerHTML = savedConversations.map(conv => `
+        <div class="library-item" data-id="${conv.id}" data-mode="${conv.mode}">
+            <div class="library-item-header">
+                <div>
+                    <div class="library-item-title">${escapeHtml(conv.title)}</div>
+                    <div class="library-item-meta">${conv.mode === 'gemini' ? '✨' : '💻'} ${conv.date}</div>
+                </div>
+                <button class="library-item-favorite" onclick="toggleFavorite(${conv.id})">${conv.favorite ? '⭐' : '☆'}</button>
+            </div>
+            <div class="library-item-preview">${escapeHtml(conv.preview)}</div>
+            <div class="library-item-tags">
+                ${conv.tags.map(tag => `<span class="library-tag">${escapeHtml(tag)}</span>`).join('')}
+            </div>
+            <div class="library-item-actions">
+                <button onclick="loadConversation(${conv.id})">📂 Відкрити</button>
+                <button onclick="exportConversation(${conv.id})">📤 Експорт</button>
+                <button onclick="deleteConversation(${conv.id})">🗑️ Видалити</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Перемикання улюблених
+function toggleFavorite(id) {
+    const conv = savedConversations.find(c => c.id === id);
+    if (conv) {
+        conv.favorite = !conv.favorite;
+        saveSavedConversations();
+        displayLibrary();
+    }
+}
+
+// Завантажити розмову
+function loadConversation(id) {
+    const conv = savedConversations.find(c => c.id === id);
+    if (!conv) return;
+    
+    if (conv.mode === 'gemini') {
+        geminiHistory = [...conv.history];
+        switchMode('gemini');
+        displayHistory('geminiMessages', geminiHistory, 'gemini');
+    } else if (conv.mode === 'deepseek') {
+        deepseekHistory = [...conv.history];
+        if (conv.codeFiles) {
+            codeFiles = {...conv.codeFiles};
+            displayCodeFiles();
+        }
+        switchMode('deepseek');
+        displayHistory('deepseekMessages', deepseekHistory, 'deepseek');
+    }
+    
+    alert('✅ Розмову завантажено!');
+}
+
+// Відобразити історію
+function displayHistory(containerId, history, mode) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    history.forEach(msg => {
+        const role = msg.role === 'user' || msg.role === 'user' ? 'user' : 'assistant';
+        const content = msg.content || msg.parts?.[0]?.text || '';
+        if (content) {
+            addMessage(content, role, containerId);
+        }
+    });
+}
+
+// Експорт розмови
+function exportConversation(id) {
+    const conv = savedConversations.find(c => c.id === id);
+    if (!conv) return;
+    
+    const markdown = generateMarkdown(conv);
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${conv.title}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Генерація Markdown
+function generateMarkdown(conv) {
+    let md = `# ${conv.title}\n\n`;
+    md += `**Дата:** ${conv.date}\n`;
+    md += `**Режим:** ${conv.mode === 'gemini' ? 'Gemini Chat' : 'DeepSeek Coder'}\n`;
+    md += `**Теги:** ${conv.tags.join(', ')}\n\n`;
+    md += `---\n\n`;
+    
+    conv.history.forEach(msg => {
+        const role = msg.role === 'user' ? '👤 Користувач' : '🤖 AI';
+        const content = msg.content || msg.parts?.[0]?.text || '';
+        md += `## ${role}\n\n${content}\n\n`;
+    });
+    
+    return md;
+}
+
+// Видалити розмову
+function deleteConversation(id) {
+    if (!confirm('⚠️ Видалити цю розмову?')) return;
+    
+    savedConversations = savedConversations.filter(c => c.id !== id);
+    saveSavedConversations();
+    displayLibrary();
+    alert('✅ Розмову видалено!');
+}
+
+// Фільтри бібліотеки
+function filterByType(type) {
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    const items = document.querySelectorAll('.library-item');
+    
+    items.forEach(item => {
+        const mode = item.dataset.mode;
+        const id = parseInt(item.dataset.id);
+        const conv = savedConversations.find(c => c.id === id);
+        
+        let show = true;
+        
+        if (type === 'gemini' && mode !== 'gemini') show = false;
+        if (type === 'deepseek' && mode !== 'deepseek') show = false;
+        if (type === 'image' && mode !== 'image') show = false;
+        if (type === 'favorites' && !conv?.favorite) show = false;
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Пошук в бібліотеці
+function filterLibrary() {
+    const query = document.getElementById('librarySearch').value.toLowerCase();
+    const items = document.querySelectorAll('.library-item');
+    
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(query) ? 'block' : 'none';
+    });
+}
+
+// Генерація зображень
+async function generateImage() {
+    const input = document.getElementById('imageInput');
+    const prompt = input.value.trim();
+    
+    if (!prompt) return;
+    
+    input.value = '';
+    
+    const gallery = document.getElementById('imageGallery');
+    
+    // Видалити empty state якщо є
+    const emptyState = gallery.querySelector('.empty-state');
+    if (emptyState) {
+        gallery.innerHTML = '';
+        gallery.style.display = 'grid';
+    }
+    
+    // Створити placeholder
+    const placeholder = document.createElement('div');
+    placeholder.className = 'image-item';
+    placeholder.innerHTML = `
+        <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary);">
+            <div class="loading-dots">
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            </div>
+        </div>
+        <div class="image-item-footer">
+            <div class="image-item-prompt">${escapeHtml(prompt)}</div>
+        </div>
+    `;
+    
+    gallery.insertBefore(placeholder, gallery.firstChild);
+    
+    try {
+        // Використовуємо безкоштовний API Pollinations.ai
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+        
+        // Завантажити зображення
+        const img = new Image();
+        img.onload = function() {
+            placeholder.innerHTML = `
+                <img src="${imageUrl}" alt="${escapeHtml(prompt)}">
+                <div class="image-item-footer">
+                    <div class="image-item-prompt">${escapeHtml(prompt)}</div>
+                    <div class="image-item-actions">
+                        <button onclick="downloadImage('${imageUrl}', '${escapeHtml(prompt)}')">💾 Завантажити</button>
+                        <button onclick="copyImageUrl('${imageUrl}')">🔗 Копіювати URL</button>
+                    </div>
+                </div>
+            `;
+            
+            imageHistory.push({ prompt, url: imageUrl, date: Date.now() });
+            stats.imagesGenerated++;
+            saveStats();
+        };
+        
+        img.onerror = function() {
+            placeholder.innerHTML = `
+                <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); color: var(--text-secondary);">
+                    ❌ Помилка завантаження
+                </div>
+                <div class="image-item-footer">
+                    <div class="image-item-prompt">${escapeHtml(prompt)}</div>
+                </div>
+            `;
+        };
+        
+        img.src = imageUrl;
+        
+    } catch (error) {
+        console.error('Помилка:', error);
+        placeholder.innerHTML = `
+            <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); color: var(--text-secondary);">
+                ❌ Помилка генерації
+            </div>
+            <div class="image-item-footer">
+                <div class="image-item-prompt">${escapeHtml(prompt)}</div>
+            </div>
+        `;
+    }
+}
+
+// Завантажити зображення
+function downloadImage(url, prompt) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prompt.substring(0, 50)}.png`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// Копіювати URL зображення
+function copyImageUrl(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Скопійовано!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    });
+}
 
 // Завантаження теми
 function loadTheme() {
@@ -55,6 +456,14 @@ function initializeShortcuts() {
             openSearch();
         }
         
+        // Ctrl+S - Зберегти
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            if (currentMode === 'gemini' || currentMode === 'deepseek') {
+                saveConversation(currentMode);
+            }
+        }
+        
         // Ctrl+Enter - Відправити повідомлення
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
@@ -62,6 +471,8 @@ function initializeShortcuts() {
                 sendGeminiMessage();
             } else if (currentMode === 'deepseek') {
                 sendDeepseekMessage();
+            } else if (currentMode === 'image') {
+                generateImage();
             }
         }
         
@@ -70,6 +481,7 @@ function initializeShortcuts() {
             closeSearch();
             closeDiffViewer();
             closePreview();
+            closeSaveModal();
         }
     });
 }
@@ -156,6 +568,15 @@ function clearChat(mode) {
                 <p>Код з'явиться тут після відповіді AI</p>
             </div>
         `;
+    } else if (mode === 'image') {
+        imageHistory = [];
+        document.getElementById('imageGallery').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🎨</div>
+                <h3>Генерація зображень</h3>
+                <p>Опиши що хочеш згенерувати (використовує DALL-E 3 через Pollinations.ai)</p>
+            </div>
+        `;
     }
     
     alert('✅ Чат очищено!');
@@ -169,7 +590,6 @@ function togglePreview() {
     if (isActive) {
         closePreview();
     } else {
-        // Знайти HTML файл
         const htmlFile = Object.keys(codeFiles).find(name => name.endsWith('.html'));
         if (!htmlFile) {
             alert('⚠️ HTML файл не знайдено!');
@@ -177,24 +597,22 @@ function togglePreview() {
         }
         
         const frame = document.getElementById('previewFrame');
-        const htmlContent = codeFiles[htmlFile].code;
+        let htmlContent = codeFiles[htmlFile].code;
         
-        // Додати CSS та JS якщо є
-        let fullHtml = htmlContent;
         const cssFile = Object.keys(codeFiles).find(name => name.endsWith('.css'));
         const jsFile = Object.keys(codeFiles).find(name => name.endsWith('.js'));
         
         if (cssFile) {
             const cssContent = codeFiles[cssFile].code;
-            fullHtml = fullHtml.replace('</head>', `<style>${cssContent}</style></head>`);
+            htmlContent = htmlContent.replace('</head>', `<style>${cssContent}</style></head>`);
         }
         
         if (jsFile) {
             const jsContent = codeFiles[jsFile].code;
-            fullHtml = fullHtml.replace('</body>', `<script>${jsContent}</script></body>`);
+            htmlContent = htmlContent.replace('</body>', `<script>${jsContent}</script></body>`);
         }
         
-        frame.srcdoc = fullHtml;
+        frame.srcdoc = htmlContent;
         panel.classList.add('active');
     }
 }
@@ -230,7 +648,7 @@ async function downloadAllAsZip() {
 
 // Diff Viewer
 function showDiffViewer() {
-    if (Object.keys(codeHistory).length < 2) {
+    if (Object.keys(codeHistory).length < 1) {
         alert('⚠️ Потрібно мінімум 2 версії файлу для порівняння!');
         return;
     }
@@ -239,12 +657,13 @@ function showDiffViewer() {
     const select1 = document.getElementById('diffFile1');
     const select2 = document.getElementById('diffFile2');
     
-    // Заповнити селекти
     select1.innerHTML = '<option value="">Виберіть версію 1</option>';
     select2.innerHTML = '<option value="">Виберіть версію 2</option>';
     
-    Object.keys(codeHistory).forEach((filename, index) => {
+    Object.keys(codeHistory).forEach((filename) => {
         const versions = codeHistory[filename];
+        if (versions.length < 2) return;
+        
         versions.forEach((version, vIndex) => {
             const option = `<option value="${filename}-${vIndex}">${filename} (v${vIndex + 1})</option>`;
             select1.innerHTML += option;
@@ -309,7 +728,7 @@ function compareDiff() {
 function loadSettings() {
     const geminiKey = localStorage.getItem('gemini_api_key') || '';
     const groqKey = localStorage.getItem('groq_api_key') || '';
-    const geminiPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент. Відповідай чітко, стисло та по суті. Говори українською мовою.';
+    const geminiPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асістент. Відповідай чітко, стисло та по суті. Говори українською мовою.';
     const deepseekPrompt = localStorage.getItem('deepseek_system_prompt') || 'Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Створюй окремі файли для HTML, CSS, JS. Говори українською мовою.';
 
     const geminiApiKeyInput = document.getElementById('geminiApiKey');
@@ -344,28 +763,28 @@ function clearAllData() {
         localStorage.clear();
         geminiHistory = [];
         deepseekHistory = [];
+        imageHistory = [];
+        savedConversations = [];
         codeFiles = {};
         codeHistory = {};
+        stats = {
+            geminiRequests: 0,
+            deepseekRequests: 0,
+            imagesGenerated: 0,
+            savedProjects: 0,
+            totalTokens: 0,
+            firstUse: Date.now()
+        };
         
-        const geminiMessages = document.getElementById('geminiMessages');
-        const deepseekMessages = document.getElementById('deepseekMessages');
-        const fileTabs = document.getElementById('fileTabs');
-        const codeContent = document.getElementById('codeContent');
-
-        if (geminiMessages) geminiMessages.innerHTML = '';
-        if (deepseekMessages) deepseekMessages.innerHTML = '';
-        if (fileTabs) fileTabs.innerHTML = '';
-        if (codeContent) {
-            codeContent.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📝</div>
-                    <h3>Немає файлів</h3>
-                    <p>Код з'явиться тут після відповіді AI</p>
-                </div>
-            `;
-        }
+        document.getElementById('geminiMessages').innerHTML = '';
+        document.getElementById('deepseekMessages').innerHTML = '';
+        document.getElementById('imageGallery').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎨</div><h3>Генерація зображень</h3><p>Опиши що хочеш згенерувати</p></div>';
+        document.getElementById('fileTabs').innerHTML = '';
+        document.getElementById('codeContent').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><h3>Немає файлів</h3><p>Код з\'явиться тут після відповіді AI</p></div>';
         
         loadSettings();
+        updateStats();
+        displayLibrary();
         alert('🗑️ Всі дані видалено!');
     }
 }
@@ -391,11 +810,16 @@ function switchMode(mode) {
     if (modeElement) {
         modeElement.classList.add('active');
     }
+    
+    // Якщо переходимо в бібліотеку - відобразити її
+    if (mode === 'library') {
+        displayLibrary();
+    }
 }
 
 // Ініціалізація полів вводу
 function initializeInputs() {
-    const inputs = ['geminiInput', 'deepseekInput'];
+    const inputs = ['geminiInput', 'deepseekInput', 'imageInput'];
     
     inputs.forEach(inputId => {
         const input = document.getElementById(inputId);
@@ -413,6 +837,8 @@ function initializeInputs() {
                     sendGeminiMessage();
                 } else if (inputId === 'deepseekInput') {
                     sendDeepseekMessage();
+                } else if (inputId === 'imageInput') {
+                    generateImage();
                 }
             }
         });
@@ -439,6 +865,12 @@ function addMessage(text, sender, messagesId) {
     messageDiv.appendChild(contentDiv);
     messagesDiv.appendChild(messageDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Підрахунок токенів (приблизний)
+function estimateTokens(text) {
+    // Приблизно 1 токен = 4 символи для англійської, ~2 для української
+    return Math.ceil(text.length / 3);
 }
 
 // Gemini Message
@@ -474,7 +906,7 @@ async function sendGeminiMessage() {
     }
 
     try {
-        const systemPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асистент.';
+        const systemPrompt = localStorage.getItem('gemini_system_prompt') || 'Ти корисний AI асістент.';
         
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
             method: 'POST',
@@ -503,6 +935,11 @@ async function sendGeminiMessage() {
         
         geminiHistory.push({ role: 'model', parts: [{ text: aiMessage }] });
         addMessage(aiMessage, 'assistant', 'geminiMessages');
+        
+        // Оновити статистику
+        stats.geminiRequests++;
+        stats.totalTokens += estimateTokens(message + aiMessage);
+        saveStats();
 
     } catch (error) {
         console.error('Помилка:', error);
@@ -584,6 +1021,11 @@ async function sendDeepseekMessage() {
         addMessage(textOnly, 'assistant', 'deepseekMessages');
         
         extractAndDisplayCode(aiMessage);
+        
+        // Оновити статистику
+        stats.deepseekRequests++;
+        stats.totalTokens += estimateTokens(message + aiMessage);
+        saveStats();
 
     } catch (error) {
         console.error('Помилка:', error);
