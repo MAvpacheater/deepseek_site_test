@@ -100,7 +100,7 @@
 
         <!-- DeepSeek Coder -->
         <div class="mode-content" id="deepseekMode">
-            <div class="chat-section">
+            <div class="chat-section" id="deepseekChatSection">
                 <div class="header">
                     <div class="header-left">
                         <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
@@ -109,6 +109,7 @@
                     <div class="header-actions">
                         <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
                         <button class="preview-toggle-btn" onclick="togglePreview()">👁️ Preview</button>
+                        <button class="clear-chat-btn" onclick="toggleCodePanel()" title="Показати/сховати код">⚡ Код</button>
                         <button class="save-chat-btn" onclick="saveConversation('deepseek')">💾</button>
                         <button class="clear-chat-btn" onclick="clearChat('deepseek')">🗑️</button>
                     </div>
@@ -122,14 +123,41 @@
                 </div>
             </div>
 
-            <div class="code-section" id="codeSection">
+            <div class="code-section collapsed" id="codeSection">
                 <div class="code-header">
-                    <h2>📁 Файли проекту</h2>
+                    <div class="code-header-left">
+                        <h2>📁 Файли проекту</h2>
+                        <button class="icon-btn" onclick="toggleCodePanel()" title="Згорнути">✕</button>
+                    </div>
                     <div class="code-actions">
                         <button onclick="downloadAllAsZip()">📦 ZIP</button>
                     </div>
                 </div>
-                <div class="file-tabs" id="fileTabs"></div>
+                
+                <!-- File Navigation -->
+                <div class="file-navigation" id="fileNavigation">
+                    <div class="file-nav-header">
+                        <button class="nav-btn" onclick="navigateToPreviousFile()" title="Попередній файл">◀</button>
+                        <select id="fileSelector" onchange="switchToFile(this.value)" class="file-selector">
+                            <option value="">Виберіть файл...</option>
+                        </select>
+                        <button class="nav-btn" onclick="navigateToNextFile()" title="Наступний файл">▶</button>
+                    </div>
+                </div>
+
+                <!-- Version Control -->
+                <div class="version-control" id="versionControl" style="display: none;">
+                    <div class="version-header">
+                        <span class="version-label">📜 Версії:</span>
+                        <div class="version-buttons">
+                            <button class="version-btn" onclick="previousVersion()" title="Попередня версія">◀</button>
+                            <span id="versionInfo" class="version-info">v1/1</span>
+                            <button class="version-btn" onclick="nextVersion()" title="Наступна версія">▶</button>
+                            <button class="version-btn" onclick="revertToVersion()" title="Відновити цю версію">↶</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="code-content" id="codeContent">
                     <div class="empty-state">
                         <div class="empty-state-icon">📝</div>
@@ -138,15 +166,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="preview-panel" id="previewPanel">
-                <div class="preview-header">
-                    <h3>👁️ Попередній перегляд</h3>
-                    <button onclick="closePreview()">✕</button>
-                </div>
-                <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
-            </div>
-        </div>
 
         <!-- Image Generator -->
         <div class="mode-content" id="imageMode">
