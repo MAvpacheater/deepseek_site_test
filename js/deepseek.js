@@ -1,19 +1,225 @@
-// 💻 DeepSeek Coder Logic - Оновлено з GitHub та файл-менеджментом
+// 💻 Enhanced DeepSeek Coder with GitHub Integration
+
 let deepseekHistory = [];
 let codeFiles = {};
 let codeHistory = {};
 let activeFile = null;
+let projectContext = null;
 
-// Відправка повідомлення в DeepSeek
+// GitHub Integration State
+let githubState = {
+    token: localStorage.getItem('github_token') || null,
+    currentRepo: null,
+    branch: 'main'
+};
+
+// ========================================
+// GITHUB INTEGRATION
+// ========================================
+
+async function importGitHubRepo() {
+    const repoUrl = prompt(
+        '🐙 Введи URL GitHub репозиторія:\n\n' +
+        'Формати:\n' +
+        '• https://github.com/owner/repo\n' +
+        '• owner/repo\n\n' +
+        'Публічні репозиторії працюють без токену!'
+    );
+    
+    if (!repoUrl) return;
+    
+    // Parse URL
+    let owner, repo;
+    const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (match) {
+        owner = match[1];
+        repo = match[2].replace('.git', '');
+    } else if (repoUrl.includes('/')) {
+        [owner, repo] = repoUrl.split('/');
+    } else {
+        alert('❌ Невірний формат!');
+        return;
+    }
+    
+    showLoadingOverlay(`📥 Завантаження ${owner}/${repo}...`);
+    
+    try {
+        const headers = githubState.token ? {
+            'Authorization': `Bearer ${githubState.token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        } : {};
+        
+        // Get repository tree
+        let treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`;
+        let response = await fetch(treeUrl, { headers });
+        
+        if (!response.ok && response.status === 404) {
+            treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`;
+            response = await fetch(treeUrl, { headers });
+        }
+        
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Rate limit exceeded. Додай GitHub токен у налаштуваннях.');
+            }
+            throw new Error('Репозиторій не знайдено або він приватний.');
+        }
+        
+        const data = await response.json();
+        const files = data.tree.filter(item => item.type === 'blob');
+        
+        // Filter code files
+        const codeExtensions = [
+            '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.scss', '.sass',
+            '.json', '.md', '.py', '.java', '.cpp', '.c', '.go', '.rs',
+            '.php', '.rb', '.swift', '.kt', '.vue', '.svelte'
+        ];
+        
+        const codeFilesOnly = files.filter(file => {
+            const hasValidExt = codeExtensions.some(ext => file.path.endsWith(ext));
+            const notIgnored = !file.path.includes('node_modules') &&
+                             !file.path.includes('.git') &&
+                             !file.path.includes('dist') &&
+                             !file.path.includes('build') &&
+                             !file.path.includes('.next') &&
+                             !file.path.includes('package-lock.json');
+            return hasValidExt && notIgnored;
+        });
+        
+        if (codeFilesOnly.length === 0) {
+            throw new Error('Не знайдено файлів коду!');
+        }
+        
+        // Limit files
+        const MAX_FILES = 50;
+        const filesToLoad = codeFilesOnly.slice(0, MAX_FILES);
+        
+        if (codeFilesOnly.length > MAX_FILES) {
+            const proceed = confirm(
+                `⚠️ Знайдено ${codeFilesOnly.length} файлів.\n\n` +
+                `Завантажити перші ${MAX_FILES}?`
+            );
+            if (!proceed) {
+                hideLoadingOverlay();
+                return;
+            }
+        }
+        
+        // Load files content
+        codeFiles = {};
+        let loadedCount = 0;
+        
+        for (const file of filesToLoad) {
+            updateLoadingOverlay(`${++loadedCount}/${filesToLoad.length}: ${file.path}`);
+            
+            try {
+                const branch = githubState.branch;
+                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`;
+                const contentResponse = await fetch(rawUrl);
+                
+                if (contentResponse.ok) {
+                    const content = await contentResponse.text();
+                    const ext = file.path.split('.').pop();
+                    
+                    codeFiles[file.path] = {
+                        language: getLanguageFromExtension(ext),
+                        code: content,
+                        size: content.length,
+                        modified: false
+                    };
+                }
+            } catch (err) {
+                console.warn(`Failed to load ${file.path}:`, err);
+            }
+            
+            // Rate limiting protection
+            await new Promise(r => setTimeout(r, 50));
+        }
+        
+        // Save project context
+        projectContext = {
+            owner: owner,
+            repo: repo,
+            branch: githubState.branch,
+            filesCount: Object.keys(codeFiles).length,
+            url: `https://github.com/${owner}/${repo}`
+        };
+        
+        githubState.currentRepo = { owner, repo };
+        
+        hideLoadingOverlay();
+        
+        // Switch to DeepSeek mode
+        switchMode('deepseek');
+        displayCodeFiles();
+        
+        // Add success message
+        addGitHubSuccessMessage(owner, repo, Object.keys(codeFiles).length);
+        
+        alert(
+            `✅ Репозиторій завантажено!\n\n` +
+            `📁 ${Object.keys(codeFiles).length} файлів\n` +
+            `📦 ${owner}/${repo}`
+        );
+        
+    } catch (error) {
+        hideLoadingOverlay();
+        console.error('GitHub error:', error);
+        alert('❌ Помилка:\n' + error.message);
+    }
+}
+
+function addGitHubSuccessMessage(owner, repo, filesCount) {
+    const messagesDiv = document.getElementById('deepseekMessages');
+    if (!messagesDiv) return;
+    
+    const msg = document.createElement('div');
+    msg.className = 'message assistant';
+    msg.style.cssText = `
+        background: linear-gradient(135deg, #2ea043 0%, #238636 100%);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 20px;
+    `;
+    
+    msg.innerHTML = `
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="font-size: 48px;">🐙</div>
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px;">Репозиторій завантажено з GitHub</h3>
+                <p style="margin: 0 0 8px 0; opacity: 0.9;">📦 ${owner}/${repo}</p>
+                <p style="margin: 0 0 12px 0; opacity: 0.9;">📁 ${filesCount} файлів</p>
+                <div style="padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <p style="margin: 0 0 8px 0; font-weight: 600;">💡 Тепер можеш:</p>
+                    <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.8;">
+                        <li>Редагувати кілька файлів одночасно</li>
+                        <li>Аналізувати код на помилки</li>
+                        <li>Рефакторити та оптимізувати</li>
+                        <li>Генерувати тести</li>
+                        <li>Додавати нові функції</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    messagesDiv.appendChild(msg);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// ========================================
+// ENHANCED DEEPSEEK CHAT
+// ========================================
+
 async function sendDeepseekMessage() {
     const input = document.getElementById('deepseekInput');
     if (!input) return;
     
     const message = input.value.trim();
-    
     if (!message) return;
 
-    const apiKey = typeof getGroqApiKey === 'function' ? getGroqApiKey() : localStorage.getItem('groq_api_key');
+    const apiKey = getGroqApiKey();
     if (!apiKey) {
         alert('⚠️ Введи Groq API ключ у налаштуваннях!');
         switchMode('settings');
@@ -25,13 +231,19 @@ async function sendDeepseekMessage() {
 
     addMessage(message, 'user', 'deepseekMessages');
     
-    const systemPrompt = localStorage.getItem('deepseek_system_prompt') || 
-        'Ти експерт-програміст. Пиши чистий, оптимізований код з коментарями. Говори українською.';
+    // Build context with project files
+    const context = buildProjectContext(message);
     
-    deepseekHistory.push({ role: 'user', content: message });
+    const systemPrompt = localStorage.getItem('deepseek_system_prompt') || 
+        'Ти експерт-програміст. Пиши чистий код з коментарями. ' +
+        'Коли редагуєш існуючі файли - показуй ТІЛЬКИ змінені частини. ' +
+        'Використовуй формат: // FILE: назва_файлу.js для кожного файлу. ' +
+        'Говори українською.';
+    
+    deepseekHistory.push({ role: 'user', content: context });
 
-    if (deepseekHistory.length > 40) {
-        deepseekHistory = deepseekHistory.slice(-40);
+    if (deepseekHistory.length > 20) {
+        deepseekHistory = deepseekHistory.slice(-20);
     }
 
     const sendBtn = document.getElementById('deepseekSendBtn');
@@ -55,27 +267,31 @@ async function sendDeepseekMessage() {
             body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: messages,
-                temperature: 0.7,
-                max_tokens: 4000
+                temperature: 0.5,
+                max_tokens: 8000
             })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error?.message || `Помилка API: ${response.status}`);
+            throw new Error(data.error?.message || `API Error: ${response.status}`);
         }
 
         const aiMessage = data.choices[0].message.content;
         
         deepseekHistory.push({ role: 'assistant', content: aiMessage });
         
+        // Display text without code blocks
         const textOnly = removeCodeBlocks(aiMessage);
-        addMessage(textOnly, 'assistant', 'deepseekMessages');
+        if (textOnly.trim()) {
+            addMessage(textOnly, 'assistant', 'deepseekMessages');
+        }
         
-        extractAndDisplayCode(aiMessage);
+        // Extract and apply code changes
+        extractAndApplyCode(aiMessage);
         
-        // Статистика
+        // Update stats
         if (typeof stats !== 'undefined') {
             stats.deepseekRequests++;
             stats.totalTokens += estimateTokens(message + aiMessage);
@@ -83,7 +299,7 @@ async function sendDeepseekMessage() {
         }
 
     } catch (error) {
-        console.error('Помилка:', error);
+        console.error('Error:', error);
         addMessage('❌ Помилка: ' + error.message, 'assistant', 'deepseekMessages');
     } finally {
         if (sendBtn) {
@@ -93,13 +309,102 @@ async function sendDeepseekMessage() {
     }
 }
 
-// Видалення блоків коду
-function removeCodeBlocks(text) {
-    return text.replace(/```[\s\S]*?```/g, '').trim();
+// Build project context for AI
+function buildProjectContext(userMessage) {
+    let context = userMessage;
+    
+    // If we have project loaded, add context
+    if (projectContext && Object.keys(codeFiles).length > 0) {
+        context += '\n\n--- КОНТЕКСТ ПРОЕКТУ ---\n';
+        context += `Репозиторій: ${projectContext.owner}/${projectContext.repo}\n`;
+        context += `Файлів: ${projectContext.filesCount}\n\n`;
+        
+        // Add file structure
+        context += 'Структура:\n';
+        Object.keys(codeFiles).slice(0, 20).forEach(filename => {
+            const file = codeFiles[filename];
+            context += `• ${filename} (${file.language}, ${file.size} символів)${file.modified ? ' [змінено]' : ''}\n`;
+        });
+        
+        // If user mentions specific files, add their content
+        const mentionedFiles = Object.keys(codeFiles).filter(filename => 
+            userMessage.toLowerCase().includes(filename.toLowerCase()) ||
+            userMessage.toLowerCase().includes(filename.split('/').pop().toLowerCase())
+        );
+        
+        if (mentionedFiles.length > 0) {
+            context += '\n--- ЗГАДАНІ ФАЙЛИ ---\n';
+            mentionedFiles.forEach(filename => {
+                const file = codeFiles[filename];
+                context += `\n// FILE: ${filename}\n`;
+                context += file.code.substring(0, 3000); // Limit size
+                if (file.code.length > 3000) {
+                    context += '\n... (скорочено)';
+                }
+                context += '\n';
+            });
+        }
+        // If active file is open, add it
+        else if (activeFile && codeFiles[activeFile]) {
+            context += '\n--- АКТИВНИЙ ФАЙЛ ---\n';
+            context += `// FILE: ${activeFile}\n`;
+            context += codeFiles[activeFile].code.substring(0, 3000);
+            if (codeFiles[activeFile].code.length > 3000) {
+                context += '\n... (скорочено)';
+            }
+        }
+    }
+    
+    return context;
 }
 
-// Витяг та відображення коду
-function extractAndDisplayCode(text) {
+// Extract and apply code changes
+function extractAndApplyCode(text) {
+    // Method 1: Look for // FILE: markers
+    const fileMarkers = text.match(/\/\/\s*FILE:\s*(.+?)(?:\n|$)/gi);
+    
+    if (fileMarkers) {
+        let currentPos = 0;
+        
+        fileMarkers.forEach((marker, index) => {
+            const filename = marker.replace(/\/\/\s*FILE:\s*/i, '').trim();
+            const markerPos = text.indexOf(marker, currentPos);
+            const nextMarkerPos = index < fileMarkers.length - 1 ? 
+                text.indexOf(fileMarkers[index + 1], markerPos) : text.length;
+            
+            let codeBlock = text.substring(markerPos + marker.length, nextMarkerPos).trim();
+            
+            // Remove code fences if present
+            codeBlock = codeBlock.replace(/```[\w]*\n?/g, '').replace(/```\n?$/g, '').trim();
+            
+            if (codeBlock) {
+                const ext = filename.split('.').pop();
+                const language = getLanguageFromExtension(ext);
+                
+                // Save to history
+                if (!codeHistory[filename]) {
+                    codeHistory[filename] = [];
+                }
+                if (codeFiles[filename]) {
+                    codeHistory[filename].push(codeFiles[filename].code);
+                }
+                
+                codeFiles[filename] = {
+                    language: language,
+                    code: codeBlock,
+                    size: codeBlock.length,
+                    modified: true
+                };
+            }
+            
+            currentPos = nextMarkerPos;
+        });
+        
+        displayCodeFiles();
+        return;
+    }
+    
+    // Method 2: Traditional code blocks
     const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
     let match;
     let fileIndex = Object.keys(codeFiles).length;
@@ -115,15 +420,19 @@ function extractAndDisplayCode(text) {
             filename = `file_${fileIndex}.${getExtension(lang)}`;
         }
         
-        // Зберегти версію для diff
+        // Save to history
         if (!codeHistory[filename]) {
             codeHistory[filename] = [];
         }
-        codeHistory[filename].push(code);
+        if (codeFiles[filename]) {
+            codeHistory[filename].push(codeFiles[filename].code);
+        }
         
         codeFiles[filename] = {
             language: lang,
-            code: code
+            code: code,
+            size: code.length,
+            modified: true
         };
     }
     
@@ -132,30 +441,10 @@ function extractAndDisplayCode(text) {
     }
 }
 
-// Визначення імені файлу
-function detectFilename(code, lang) {
-    const lines = code.split('\n');
-    for (let line of lines.slice(0, 5)) {
-        if (line.includes('<!DOCTYPE') || line.includes('<html')) return 'index.html';
-        if (line.includes('def ') && lang === 'python') return 'main.py';
-        if (line.includes('function ') || line.includes('const ') || line.includes('let ')) return 'script.js';
-        if (line.includes('body {') || line.includes('* {')) return 'styles.css';
-    }
-    return null;
-}
+// ========================================
+// FILE MANAGEMENT
+// ========================================
 
-// Розширення за мовою
-function getExtension(lang) {
-    const extensions = {
-        'javascript': 'js', 'python': 'py', 'html': 'html', 'css': 'css',
-        'java': 'java', 'cpp': 'cpp', 'c': 'c', 'go': 'go', 'rust': 'rs',
-        'php': 'php', 'ruby': 'rb', 'swift': 'swift', 'kotlin': 'kt',
-        'typescript': 'ts', 'json': 'json', 'xml': 'xml', 'sql': 'sql'
-    };
-    return extensions[lang.toLowerCase()] || 'txt';
-}
-
-// Відображення файлів
 function displayCodeFiles() {
     const tabsDiv = document.getElementById('fileTabs');
     const contentDiv = document.getElementById('codeContent');
@@ -165,22 +454,37 @@ function displayCodeFiles() {
     tabsDiv.innerHTML = '';
     contentDiv.innerHTML = '';
     
-    const filenames = Object.keys(codeFiles);
+    if (Object.keys(codeFiles).length === 0) {
+        contentDiv.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📁</div>
+                <h3>Немає файлів</h3>
+                <p>Завантаж проект з GitHub або створи новий</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const filenames = Object.keys(codeFiles).sort();
     
     filenames.forEach((filename, index) => {
+        const file = codeFiles[filename];
+        
+        // Create tab
         const tab = document.createElement('div');
         tab.className = 'file-tab' + (index === 0 ? ' active' : '');
-        tab.textContent = filename;
+        tab.innerHTML = `
+            ${file.modified ? '<span style="color: #f59e0b;">●</span> ' : ''}
+            ${filename}
+        `;
         tab.onclick = () => switchFile(filename);
         tabsDiv.appendChild(tab);
         
+        // Create content
         const fileDiv = document.createElement('div');
         fileDiv.className = 'code-file' + (index === 0 ? ' active' : '');
         fileDiv.dataset.filename = filename;
         
-        const file = codeFiles[filename];
-        
-        const languageClass = `language-${file.language}`;
         const highlightedCode = typeof Prism !== 'undefined' ? 
             Prism.highlight(file.code, Prism.languages[file.language] || Prism.languages.plaintext, file.language) :
             escapeHtml(file.code);
@@ -191,13 +495,17 @@ function displayCodeFiles() {
                     <div class="code-block-info">
                         <span class="code-block-lang">${file.language}</span>
                         <span class="code-block-name">${filename}</span>
+                        ${file.modified ? '<span style="color: #f59e0b; font-size: 12px;">● змінено</span>' : ''}
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 8px;">
+                        ${codeHistory[filename] && codeHistory[filename].length > 0 ? 
+                            `<button onclick="revertFile('${escapeHtml(filename)}')">↶ Відмінити</button>` : ''}
+                        <button onclick="editFile('${escapeHtml(filename)}')">✏️ Редагувати</button>
                         <button onclick="copyCode('${escapeHtml(filename)}')">📋 Копіювати</button>
                         <button onclick="downloadFile('${escapeHtml(filename)}')">💾 Завантажити</button>
                     </div>
                 </div>
-                <pre><code class="${languageClass}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
+                <pre><code class="language-${file.language}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
             </div>
         `;
         
@@ -205,23 +513,12 @@ function displayCodeFiles() {
     });
     
     activeFile = filenames[0];
-    
-    // Ініціалізувати додаткові функції
-    setTimeout(() => {
-        if (typeof initializeCoderEnhancements === 'function') {
-            initializeCoderEnhancements();
-        }
-        if (typeof initializeGitHubButtons === 'function') {
-            initializeGitHubButtons();
-        }
-    }, 100);
 }
 
-// Перемикання файлів
 function switchFile(filename) {
     document.querySelectorAll('.file-tab').forEach(tab => {
         tab.classList.remove('active');
-        if (tab.textContent === filename) {
+        if (tab.textContent.includes(filename)) {
             tab.classList.add('active');
         }
     });
@@ -236,7 +533,40 @@ function switchFile(filename) {
     activeFile = filename;
 }
 
-// Копіювання коду
+function editFile(filename) {
+    const file = codeFiles[filename];
+    if (!file) return;
+    
+    const newCode = prompt(`✏️ Редагувати ${filename}:\n\n(Для великих змін краще використати AI)`, file.code);
+    
+    if (newCode !== null && newCode !== file.code) {
+        // Save to history
+        if (!codeHistory[filename]) {
+            codeHistory[filename] = [];
+        }
+        codeHistory[filename].push(file.code);
+        
+        file.code = newCode;
+        file.size = newCode.length;
+        file.modified = true;
+        
+        displayCodeFiles();
+    }
+}
+
+function revertFile(filename) {
+    const history = codeHistory[filename];
+    if (!history || history.length === 0) return;
+    
+    if (!confirm(`↶ Відмінити зміни в ${filename}?`)) return;
+    
+    const previousVersion = history.pop();
+    codeFiles[filename].code = previousVersion;
+    codeFiles[filename].size = previousVersion.length;
+    
+    displayCodeFiles();
+}
+
 function copyCode(filename) {
     const code = codeFiles[filename]?.code;
     if (!code) return;
@@ -253,12 +583,11 @@ function copyCode(filename) {
     });
 }
 
-// Завантаження файлу
 function downloadFile(filename) {
-    if (!codeFiles[filename]) return;
+    const file = codeFiles[filename];
+    if (!file) return;
     
-    const code = codeFiles[filename].code;
-    const blob = new Blob([code], { type: 'text/plain' });
+    const blob = new Blob([file.code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -269,50 +598,9 @@ function downloadFile(filename) {
     URL.revokeObjectURL(url);
 }
 
-// Preview HTML
-function togglePreview() {
-    const panel = document.getElementById('previewPanel');
-    const isActive = panel.classList.contains('active');
-    
-    if (isActive) {
-        closePreview();
-    } else {
-        const htmlFile = Object.keys(codeFiles).find(name => name.endsWith('.html'));
-        if (!htmlFile) {
-            alert('⚠️ HTML файл не знайдено!');
-            return;
-        }
-        
-        const frame = document.getElementById('previewFrame');
-        let htmlContent = codeFiles[htmlFile].code;
-        
-        const cssFile = Object.keys(codeFiles).find(name => name.endsWith('.css'));
-        const jsFile = Object.keys(codeFiles).find(name => name.endsWith('.js'));
-        
-        if (cssFile) {
-            const cssContent = codeFiles[cssFile].code;
-            htmlContent = htmlContent.replace('</head>', `<style>${cssContent}</style></head>`);
-        }
-        
-        if (jsFile) {
-            const jsContent = codeFiles[jsFile].code;
-            htmlContent = htmlContent.replace('</body>', `<script>${jsContent}</script></body>`);
-        }
-        
-        frame.srcdoc = htmlContent;
-        panel.classList.add('active');
-    }
-}
-
-function closePreview() {
-    const panel = document.getElementById('previewPanel');
-    panel.classList.remove('active');
-}
-
-// Завантаження як ZIP
 async function downloadAllAsZip() {
     if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає файлів для завантаження!');
+        alert('⚠️ Немає файлів!');
         return;
     }
     
@@ -327,95 +615,157 @@ async function downloadAllAsZip() {
         zip.file(filename, codeFiles[filename].code);
     });
     
+    // Add README if GitHub project
+    if (projectContext) {
+        const readme = `# ${projectContext.repo}\n\n` +
+            `Оригінальний репозиторій: ${projectContext.url}\n\n` +
+            `Змінено через AI Assistant Hub\n`;
+        zip.file('AI_CHANGES.md', readme);
+    }
+    
     const content = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'project.zip';
+    a.download = projectContext ? `${projectContext.repo}_modified.zip` : 'project.zip';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
-// Ініціалізація кнопок покращень
-function initializeCoderEnhancements() {
-    const codeHeader = document.querySelector('.code-header');
-    if (!codeHeader || document.getElementById('coder-enhancements')) return;
-    
-    const enhancementsDiv = document.createElement('div');
-    enhancementsDiv.id = 'coder-enhancements';
-    enhancementsDiv.style.cssText = 'display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;';
-    
-    enhancementsDiv.innerHTML = `
-        <button onclick="analyzeCodeForErrors()" title="Аналіз помилок" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔍 Аналіз</button>
-        <button onclick="generateTests()" title="Генерація тестів" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🧪 Тести</button>
-        <button onclick="generateDocumentation()" title="Документація" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">📚 Docs</button>
-        <button onclick="refactorCode()" title="Рефакторинг" style="background: rgba(102, 126, 234, 0.2); color: white; border: 1px solid var(--accent-primary); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🎯 Рефактор</button>
-    `;
-    
-    codeHeader.appendChild(enhancementsDiv);
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+function removeCodeBlocks(text) {
+    return text.replace(/```[\s\S]*?```/g, '').trim();
 }
 
-// Ініціалізація GitHub кнопок
-function initializeGitHubButtons() {
-    const codeActions = document.querySelector('.code-actions');
-    if (!codeActions || document.getElementById('github-quick-actions')) return;
-    
-    const githubDiv = document.createElement('div');
-    githubDiv.id = 'github-quick-actions';
-    githubDiv.style.cssText = 'display: flex; gap: 8px; margin-left: 10px;';
-    
-    githubDiv.innerHTML = `
-        <button onclick="importFromGitHub()" title="Імпорт з GitHub" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🐙 Імпорт</button>
-        <button onclick="analyzeImportedCode()" title="Аналізувати" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔍 Аналіз</button>
-        <button onclick="exportToGitHub()" title="Експорт" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">📤 Експорт</button>
-        <button onclick="setupGitHubToken()" title="GitHub Token" style="background: rgba(46, 160, 67, 0.2); color: white; border: 1px solid #2ea043; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🔑 Token</button>
-    `;
-    
-    codeActions.appendChild(githubDiv);
+function detectFilename(code, lang) {
+    const lines = code.split('\n');
+    for (let line of lines.slice(0, 5)) {
+        if (line.includes('<!DOCTYPE') || line.includes('<html')) return 'index.html';
+        if (line.includes('package.json')) return 'package.json';
+        if (line.match(/^import .* from/)) return 'index.js';
+        if (line.match(/^def .+\(/)) return 'main.py';
+    }
+    return null;
 }
 
-// Функції аналізу та покращення (базові версії)
-async function analyzeCodeForErrors() {
-    if (Object.keys(codeFiles).length === 0) {
-        alert('⚠️ Немає коду для аналізу!');
-        return;
+function getExtension(lang) {
+    const extensions = {
+        'javascript': 'js', 'typescript': 'ts', 'python': 'py',
+        'html': 'html', 'css': 'css', 'json': 'json',
+        'java': 'java', 'cpp': 'cpp', 'c': 'c',
+        'go': 'go', 'rust': 'rs', 'php': 'php'
+    };
+    return extensions[lang.toLowerCase()] || 'txt';
+}
+
+function getLanguageFromExtension(ext) {
+    const map = {
+        'js': 'javascript', 'jsx': 'javascript',
+        'ts': 'typescript', 'tsx': 'typescript',
+        'py': 'python', 'html': 'html', 'css': 'css',
+        'json': 'json', 'md': 'markdown',
+        'java': 'java', 'cpp': 'cpp', 'c': 'c',
+        'go': 'go', 'rs': 'rust', 'php': 'php',
+        'rb': 'ruby', 'vue': 'html', 'svelte': 'html'
+    };
+    return map[ext.toLowerCase()] || 'plaintext';
+}
+
+function showLoadingOverlay(message) {
+    let overlay = document.getElementById('loading-overlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white;
+        `;
+        overlay.innerHTML = `
+            <div style="font-size: 64px; margin-bottom: 20px;">🐙</div>
+            <div style="font-size: 24px; font-weight: 600; margin-bottom: 10px;" id="loading-title">Завантаження...</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.7);" id="loading-subtitle"></div>
+            <div style="margin-top: 30px;">
+                <div class="loading-dots">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
     }
     
-    const activeFileName = activeFile || Object.keys(codeFiles)[0];
-    const code = codeFiles[activeFileName].code;
-    const language = codeFiles[activeFileName].language;
+    const title = document.getElementById('loading-title');
+    if (title) title.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function updateLoadingOverlay(message) {
+    const subtitle = document.getElementById('loading-subtitle');
+    if (subtitle) subtitle.textContent = message;
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function getGroqApiKey() {
+    const encrypted = localStorage.getItem('groq_api_key');
+    if (!encrypted) return '';
     
-    const errors = [];
+    // Check if encrypted
+    const isEncrypted = localStorage.getItem('groq_encrypted') === 'true';
+    if (isEncrypted && typeof decryptApiKey === 'function') {
+        return decryptApiKey(encrypted);
+    }
     
-    if (language === 'javascript' || language === 'js') {
-        if (code.match(/console\.log/g)?.length > 5) {
-            errors.push('⚠️ Забагато console.log');
-        }
-        if (code.includes('var ')) {
-            errors.push('💡 Використовується var - краще let/const');
-        }
-        if (code.match(/[^=!]==(?!=)/g)) {
-            errors.push('❌ Використовується == замість ===');
+    return encrypted;
+}
+
+// ========================================
+// INITIALIZATION
+// ========================================
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Add GitHub button to header
+    const codeHeader = document.querySelector('#deepseekMode .code-header');
+    if (codeHeader) {
+        const actions = codeHeader.querySelector('.code-actions');
+        if (actions && !document.getElementById('github-import-btn')) {
+            const githubBtn = document.createElement('button');
+            githubBtn.id = 'github-import-btn';
+            githubBtn.textContent = '🐙 GitHub';
+            githubBtn.title = 'Завантажити репозиторій з GitHub';
+            githubBtn.onclick = importGitHubRepo;
+            githubBtn.style.cssText = `
+                background: rgba(46, 160, 67, 0.2);
+                color: white;
+                border: 1px solid #2ea043;
+                padding: 8px 14px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+            `;
+            actions.insertBefore(githubBtn, actions.firstChild);
         }
     }
     
-    if (errors.length === 0) {
-        alert('✅ Помилок не знайдено!');
-    } else {
-        alert('🔍 Результати аналізу:\n\n' + errors.join('\n'));
-    }
-}
+    console.log('✅ Enhanced DeepSeek ready');
+});
 
-async function generateTests() {
-    alert('🧪 Функція генерації тестів доступна з Groq API');
-}
-
-async function generateDocumentation() {
-    alert('📚 Функція генерації документації доступна');
-}
-
-async function refactorCode() {
-    alert('🎯 Функція рефакторингу доступна з Groq API');
-}
+// Export functions
+window.importGitHubRepo = importGitHubRepo;
+window.sendDeepseekMessage = sendDeepseekMessage;
+window.displayCodeFiles = displayCodeFiles;
+window.downloadAllAsZip = downloadAllAsZip;
+window.codeFiles = codeFiles;
