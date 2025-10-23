@@ -108,7 +108,8 @@
                     </div>
                     <div class="header-actions">
                         <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
-                        <button class="preview-toggle-btn" onclick="togglePreview()">👁️ Preview</button>
+                        <button class="clear-chat-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">🐙 GitHub</button>
+                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Попередній перегляд">👁️ Preview</button>
                         <button class="clear-chat-btn" onclick="toggleCodePanel()" title="Показати/сховати код">⚡ Код</button>
                         <button class="save-chat-btn" onclick="saveConversation('deepseek')">💾</button>
                         <button class="clear-chat-btn" onclick="clearChat('deepseek')">🗑️</button>
@@ -130,12 +131,13 @@
                         <button class="icon-btn" onclick="toggleCodePanel()" title="Згорнути">✕</button>
                     </div>
                     <div class="code-actions">
+                        <button onclick="showSmartCommands()" title="Розумні команди">🎯 Команди</button>
                         <button onclick="downloadAllAsZip()">📦 ZIP</button>
                     </div>
                 </div>
                 
                 <!-- File Navigation -->
-                <div class="file-navigation" id="fileNavigation">
+                <div class="file-navigation" id="fileNavigation" style="display: none;">
                     <div class="file-nav-header">
                         <button class="nav-btn" onclick="navigateToPreviousFile()" title="Попередній файл">◀</button>
                         <select id="fileSelector" onchange="switchToFile(this.value)" class="file-selector">
@@ -158,6 +160,9 @@
                     </div>
                 </div>
 
+                <!-- File Tabs -->
+                <div class="file-tabs" id="fileTabs"></div>
+
                 <div class="code-content" id="codeContent">
                     <div class="empty-state">
                         <div class="empty-state-icon">📝</div>
@@ -166,6 +171,16 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Preview Panel -->
+            <div class="preview-panel" id="previewPanel">
+                <div class="preview-header">
+                    <h3>👁️ Попередній перегляд</h3>
+                    <button onclick="togglePreview()">✕</button>
+                </div>
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </div>
 
         <!-- Image Generator -->
         <div class="mode-content" id="imageMode">
@@ -367,7 +382,7 @@
     </div>
 
     <!-- File Input -->
-    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb" multiple onchange="handleFileUpload(event)">
+    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.ts,.tsx,.jsx,.vue,.svelte" multiple>
 
     <!-- Modals -->
     <div class="modal" id="planModal">
@@ -416,7 +431,7 @@
         </div>
     </div>
 
-<!-- Scripts - ПРАВИЛЬНИЙ ПОРЯДОК -->
+    <!-- Scripts - ПРАВИЛЬНИЙ ПОРЯДОК -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -434,6 +449,7 @@
     <!-- Основні модулі -->
     <script src="js/gemini.js"></script>
     <script src="js/deepseek.js"></script>
+    <script src="js/deepseek-ui-controls.js"></script>
     <script src="js/photo.js"></script>
     <script src="js/planner.js"></script>
     <script src="js/memory.js"></script>
