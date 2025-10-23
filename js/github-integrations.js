@@ -1,11 +1,11 @@
 // 🐙 GitHub Integration - Імпорт репозиторіїв з GitHub
 
-let githubToken = null;
+let githubToken = localStorage.getItem('github_token') || null;
 let currentRepoInfo = null;
 
 // Налаштування GitHub токену
 function setupGitHubToken() {
-    const currentToken = githubToken || localStorage.getItem('github_token') || '';
+    const currentToken = githubToken || '';
     
     const token = prompt(
         '🔑 GitHub Personal Access Token (опціонально)\n\n' +
@@ -40,7 +40,7 @@ async function importFromGitHub() {
     if (!repoUrl) return;
     
     // Парсинг URL
-    let owner, repo, branch = 'main';
+    let owner, repo;
     
     const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
     if (match) {
@@ -60,13 +60,10 @@ async function importFromGitHub() {
     showLoadingOverlay(`📥 Завантаження ${owner}/${repo}...`);
     
     try {
-        // Завантажити токен якщо є
-        if (!githubToken) {
-            const saved = localStorage.getItem('github_token');
-            if (saved) githubToken = saved;
-        }
-        
-        const headers = githubToken ? { 'Authorization': `token ${githubToken}` } : {};
+        const headers = githubToken ? { 
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+        } : {};
         
         // Спробувати main, потім master
         let treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`;
@@ -78,7 +75,10 @@ async function importFromGitHub() {
         }
         
         if (!response.ok) {
-            throw new Error('Репозиторій не знайдено. Можливо, він приватний?');
+            if (response.status === 403) {
+                throw new Error('Rate limit exceeded. Додай GitHub токен у налаштуваннях.');
+            }
+            throw new Error('Репозиторій не знайдено або він приватний.');
         }
         
         const data = await response.json();
@@ -88,7 +88,7 @@ async function importFromGitHub() {
         const allowedExtensions = [
             '.js', '.jsx', '.ts', '.tsx', '.html', '.htm', '.css', '.scss',
             '.py', '.java', '.cpp', '.c', '.go', '.rs', '.php', '.rb',
-            '.json', '.xml', '.sql', '.md'
+            '.json', '.xml', '.sql', '.md', '.vue', '.svelte'
         ];
         
         const codeFilesFiltered = allFiles.filter(file => {
@@ -97,7 +97,8 @@ async function importFromGitHub() {
                              !file.path.includes('.git') &&
                              !file.path.includes('dist') &&
                              !file.path.includes('build') &&
-                             !file.path.includes('.env');
+                             !file.path.includes('.next') &&
+                             !file.path.includes('package-lock.json');
             return hasExt && notIgnored;
         });
         
@@ -105,13 +106,14 @@ async function importFromGitHub() {
             throw new Error('У репозиторії не знайдено файлів з кодом!');
         }
         
-        // Обмежити до 30 файлів
-        const filesToLoad = codeFilesFiltered.slice(0, 30);
+        // Обмежити до 50 файлів
+        const MAX_FILES = 50;
+        const filesToLoad = codeFilesFiltered.slice(0, MAX_FILES);
         
-        if (codeFilesFiltered.length > 30) {
+        if (codeFilesFiltered.length > MAX_FILES) {
             const proceed = confirm(
                 `⚠️ Знайдено ${codeFilesFiltered.length} файлів.\n\n` +
-                `Завантажити перші 30?\n\nТа/Ні`
+                `Завантажити перші ${MAX_FILES}?\n\nТа/Ні`
             );
             if (!proceed) {
                 hideLoadingOverlay();
@@ -119,12 +121,20 @@ async function importFromGitHub() {
             }
         }
         
+        // Очистити попередні файли
+        if (typeof window.codeFiles !== 'undefined') {
+            window.codeFiles = {};
+        } else {
+            window.codeFiles = {};
+        }
+        
         // Завантажити файли
         for (let i = 0; i < filesToLoad.length; i++) {
             const file = filesToLoad[i];
             updateLoadingOverlay(`${i + 1}/${filesToLoad.length}: ${file.path}`);
             
-            let rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${file.path}`;
+            const branch = 'main';
+            let rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`;
             let fileResponse = await fetch(rawUrl);
             
             if (!fileResponse.ok) {
@@ -137,33 +147,35 @@ async function importFromGitHub() {
                 const ext = file.path.split('.').pop();
                 const language = getLanguageFromExtension(ext);
                 
-                if (!window.codeFiles) window.codeFiles = {};
-                
                 window.codeFiles[file.path] = {
                     language: language,
-                    code: content
+                    code: content,
+                    size: content.length,
+                    modified: false
                 };
-                
-                if (fileManager) {
-                    fileManager.addFiles({ [file.path]: { language, code: content } });
-                }
             }
             
-            await new Promise(r => setTimeout(r, 100)); // Затримка для запобігання rate limit
+            // Затримка для запобігання rate limit
+            await new Promise(r => setTimeout(r, 50));
         }
         
         currentRepoInfo = {
             owner: owner,
             repo: repo,
-            branch: branch,
+            branch: 'main',
             filesCount: filesToLoad.length,
             url: `https://github.com/${owner}/${repo}`
         };
         
+        // Зберегти у projectContext для deepseek.js
+        if (typeof window.projectContext !== 'undefined') {
+            window.projectContext = currentRepoInfo;
+        }
+        
         hideLoadingOverlay();
         
         // Перейти на DeepSeek
-        if (displayCodeFiles) {
+        if (typeof displayCodeFiles === 'function') {
             displayCodeFiles();
         }
         switchMode('deepseek');
@@ -174,7 +186,7 @@ async function importFromGitHub() {
         alert(`✅ GitHub імпорт успішний!\n\n📁 ${filesToLoad.length} файлів завантажено\n📍 ${owner}/${repo}`);
         
         // Запам'ятати
-        if (agent) {
+        if (typeof agent !== 'undefined' && agent) {
             agent.addMemory({
                 type: 'github_imported',
                 repo: `${owner}/${repo}`,
@@ -207,7 +219,9 @@ function getLanguageFromExtension(ext) {
         'json': 'json',
         'xml': 'xml',
         'sql': 'sql',
-        'md': 'markdown'
+        'md': 'markdown',
+        'vue': 'html',
+        'svelte': 'html'
     };
     return map[ext.toLowerCase()] || 'plaintext';
 }
@@ -224,22 +238,25 @@ function addGitHubSuccessMessage(owner, repo, count) {
         padding: 20px;
         border-radius: 12px;
         color: white;
+        margin-bottom: 20px;
     `;
     
     messageDiv.innerHTML = `
         <div style="display: flex; gap: 15px; align-items: center;">
             <div style="font-size: 48px;">🐙</div>
-            <div>
-                <h3 style="margin: 0 0 8px 0; font-size: 18px;">Репозиторій імпортовано</h3>
-                <p style="margin: 0 0 8px 0; opacity: 0.9;">${owner}/${repo}</p>
-                <p style="margin: 0; opacity: 0.8;">📁 Завантажено ${count} файлів</p>
-                <div style="margin-top: 12px; font-size: 13px; line-height: 1.6;">
-                    ✨ Тепер ти можеш:<br>
-                    • Аналізувати код<br>
-                    • Рефакторити<br>
-                    • Генерувати тести<br>
-                    • Документувати<br>
-                    • Експортувати назад
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px;">Репозиторій імпортовано з GitHub</h3>
+                <p style="margin: 0 0 8px 0; opacity: 0.9;">📦 ${owner}/${repo}</p>
+                <p style="margin: 0 0 12px 0; opacity: 0.9;">📁 ${count} файлів</p>
+                <div style="padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <p style="margin: 0 0 8px 0; font-weight: 600;">💡 Тепер можеш:</p>
+                    <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.8;">
+                        <li>Редагувати кілька файлів одночасно</li>
+                        <li>Аналізувати код на помилки</li>
+                        <li>Рефакторити та оптимізувати</li>
+                        <li>Генерувати тести</li>
+                        <li>Додавати нові функції</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -263,7 +280,6 @@ async function analyzeImportedCode() {
     
     const action = prompt(
         '🔍 Виберіть тип аналізу:\n\n' +
-
         '1 - Якість коду\n' +
         '2 - Потенційні баги\n' +
         '3 - Безпека\n' +
@@ -282,24 +298,16 @@ async function analyzeImportedCode() {
     
     const prompt = prompts[action] || prompts['1'];
     
-    // Збірка контексту з файлів
-    let context = `📁 Репозиторій: ${currentRepoInfo.owner}/${currentRepoInfo.repo}\n\n`;
-    context += `Структура файлів:\n`;
-    
-    Object.keys(window.codeFiles).slice(0, 10).forEach(file => {
-        context += `• ${file}\n`;
-    });
-    
-    if (Object.keys(window.codeFiles).length > 10) {
-        context += `... та ще ${Object.keys(window.codeFiles).length - 10} файлів\n`;
-    }
-    
-    context += `\n${prompt}`;
-    
     // Відправити в чат
-    document.getElementById('deepseekInput').value = context;
-    if (sendDeepseekMessage) {
-        await sendDeepseekMessage();
+    const input = document.getElementById('deepseekInput');
+    if (input) {
+        input.value = prompt;
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+        
+        if (typeof sendDeepseekMessage === 'function') {
+            await sendDeepseekMessage();
+        }
     }
 }
 
@@ -322,7 +330,7 @@ function exportToGitHub() {
     );
     
     if (action) {
-        if (downloadAllAsZip) {
+        if (typeof downloadAllAsZip === 'function') {
             downloadAllAsZip();
         }
     } else {
@@ -417,3 +425,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     console.log('✅ GitHub Integration готова');
 });
+
+// Експорт функцій
+window.importFromGitHub = importFromGitHub;
+window.setupGitHubToken = setupGitHubToken;
+window.analyzeImportedCode = analyzeImportedCode;
+window.exportToGitHub = exportToGitHub;
