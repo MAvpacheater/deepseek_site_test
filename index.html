@@ -107,10 +107,10 @@
                         <h1>💻 DeepSeek Coder</h1>
                     </div>
                     <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁</button>
-                        <button class="clear-chat-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">🐙</button>
-                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Preview HTML">👁️</button>
-                        <button class="clear-chat-btn" onclick="toggleCodePanel()" title="Показати код">⚡</button>
+                        <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
+                        <button class="clear-chat-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">🐙 GitHub</button>
+                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Preview HTML">👁️ Preview</button>
+                        <button class="clear-chat-btn" onclick="toggleCodePanel()" title="Показати код">⚡ Код</button>
                         <button class="save-chat-btn" onclick="saveConversation('deepseek')">💾</button>
                         <button class="clear-chat-btn" onclick="clearChat('deepseek')">🗑️</button>
                     </div>
@@ -368,6 +368,20 @@
                                     <div class="stat-value" id="statSaved">0</div>
                                 </div>
                             </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🔢</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Токенів</div>
+                                    <div class="stat-value" id="statTokens">0</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">📅</div>
+                                <div class="stat-info">
+                                    <div class="stat-label">Днів використання</div>
+                                    <div class="stat-value" id="statDays">1</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -445,7 +459,7 @@
     <script src="js/deepseek-ui-controls.js"></script>
     <script src="js/photo.js"></script>
     <script src="js/file-upload.js"></script>
-    <script src="js/github-integration.js"></script>
+    <script src="js/github-integrations.js"></script>
     <script src="js/planner.js"></script>
     <script src="js/memory.js"></script>
     <script src="js/agent-core.js"></script>
