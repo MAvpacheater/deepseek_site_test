@@ -1,4 +1,4 @@
-// 💻 Enhanced DeepSeek Coder with GitHub Integration
+// 💻 Enhanced DeepSeek Coder with GitHub Integration - FIXED VERSION
 
 let deepseekHistory = [];
 let codeFiles = {};
@@ -6,13 +6,39 @@ let codeHistory = {};
 let activeFile = null;
 let projectContext = null;
 
+// Безпечні утиліти
+function safeGetCodeElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`Code element '${id}' not found`);
+    }
+    return element;
+}
+
+function safeGetCodeFiles() {
+    if (!window.codeFiles) {
+        window.codeFiles = {};
+    }
+    return window.codeFiles;
+}
+
+function safeGetCodeHistory() {
+    if (!window.codeHistory) {
+        window.codeHistory = {};
+    }
+    return window.codeHistory;
+}
+
 // ========================================
 // ENHANCED DEEPSEEK CHAT
 // ========================================
 
 async function sendDeepseekMessage() {
-    const input = document.getElementById('deepseekInput');
-    if (!input) return;
+    const input = safeGetCodeElement('deepseekInput');
+    if (!input) {
+        console.error('DeepSeek input not found');
+        return;
+    }
     
     const message = input.value.trim();
     if (!message) return;
@@ -20,14 +46,18 @@ async function sendDeepseekMessage() {
     const apiKey = getGroqApiKey();
     if (!apiKey) {
         alert('⚠️ Введи Groq API ключ у налаштуваннях!');
-        switchMode('settings');
+        if (typeof switchMode === 'function') {
+            switchMode('settings');
+        }
         return;
     }
 
     input.value = '';
     input.style.height = 'auto';
 
-    addMessage(message, 'user', 'deepseekMessages');
+    if (typeof addMessage === 'function') {
+        addMessage(message, 'user', 'deepseekMessages');
+    }
     
     // Build context with project files
     const context = buildProjectContext(message);
@@ -44,7 +74,7 @@ async function sendDeepseekMessage() {
         deepseekHistory = deepseekHistory.slice(-40);
     }
 
-    const sendBtn = document.getElementById('deepseekSendBtn');
+    const sendBtn = safeGetCodeElement('deepseekSendBtn');
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.innerHTML = '<div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
@@ -70,10 +100,15 @@ async function sendDeepseekMessage() {
             })
         });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+        }
+
         const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error?.message || `API Error: ${response.status}`);
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid API response format');
         }
 
         const aiMessage = data.choices[0].message.content;
@@ -82,7 +117,7 @@ async function sendDeepseekMessage() {
         
         // Display text without code blocks
         const textOnly = removeCodeBlocks(aiMessage);
-        if (textOnly.trim()) {
+        if (textOnly.trim() && typeof addMessage === 'function') {
             addMessage(textOnly, 'assistant', 'deepseekMessages');
         }
         
@@ -90,15 +125,17 @@ async function sendDeepseekMessage() {
         extractAndApplyCode(aiMessage);
         
         // Update stats
-        if (typeof stats !== 'undefined') {
+        if (typeof stats !== 'undefined' && typeof saveStats === 'function') {
             stats.deepseekRequests++;
             stats.totalTokens += estimateTokens(message + aiMessage);
             saveStats();
         }
 
     } catch (error) {
-        console.error('Error:', error);
-        addMessage('❌ Помилка: ' + error.message, 'assistant', 'deepseekMessages');
+        console.error('DeepSeek Error:', error);
+        if (typeof addMessage === 'function') {
+            addMessage('❌ Помилка: ' + error.message, 'assistant', 'deepseekMessages');
+        }
     } finally {
         if (sendBtn) {
             sendBtn.disabled = false;
@@ -111,21 +148,25 @@ async function sendDeepseekMessage() {
 function buildProjectContext(userMessage) {
     let context = userMessage;
     
+    const files = safeGetCodeFiles();
+    
     // If we have project loaded, add context
-    if (projectContext && Object.keys(codeFiles).length > 0) {
+    if (projectContext && Object.keys(files).length > 0) {
         context += '\n\n--- КОНТЕКСТ ПРОЕКТУ ---\n';
         context += `Репозиторій: ${projectContext.owner}/${projectContext.repo}\n`;
         context += `Файлів: ${projectContext.filesCount}\n\n`;
         
         // Add file structure
         context += 'Структура:\n';
-        Object.keys(codeFiles).slice(0, 20).forEach(filename => {
-            const file = codeFiles[filename];
-            context += `• ${filename} (${file.language}, ${file.size} символів)${file.modified ? ' [змінено]' : ''}\n`;
+        Object.keys(files).slice(0, 20).forEach(filename => {
+            const file = files[filename];
+            if (file && file.language) {
+                context += `• ${filename} (${file.language}, ${file.size || 0} символів)${file.modified ? ' [змінено]' : ''}\n`;
+            }
         });
         
         // If user mentions specific files, add their content
-        const mentionedFiles = Object.keys(codeFiles).filter(filename => 
+        const mentionedFiles = Object.keys(files).filter(filename => 
             userMessage.toLowerCase().includes(filename.toLowerCase()) ||
             userMessage.toLowerCase().includes(filename.split('/').pop().toLowerCase())
         );
@@ -133,22 +174,27 @@ function buildProjectContext(userMessage) {
         if (mentionedFiles.length > 0) {
             context += '\n--- ЗГАДАНІ ФАЙЛИ ---\n';
             mentionedFiles.forEach(filename => {
-                const file = codeFiles[filename];
-                context += `\n// FILE: ${filename}\n`;
-                context += file.code.substring(0, 3000); // Limit size
-                if (file.code.length > 3000) {
-                    context += '\n... (скорочено)';
+                const file = files[filename];
+                if (file && file.code) {
+                    context += `\n// FILE: ${filename}\n`;
+                    context += file.code.substring(0, 3000);
+                    if (file.code.length > 3000) {
+                        context += '\n... (скорочено)';
+                    }
+                    context += '\n';
                 }
-                context += '\n';
             });
         }
         // If active file is open, add it
-        else if (activeFile && codeFiles[activeFile]) {
+        else if (activeFile && files[activeFile]) {
             context += '\n--- АКТИВНИЙ ФАЙЛ ---\n';
             context += `// FILE: ${activeFile}\n`;
-            context += codeFiles[activeFile].code.substring(0, 3000);
-            if (codeFiles[activeFile].code.length > 3000) {
-                context += '\n... (скорочено)';
+            const activeFileContent = files[activeFile].code;
+            if (activeFileContent) {
+                context += activeFileContent.substring(0, 3000);
+                if (activeFileContent.length > 3000) {
+                    context += '\n... (скорочено)';
+                }
             }
         }
     }
@@ -158,10 +204,15 @@ function buildProjectContext(userMessage) {
 
 // Extract and apply code changes
 function extractAndApplyCode(text) {
+    if (!text) return;
+    
+    const files = safeGetCodeFiles();
+    const history = safeGetCodeHistory();
+    
     // Method 1: Look for // FILE: markers
     const fileMarkers = text.match(/\/\/\s*FILE:\s*(.+?)(?:\n|$)/gi);
     
-    if (fileMarkers) {
+    if (fileMarkers && fileMarkers.length > 0) {
         let currentPos = 0;
         
         fileMarkers.forEach((marker, index) => {
@@ -180,14 +231,14 @@ function extractAndApplyCode(text) {
                 const language = getLanguageFromExtension(ext);
                 
                 // Save to history
-                if (!codeHistory[filename]) {
-                    codeHistory[filename] = [];
+                if (!history[filename]) {
+                    history[filename] = [];
                 }
-                if (codeFiles[filename]) {
-                    codeHistory[filename].push(codeFiles[filename].code);
+                if (files[filename] && files[filename].code) {
+                    history[filename].push(files[filename].code);
                 }
                 
-                codeFiles[filename] = {
+                files[filename] = {
                     language: language,
                     code: codeBlock,
                     size: codeBlock.length,
@@ -198,7 +249,7 @@ function extractAndApplyCode(text) {
             currentPos = nextMarkerPos;
         });
         
-        if (Object.keys(codeFiles).length > 0) {
+        if (Object.keys(files).length > 0 && typeof displayCodeFiles === 'function') {
             displayCodeFiles();
         }
         return;
@@ -207,7 +258,8 @@ function extractAndApplyCode(text) {
     // Method 2: Traditional code blocks
     const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
     let match;
-    let fileIndex = Object.keys(codeFiles).length;
+    let fileIndex = Object.keys(files).length;
+    let hasNewFiles = false;
     
     while ((match = codeBlockRegex.exec(text)) !== null) {
         const lang = match[1] || 'txt';
@@ -223,22 +275,24 @@ function extractAndApplyCode(text) {
         }
         
         // Save to history
-        if (!codeHistory[filename]) {
-            codeHistory[filename] = [];
+        if (!history[filename]) {
+            history[filename] = [];
         }
-        if (codeFiles[filename]) {
-            codeHistory[filename].push(codeFiles[filename].code);
+        if (files[filename] && files[filename].code) {
+            history[filename].push(files[filename].code);
         }
         
-        codeFiles[filename] = {
+        files[filename] = {
             language: lang,
             code: code,
             size: code.length,
             modified: true
         };
+        
+        hasNewFiles = true;
     }
     
-    if (Object.keys(codeFiles).length > 0) {
+    if (hasNewFiles && typeof displayCodeFiles === 'function') {
         displayCodeFiles();
     }
 }
@@ -248,18 +302,24 @@ function extractAndApplyCode(text) {
 // ========================================
 
 function displayCodeFiles() {
-    const contentDiv = document.getElementById('codeContent');
-    const tabsDiv = document.getElementById('fileTabs');
-    const fileNav = document.getElementById('fileNavigation');
-    const fileSelector = document.getElementById('fileSelector');
+    const contentDiv = safeGetCodeElement('codeContent');
+    const tabsDiv = safeGetCodeElement('fileTabs');
+    const fileNav = safeGetCodeElement('fileNavigation');
+    const fileSelector = safeGetCodeElement('fileSelector');
     
-    if (!contentDiv) return;
+    if (!contentDiv) {
+        console.error('Code content div not found');
+        return;
+    }
+    
+    const files = safeGetCodeFiles();
+    const history = safeGetCodeHistory();
     
     // Clear previous content
     if (tabsDiv) tabsDiv.innerHTML = '';
     contentDiv.innerHTML = '';
     
-    if (Object.keys(codeFiles).length === 0) {
+    if (Object.keys(files).length === 0) {
         contentDiv.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">📁</div>
@@ -274,7 +334,7 @@ function displayCodeFiles() {
     // Show navigation
     if (fileNav) fileNav.style.display = 'block';
     
-    const filenames = Object.keys(codeFiles).sort();
+    const filenames = Object.keys(files).sort();
     
     // Update file selector
     if (fileSelector) {
@@ -286,7 +346,8 @@ function displayCodeFiles() {
     }
     
     filenames.forEach((filename, index) => {
-        const file = codeFiles[filename];
+        const file = files[filename];
+        if (!file) return;
         
         // Create tab
         if (tabsDiv) {
@@ -305,51 +366,51 @@ function displayCodeFiles() {
         fileDiv.className = 'code-file' + (index === 0 && !activeFile ? ' active' : activeFile === filename ? ' active' : '');
         fileDiv.dataset.filename = filename;
         
-        const highlightedCode = typeof Prism !== 'undefined' ? 
+        const highlightedCode = typeof Prism !== 'undefined' && file.code ? 
             Prism.highlight(file.code, Prism.languages[file.language] || Prism.languages.plaintext, file.language) :
-            escapeHtml(file.code);
+            escapeHtml(file.code || '');
         
         fileDiv.innerHTML = `
             <div class="code-block">
                 <div class="code-block-header">
                     <div class="code-block-info">
-                        <span class="code-block-lang">${escapeHtml(file.language)}</span>
+                        <span class="code-block-lang">${escapeHtml(file.language || 'unknown')}</span>
                         <span class="code-block-name">${escapeHtml(filename)}</span>
                         ${file.modified ? '<span style="color: #f59e0b; font-size: 12px;">● змінено</span>' : ''}
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        ${codeHistory[filename] && codeHistory[filename].length > 0 ? 
+                        ${history[filename] && history[filename].length > 0 ? 
                             `<button onclick="revertFile('${escapeHtml(filename)}')">↶ Відмінити</button>` : ''}
                         <button onclick="editFile('${escapeHtml(filename)}')">✏️ Редагувати</button>
                         <button onclick="copyCode('${escapeHtml(filename)}')">📋 Копіювати</button>
                         <button onclick="downloadFile('${escapeHtml(filename)}')">💾 Завантажити</button>
                     </div>
                 </div>
-                <pre><code class="language-${escapeHtml(file.language)}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
+                <pre><code class="language-${escapeHtml(file.language || 'plaintext')}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
             </div>
         `;
         
         contentDiv.appendChild(fileDiv);
     });
     
-    if (!activeFile) {
+    if (!activeFile && filenames.length > 0) {
         activeFile = filenames[0];
     }
     
     // Show version control if file has history
-    const versionControl = document.getElementById('versionControl');
-    if (versionControl && activeFile && codeHistory[activeFile] && codeHistory[activeFile].length > 0) {
+    const versionControl = safeGetCodeElement('versionControl');
+    if (versionControl && activeFile && history[activeFile] && history[activeFile].length > 0) {
         versionControl.style.display = 'block';
-        const versionInfo = document.getElementById('versionInfo');
+        const versionInfo = safeGetCodeElement('versionInfo');
         if (versionInfo) {
-            versionInfo.textContent = `v${codeHistory[activeFile].length + 1}/${codeHistory[activeFile].length + 1}`;
+            versionInfo.textContent = `v${history[activeFile].length + 1}/${history[activeFile].length + 1}`;
         }
     } else if (versionControl) {
         versionControl.style.display = 'none';
     }
     
     // Auto-open code panel
-    const codeSection = document.getElementById('codeSection');
+    const codeSection = safeGetCodeElement('codeSection');
     if (codeSection && codeSection.classList.contains('collapsed')) {
         if (typeof toggleCodePanel === 'function') {
             toggleCodePanel();
@@ -358,6 +419,11 @@ function displayCodeFiles() {
 }
 
 function switchFile(filename) {
+    if (!filename) return;
+    
+    const files = safeGetCodeFiles();
+    if (!files[filename]) return;
+    
     document.querySelectorAll('.file-tab').forEach(tab => {
         tab.classList.remove('active');
         if (tab.textContent.includes(filename)) {
@@ -375,19 +441,20 @@ function switchFile(filename) {
     activeFile = filename;
     
     // Update selector
-    const selector = document.getElementById('fileSelector');
+    const selector = safeGetCodeElement('fileSelector');
     if (selector) {
         selector.value = filename;
     }
     
     // Update version control
-    const versionControl = document.getElementById('versionControl');
+    const history = safeGetCodeHistory();
+    const versionControl = safeGetCodeElement('versionControl');
     if (versionControl) {
-        if (codeHistory[filename] && codeHistory[filename].length > 0) {
+        if (history[filename] && history[filename].length > 0) {
             versionControl.style.display = 'block';
-            const versionInfo = document.getElementById('versionInfo');
+            const versionInfo = safeGetCodeElement('versionInfo');
             if (versionInfo) {
-                versionInfo.textContent = `v${codeHistory[filename].length + 1}/${codeHistory[filename].length + 1}`;
+                versionInfo.textContent = `v${history[filename].length + 1}/${history[filename].length + 1}`;
             }
         } else {
             versionControl.style.display = 'none';
@@ -396,17 +463,20 @@ function switchFile(filename) {
 }
 
 function editFile(filename) {
-    const file = codeFiles[filename];
+    const files = safeGetCodeFiles();
+    const file = files[filename];
     if (!file) return;
     
     const newCode = prompt(`✏️ Редагувати ${filename}:\n\n(Для великих змін краще використати AI)`, file.code);
     
     if (newCode !== null && newCode !== file.code) {
+        const history = safeGetCodeHistory();
+        
         // Save to history
-        if (!codeHistory[filename]) {
-            codeHistory[filename] = [];
+        if (!history[filename]) {
+            history[filename] = [];
         }
-        codeHistory[filename].push(file.code);
+        history[filename].push(file.code);
         
         file.code = newCode;
         file.size = newCode.length;
@@ -417,51 +487,71 @@ function editFile(filename) {
 }
 
 function revertFile(filename) {
-    const history = codeHistory[filename];
-    if (!history || history.length === 0) return;
+    const history = safeGetCodeHistory();
+    const historyArray = history[filename];
+    
+    if (!historyArray || historyArray.length === 0) return;
     
     if (!confirm(`↶ Відмінити зміни в ${filename}?`)) return;
     
-    const previousVersion = history.pop();
-    codeFiles[filename].code = previousVersion;
-    codeFiles[filename].size = previousVersion.length;
+    const files = safeGetCodeFiles();
+    const previousVersion = historyArray.pop();
+    
+    if (files[filename]) {
+        files[filename].code = previousVersion;
+        files[filename].size = previousVersion.length;
+    }
     
     displayCodeFiles();
 }
 
 function copyCode(filename) {
-    const code = codeFiles[filename]?.code;
+    const files = safeGetCodeFiles();
+    const code = files[filename]?.code;
     if (!code) return;
     
     navigator.clipboard.writeText(code).then(() => {
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '✓ Скопійовано!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-            btn.textContent = originalText;
-            btn.classList.remove('copied');
-        }, 2000);
+        const btn = event?.target;
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Скопійовано!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert('❌ Помилка копіювання');
     });
 }
 
 function downloadFile(filename) {
-    const file = codeFiles[filename];
+    const files = safeGetCodeFiles();
+    const file = files[filename];
     if (!file) return;
     
-    const blob = new Blob([file.code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+        const blob = new Blob([file.code], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Download error:', error);
+        alert('❌ Помилка завантаження файлу');
+    }
 }
 
 async function downloadAllAsZip() {
-    if (Object.keys(codeFiles).length === 0) {
+    const files = safeGetCodeFiles();
+    
+    if (Object.keys(files).length === 0) {
         alert('⚠️ Немає файлів!');
         return;
     }
@@ -471,29 +561,37 @@ async function downloadAllAsZip() {
         return;
     }
     
-    const zip = new JSZip();
-    
-    Object.keys(codeFiles).forEach(filename => {
-        zip.file(filename, codeFiles[filename].code);
-    });
-    
-    // Add README if GitHub project
-    if (projectContext) {
-        const readme = `# ${projectContext.repo}\n\n` +
-            `Оригінальний репозиторій: ${projectContext.url}\n\n` +
-            `Змінено через AI Assistant Hub\n`;
-        zip.file('AI_CHANGES.md', readme);
+    try {
+        const zip = new JSZip();
+        
+        Object.keys(files).forEach(filename => {
+            const file = files[filename];
+            if (file && file.code) {
+                zip.file(filename, file.code);
+            }
+        });
+        
+        // Add README if GitHub project
+        if (projectContext) {
+            const readme = `# ${projectContext.repo}\n\n` +
+                `Оригінальний репозиторій: ${projectContext.url}\n\n` +
+                `Змінено через AI Assistant Hub\n`;
+            zip.file('AI_CHANGES.md', readme);
+        }
+        
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = projectContext ? `${projectContext.repo}_modified.zip` : 'project.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('ZIP error:', error);
+        alert('❌ Помилка створення ZIP архіву');
     }
-    
-    const content = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = projectContext ? `${projectContext.repo}_modified.zip` : 'project.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 }
 
 // ========================================
@@ -501,10 +599,13 @@ async function downloadAllAsZip() {
 // ========================================
 
 function removeCodeBlocks(text) {
+    if (!text) return '';
     return text.replace(/```[\s\S]*?```/g, '').trim();
 }
 
 function detectFilename(code, lang) {
+    if (!code) return null;
+    
     const lines = code.split('\n');
     for (let line of lines.slice(0, 5)) {
         if (line.includes('<!DOCTYPE') || line.includes('<html')) return 'index.html';
@@ -526,6 +627,8 @@ function getExtension(lang) {
 }
 
 function getLanguageFromExtension(ext) {
+    if (!ext) return 'plaintext';
+    
     const map = {
         'js': 'javascript', 'jsx': 'javascript',
         'ts': 'typescript', 'tsx': 'typescript',
@@ -558,13 +661,31 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function estimateTokens(text) {
+    if (!text || typeof text !== 'string') return 0;
+    return Math.ceil(text.length / 3);
+}
+
 // ========================================
 // INITIALIZATION
 // ========================================
 
-window.addEventListener('DOMContentLoaded', () => {
+function initializeDeepSeek() {
+    // Ensure global objects exist
+    window.codeFiles = window.codeFiles || {};
+    window.codeHistory = window.codeHistory || {};
+    window.activeFile = window.activeFile || null;
+    window.projectContext = window.projectContext || null;
+    
     console.log('✅ Enhanced DeepSeek готовий');
-});
+}
+
+// Auto-initialize
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDeepSeek);
+} else {
+    initializeDeepSeek();
+}
 
 // Export functions and variables
 window.sendDeepseekMessage = sendDeepseekMessage;
@@ -579,3 +700,4 @@ window.codeFiles = codeFiles;
 window.codeHistory = codeHistory;
 window.activeFile = activeFile;
 window.projectContext = projectContext;
+window.deepseekHistory = deepseekHistory;
