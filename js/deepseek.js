@@ -40,8 +40,8 @@ async function sendDeepseekMessage() {
     
     deepseekHistory.push({ role: 'user', content: context });
 
-    if (deepseekHistory.length > 20) {
-        deepseekHistory = deepseekHistory.slice(-20);
+    if (deepseekHistory.length > 40) {
+        deepseekHistory = deepseekHistory.slice(-40);
     }
 
     const sendBtn = document.getElementById('deepseekSendBtn');
@@ -198,7 +198,9 @@ function extractAndApplyCode(text) {
             currentPos = nextMarkerPos;
         });
         
-        displayCodeFiles();
+        if (Object.keys(codeFiles).length > 0) {
+            displayCodeFiles();
+        }
         return;
     }
     
@@ -210,6 +212,8 @@ function extractAndApplyCode(text) {
     while ((match = codeBlockRegex.exec(text)) !== null) {
         const lang = match[1] || 'txt';
         const code = match[2].trim();
+        
+        if (!code) continue;
         
         let filename = detectFilename(code, lang);
         
@@ -336,6 +340,10 @@ function displayCodeFiles() {
     const versionControl = document.getElementById('versionControl');
     if (versionControl && activeFile && codeHistory[activeFile] && codeHistory[activeFile].length > 0) {
         versionControl.style.display = 'block';
+        const versionInfo = document.getElementById('versionInfo');
+        if (versionInfo) {
+            versionInfo.textContent = `v${codeHistory[activeFile].length + 1}/${codeHistory[activeFile].length + 1}`;
+        }
     } else if (versionControl) {
         versionControl.style.display = 'none';
     }
