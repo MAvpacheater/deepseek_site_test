@@ -6,208 +6,6 @@ let codeHistory = {};
 let activeFile = null;
 let projectContext = null;
 
-// GitHub Integration State
-let githubState = {
-    token: localStorage.getItem('github_token') || null,
-    currentRepo: null,
-    branch: 'main'
-};
-
-// ========================================
-// GITHUB INTEGRATION
-// ========================================
-
-async function importGitHubRepo() {
-    const repoUrl = prompt(
-        '🐙 Введи URL GitHub репозиторія:\n\n' +
-        'Формати:\n' +
-        '• https://github.com/owner/repo\n' +
-        '• owner/repo\n\n' +
-        'Публічні репозиторії працюють без токену!'
-    );
-    
-    if (!repoUrl) return;
-    
-    // Parse URL
-    let owner, repo;
-    const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (match) {
-        owner = match[1];
-        repo = match[2].replace('.git', '');
-    } else if (repoUrl.includes('/')) {
-        [owner, repo] = repoUrl.split('/');
-    } else {
-        alert('❌ Невірний формат!');
-        return;
-    }
-    
-    showLoadingOverlay(`📥 Завантаження ${owner}/${repo}...`);
-    
-    try {
-        const headers = githubState.token ? {
-            'Authorization': `Bearer ${githubState.token}`,
-            'Accept': 'application/vnd.github.v3+json'
-        } : {};
-        
-        // Get repository tree
-        let treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`;
-        let response = await fetch(treeUrl, { headers });
-        
-        if (!response.ok && response.status === 404) {
-            treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`;
-            response = await fetch(treeUrl, { headers });
-        }
-        
-        if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('Rate limit exceeded. Додай GitHub токен у налаштуваннях.');
-            }
-            throw new Error('Репозиторій не знайдено або він приватний.');
-        }
-        
-        const data = await response.json();
-        const files = data.tree.filter(item => item.type === 'blob');
-        
-        // Filter code files
-        const codeExtensions = [
-            '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.scss', '.sass',
-            '.json', '.md', '.py', '.java', '.cpp', '.c', '.go', '.rs',
-            '.php', '.rb', '.swift', '.kt', '.vue', '.svelte'
-        ];
-        
-        const codeFilesOnly = files.filter(file => {
-            const hasValidExt = codeExtensions.some(ext => file.path.endsWith(ext));
-            const notIgnored = !file.path.includes('node_modules') &&
-                             !file.path.includes('.git') &&
-                             !file.path.includes('dist') &&
-                             !file.path.includes('build') &&
-                             !file.path.includes('.next') &&
-                             !file.path.includes('package-lock.json');
-            return hasValidExt && notIgnored;
-        });
-        
-        if (codeFilesOnly.length === 0) {
-            throw new Error('Не знайдено файлів коду!');
-        }
-        
-        // Limit files
-        const MAX_FILES = 50;
-        const filesToLoad = codeFilesOnly.slice(0, MAX_FILES);
-        
-        if (codeFilesOnly.length > MAX_FILES) {
-            const proceed = confirm(
-                `⚠️ Знайдено ${codeFilesOnly.length} файлів.\n\n` +
-                `Завантажити перші ${MAX_FILES}?`
-            );
-            if (!proceed) {
-                hideLoadingOverlay();
-                return;
-            }
-        }
-        
-        // Load files content
-        codeFiles = {};
-        let loadedCount = 0;
-        
-        for (const file of filesToLoad) {
-            updateLoadingOverlay(`${++loadedCount}/${filesToLoad.length}: ${file.path}`);
-            
-            try {
-                const branch = githubState.branch;
-                const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`;
-                const contentResponse = await fetch(rawUrl);
-                
-                if (contentResponse.ok) {
-                    const content = await contentResponse.text();
-                    const ext = file.path.split('.').pop();
-                    
-                    codeFiles[file.path] = {
-                        language: getLanguageFromExtension(ext),
-                        code: content,
-                        size: content.length,
-                        modified: false
-                    };
-                }
-            } catch (err) {
-                console.warn(`Failed to load ${file.path}:`, err);
-            }
-            
-            // Rate limiting protection
-            await new Promise(r => setTimeout(r, 50));
-        }
-        
-        // Save project context
-        projectContext = {
-            owner: owner,
-            repo: repo,
-            branch: githubState.branch,
-            filesCount: Object.keys(codeFiles).length,
-            url: `https://github.com/${owner}/${repo}`
-        };
-        
-        githubState.currentRepo = { owner, repo };
-        
-        hideLoadingOverlay();
-        
-        // Switch to DeepSeek mode
-        switchMode('deepseek');
-        displayCodeFiles();
-        
-        // Add success message
-        addGitHubSuccessMessage(owner, repo, Object.keys(codeFiles).length);
-        
-        alert(
-            `✅ Репозиторій завантажено!\n\n` +
-            `📁 ${Object.keys(codeFiles).length} файлів\n` +
-            `📦 ${owner}/${repo}`
-        );
-        
-    } catch (error) {
-        hideLoadingOverlay();
-        console.error('GitHub error:', error);
-        alert('❌ Помилка:\n' + error.message);
-    }
-}
-
-function addGitHubSuccessMessage(owner, repo, filesCount) {
-    const messagesDiv = document.getElementById('deepseekMessages');
-    if (!messagesDiv) return;
-    
-    const msg = document.createElement('div');
-    msg.className = 'message assistant';
-    msg.style.cssText = `
-        background: linear-gradient(135deg, #2ea043 0%, #238636 100%);
-        padding: 20px;
-        border-radius: 12px;
-        color: white;
-        margin-bottom: 20px;
-    `;
-    
-    msg.innerHTML = `
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div style="font-size: 48px;">🐙</div>
-            <div style="flex: 1;">
-                <h3 style="margin: 0 0 8px 0; font-size: 18px;">Репозиторій завантажено з GitHub</h3>
-                <p style="margin: 0 0 8px 0; opacity: 0.9;">📦 ${owner}/${repo}</p>
-                <p style="margin: 0 0 12px 0; opacity: 0.9;">📁 ${filesCount} файлів</p>
-                <div style="padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
-                    <p style="margin: 0 0 8px 0; font-weight: 600;">💡 Тепер можеш:</p>
-                    <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.8;">
-                        <li>Редагувати кілька файлів одночасно</li>
-                        <li>Аналізувати код на помилки</li>
-                        <li>Рефакторити та оптимізувати</li>
-                        <li>Генерувати тести</li>
-                        <li>Додавати нові функції</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    messagesDiv.appendChild(msg);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
 // ========================================
 // ENHANCED DEEPSEEK CHAT
 // ========================================
@@ -446,12 +244,15 @@ function extractAndApplyCode(text) {
 // ========================================
 
 function displayCodeFiles() {
-    const tabsDiv = document.getElementById('fileTabs');
     const contentDiv = document.getElementById('codeContent');
+    const tabsDiv = document.getElementById('fileTabs');
+    const fileNav = document.getElementById('fileNavigation');
+    const fileSelector = document.getElementById('fileSelector');
     
-    if (!tabsDiv || !contentDiv) return;
+    if (!contentDiv) return;
     
-    tabsDiv.innerHTML = '';
+    // Clear previous content
+    if (tabsDiv) tabsDiv.innerHTML = '';
     contentDiv.innerHTML = '';
     
     if (Object.keys(codeFiles).length === 0) {
@@ -462,27 +263,42 @@ function displayCodeFiles() {
                 <p>Завантаж проект з GitHub або створи новий</p>
             </div>
         `;
+        if (fileNav) fileNav.style.display = 'none';
         return;
     }
     
+    // Show navigation
+    if (fileNav) fileNav.style.display = 'block';
+    
     const filenames = Object.keys(codeFiles).sort();
+    
+    // Update file selector
+    if (fileSelector) {
+        fileSelector.innerHTML = '<option value="">Виберіть файл...</option>' +
+            filenames.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+        if (activeFile) {
+            fileSelector.value = activeFile;
+        }
+    }
     
     filenames.forEach((filename, index) => {
         const file = codeFiles[filename];
         
         // Create tab
-        const tab = document.createElement('div');
-        tab.className = 'file-tab' + (index === 0 ? ' active' : '');
-        tab.innerHTML = `
-            ${file.modified ? '<span style="color: #f59e0b;">●</span> ' : ''}
-            ${filename}
-        `;
-        tab.onclick = () => switchFile(filename);
-        tabsDiv.appendChild(tab);
+        if (tabsDiv) {
+            const tab = document.createElement('div');
+            tab.className = 'file-tab' + (index === 0 && !activeFile ? ' active' : activeFile === filename ? ' active' : '');
+            tab.innerHTML = `
+                ${file.modified ? '<span style="color: #f59e0b;">●</span> ' : ''}
+                ${escapeHtml(filename)}
+            `;
+            tab.onclick = () => switchFile(filename);
+            tabsDiv.appendChild(tab);
+        }
         
         // Create content
         const fileDiv = document.createElement('div');
-        fileDiv.className = 'code-file' + (index === 0 ? ' active' : '');
+        fileDiv.className = 'code-file' + (index === 0 && !activeFile ? ' active' : activeFile === filename ? ' active' : '');
         fileDiv.dataset.filename = filename;
         
         const highlightedCode = typeof Prism !== 'undefined' ? 
@@ -493,11 +309,11 @@ function displayCodeFiles() {
             <div class="code-block">
                 <div class="code-block-header">
                     <div class="code-block-info">
-                        <span class="code-block-lang">${file.language}</span>
-                        <span class="code-block-name">${filename}</span>
+                        <span class="code-block-lang">${escapeHtml(file.language)}</span>
+                        <span class="code-block-name">${escapeHtml(filename)}</span>
                         ${file.modified ? '<span style="color: #f59e0b; font-size: 12px;">● змінено</span>' : ''}
                     </div>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         ${codeHistory[filename] && codeHistory[filename].length > 0 ? 
                             `<button onclick="revertFile('${escapeHtml(filename)}')">↶ Відмінити</button>` : ''}
                         <button onclick="editFile('${escapeHtml(filename)}')">✏️ Редагувати</button>
@@ -505,14 +321,32 @@ function displayCodeFiles() {
                         <button onclick="downloadFile('${escapeHtml(filename)}')">💾 Завантажити</button>
                     </div>
                 </div>
-                <pre><code class="language-${file.language}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
+                <pre><code class="language-${escapeHtml(file.language)}" id="code-${escapeHtml(filename)}">${highlightedCode}</code></pre>
             </div>
         `;
         
         contentDiv.appendChild(fileDiv);
     });
     
-    activeFile = filenames[0];
+    if (!activeFile) {
+        activeFile = filenames[0];
+    }
+    
+    // Show version control if file has history
+    const versionControl = document.getElementById('versionControl');
+    if (versionControl && activeFile && codeHistory[activeFile] && codeHistory[activeFile].length > 0) {
+        versionControl.style.display = 'block';
+    } else if (versionControl) {
+        versionControl.style.display = 'none';
+    }
+    
+    // Auto-open code panel
+    const codeSection = document.getElementById('codeSection');
+    if (codeSection && codeSection.classList.contains('collapsed')) {
+        if (typeof toggleCodePanel === 'function') {
+            toggleCodePanel();
+        }
+    }
 }
 
 function switchFile(filename) {
@@ -531,6 +365,26 @@ function switchFile(filename) {
     });
     
     activeFile = filename;
+    
+    // Update selector
+    const selector = document.getElementById('fileSelector');
+    if (selector) {
+        selector.value = filename;
+    }
+    
+    // Update version control
+    const versionControl = document.getElementById('versionControl');
+    if (versionControl) {
+        if (codeHistory[filename] && codeHistory[filename].length > 0) {
+            versionControl.style.display = 'block';
+            const versionInfo = document.getElementById('versionInfo');
+            if (versionInfo) {
+                versionInfo.textContent = `v${codeHistory[filename].length + 1}/${codeHistory[filename].length + 1}`;
+            }
+        } else {
+            versionControl.style.display = 'none';
+        }
+    }
 }
 
 function editFile(filename) {
@@ -676,48 +530,6 @@ function getLanguageFromExtension(ext) {
     return map[ext.toLowerCase()] || 'plaintext';
 }
 
-function showLoadingOverlay(message) {
-    let overlay = document.getElementById('loading-overlay');
-    
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'loading-overlay';
-        overlay.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
-            z-index: 9999; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; color: white;
-        `;
-        overlay.innerHTML = `
-            <div style="font-size: 64px; margin-bottom: 20px;">🐙</div>
-            <div style="font-size: 24px; font-weight: 600; margin-bottom: 10px;" id="loading-title">Завантаження...</div>
-            <div style="font-size: 14px; color: rgba(255,255,255,0.7);" id="loading-subtitle"></div>
-            <div style="margin-top: 30px;">
-                <div class="loading-dots">
-                    <div class="loading-dot"></div>
-                    <div class="loading-dot"></div>
-                    <div class="loading-dot"></div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-    }
-    
-    const title = document.getElementById('loading-title');
-    if (title) title.textContent = message;
-    overlay.style.display = 'flex';
-}
-
-function updateLoadingOverlay(message) {
-    const subtitle = document.getElementById('loading-subtitle');
-    if (subtitle) subtitle.textContent = message;
-}
-
-function hideLoadingOverlay() {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
-
 function getGroqApiKey() {
     const encrypted = localStorage.getItem('groq_api_key');
     if (!encrypted) return '';
@@ -731,41 +543,31 @@ function getGroqApiKey() {
     return encrypted;
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // ========================================
 // INITIALIZATION
 // ========================================
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Add GitHub button to header
-    const codeHeader = document.querySelector('#deepseekMode .code-header');
-    if (codeHeader) {
-        const actions = codeHeader.querySelector('.code-actions');
-        if (actions && !document.getElementById('github-import-btn')) {
-            const githubBtn = document.createElement('button');
-            githubBtn.id = 'github-import-btn';
-            githubBtn.textContent = '🐙 GitHub';
-            githubBtn.title = 'Завантажити репозиторій з GitHub';
-            githubBtn.onclick = importGitHubRepo;
-            githubBtn.style.cssText = `
-                background: rgba(46, 160, 67, 0.2);
-                color: white;
-                border: 1px solid #2ea043;
-                padding: 8px 14px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 13px;
-                font-weight: 500;
-            `;
-            actions.insertBefore(githubBtn, actions.firstChild);
-        }
-    }
-    
-    console.log('✅ Enhanced DeepSeek ready');
+    console.log('✅ Enhanced DeepSeek готовий');
 });
 
-// Export functions
-window.importGitHubRepo = importGitHubRepo;
+// Export functions and variables
 window.sendDeepseekMessage = sendDeepseekMessage;
 window.displayCodeFiles = displayCodeFiles;
 window.downloadAllAsZip = downloadAllAsZip;
+window.switchFile = switchFile;
+window.editFile = editFile;
+window.revertFile = revertFile;
+window.copyCode = copyCode;
+window.downloadFile = downloadFile;
 window.codeFiles = codeFiles;
+window.codeHistory = codeHistory;
+window.activeFile = activeFile;
+window.projectContext = projectContext;
