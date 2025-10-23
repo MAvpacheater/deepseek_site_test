@@ -14,8 +14,30 @@ function handleFileUpload(event) {
     showLoadingOverlay('Завантаження файлів...');
     
     let processedCount = 0;
+    const validFiles = [];
     
+    // Валідація файлів
     for (let file of files) {
+        const validation = validateFile(file);
+        if (!validation.valid) {
+            alert(validation.error + '\n' + file.name);
+            continue;
+        }
+        validFiles.push(file);
+    }
+    
+    if (validFiles.length === 0) {
+        hideLoadingOverlay();
+        alert('❌ Немає валідних файлів для завантаження!');
+        return;
+    }
+    
+    // Очистити попередні файли при першому завантаженні
+    if (!window.codeFiles) {
+        window.codeFiles = {};
+    }
+    
+    for (let file of validFiles) {
         const reader = new FileReader();
         
         reader.onload = function(e) {
@@ -23,40 +45,56 @@ function handleFileUpload(event) {
             const content = e.target.result;
             const language = getLanguageFromFilename(filename);
             
-            if (codeFiles && typeof codeFiles === 'object') {
-                codeFiles[filename] = {
-                    language: language,
-                    code: content
-                };
-            }
+            window.codeFiles[filename] = {
+                language: language,
+                code: content,
+                size: content.length,
+                modified: false
+            };
             
             processedCount++;
-            updateLoadingOverlay(`Завантажено ${processedCount}/${files.length} файлів`);
+            updateLoadingOverlay(`Завантажено ${processedCount}/${validFiles.length} файлів`);
             
-            if (processedCount === files.length) {
+            if (processedCount === validFiles.length) {
                 hideLoadingOverlay();
                 
-                if (displayCodeFiles && typeof displayCodeFiles === 'function') {
+                if (typeof displayCodeFiles === 'function') {
                     displayCodeFiles();
                 }
                 
                 switchMode('deepseek');
-                alert(`✅ Завантажено ${files.length} файлів!\n\nТеперь ти можеш редагувати, аналізувати та покращувати код.`);
+                
+                // Додати повідомлення про завантаження
+                addFileUploadMessage(validFiles.length);
+                
+                alert(`✅ Завантажено ${validFiles.length} файлів!\n\nТепер ти можеш редагувати, аналізувати та покращувати код.`);
                 
                 // Запам'ятати дію
-                if (agent) {
+                if (typeof agent !== 'undefined' && agent) {
                     agent.addMemory({
                         type: 'files_uploaded',
-                        count: files.length,
-                        files: Array.from(files).map(f => f.name),
+                        count: validFiles.length,
+                        files: Array.from(validFiles).map(f => f.name),
                         date: new Date()
                     });
                 }
             }
         };
         
+        reader.onerror = function() {
+            alert(`❌ Помилка читання файлу: ${file.name}`);
+            processedCount++;
+            
+            if (processedCount === validFiles.length) {
+                hideLoadingOverlay();
+            }
+        };
+        
         reader.readAsText(file);
     }
+    
+    // Очистити input для можливості повторного завантаження
+    event.target.value = '';
 }
 
 function getLanguageFromFilename(filename) {
@@ -72,6 +110,7 @@ function getLanguageFromFilename(filename) {
         'htm': 'html',
         'css': 'css',
         'scss': 'css',
+        'sass': 'css',
         'less': 'css',
         'java': 'java',
         'cpp': 'cpp',
@@ -86,10 +125,87 @@ function getLanguageFromFilename(filename) {
         'xml': 'xml',
         'sql': 'sql',
         'md': 'markdown',
-        'txt': 'plaintext'
+        'txt': 'plaintext',
+        'vue': 'html',
+        'svelte': 'html'
     };
     
     return languageMap[ext] || 'plaintext';
+}
+
+// Додати повідомлення про завантаження файлів
+function addFileUploadMessage(count) {
+    const messagesDiv = document.getElementById('deepseekMessages');
+    if (!messagesDiv) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant';
+    messageDiv.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 20px;
+    `;
+    
+    const filesList = Object.keys(window.codeFiles)
+        .map(f => `<li>${f}</li>`)
+        .join('');
+    
+    messageDiv.innerHTML = `
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div style="font-size: 48px;">📁</div>
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px 0; font-size: 18px;">Файли завантажено</h3>
+                <p style="margin: 0 0 12px 0; opacity: 0.9;">📄 ${count} файлів готові до роботи</p>
+                <div style="max-height: 150px; overflow-y: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.6;">
+                        ${filesList}
+                    </ul>
+                </div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <p style="margin: 0 0 8px 0; font-weight: 600;">💡 Що можна зробити:</p>
+                    <ul style="margin: 0; padding-left: 20px; opacity: 0.9; line-height: 1.8;">
+                        <li>Аналізувати код на помилки</li>
+                        <li>Рефакторити та оптимізувати</li>
+                        <li>Генерувати тести</li>
+                        <li>Додавати нові функції</li>
+                        <li>Перевіряти безпеку</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Валідація файлу
+function validateFile(file) {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedExtensions = [
+        'js', 'jsx', 'ts', 'tsx', 'html', 'htm', 'css', 'scss', 'sass', 'less',
+        'py', 'java', 'cpp', 'c', 'go', 'rs', 'php', 'rb', 'swift', 'kt',
+        'json', 'xml', 'sql', 'md', 'txt', 'vue', 'svelte'
+    ];
+    
+    if (file.size > maxSize) {
+        return {
+            valid: false,
+            error: `❌ Файл занадто великий (макс ${maxSize / 1024 / 1024}MB)`
+        };
+    }
+    
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(ext)) {
+        return {
+            valid: false,
+            error: `❌ Недозволений тип файлу: .${ext}`
+        };
+    }
+    
+    return { valid: true };
 }
 
 // Функції-помічники для overlay
@@ -151,82 +267,15 @@ function hideLoadingOverlay() {
     }
 }
 
-// Безпечне завантаження 
-function validateFile(file) {
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedExtensions = [
-        'js', 'jsx', 'ts', 'tsx', 'html', 'htm', 'css', 'scss', 'less',
-        'py', 'java', 'cpp', 'c', 'go', 'rs', 'php', 'rb', 'swift', 'kt',
-        'json', 'xml', 'sql', 'md', 'txt'
-    ];
-    
-    if (file.size > maxSize) {
-        return {
-            valid: false,
-            error: `❌ Файл занадто великий (макс ${maxSize / 1024 / 1024}MB)`
-        };
-    }
-    
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!allowedExtensions.includes(ext)) {
-        return {
-            valid: false,
-            error: `❌ Недозволений тип файлу: .${ext}`
-        };
-    }
-    
-    return { valid: true };
-}
-
-// Багатофайловий менеджер
-class FileManager {
-    constructor() {
-        this.files = {};
-        this.uploadHistory = [];
-    }
-    
-    addFiles(newFiles) {
-        Object.assign(this.files, newFiles);
-        this.uploadHistory.push({
-            timestamp: new Date(),
-            count: Object.keys(newFiles).length,
-            files: Object.keys(newFiles)
-        });
-    }
-    
-    removeFile(filename) {
-        delete this.files[filename];
-    }
-    
-    getFilesByLanguage(language) {
-        return Object.entries(this.files)
-            .filter(([_, file]) => file.language === language)
-            .map(([name, file]) => ({ name, ...file }));
-    }
-    
-    exportAsZip() {
-        const zip = new JSZip();
-        
-        Object.entries(this.files).forEach(([filename, file]) => {
-            zip.file(filename, file.code);
-        });
-        
-        return zip.generateAsync({ type: 'blob' });
-    }
-    
-    clear() {
-        this.files = {};
-    }
-}
-
-// Глобальний менеджер
-const fileManager = new FileManager();
-
 // Ініціалізація
 window.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('fileInput');
     if (fileInput) {
         fileInput.addEventListener('change', handleFileUpload);
     }
-    console.log('✅ File Upload систем готова');
+    console.log('✅ File Upload система готова');
 });
+
+// Експорт функцій
+window.uploadLocalFile = uploadLocalFile;
+window.handleFileUpload = handleFileUpload;
