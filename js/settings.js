@@ -29,17 +29,24 @@ function saveStats() {
     updateStats();
 }
 
-// Оновлення відображення статистики
+// Оновлення відображення статистики - FIXED
 function updateStats() {
-    document.getElementById('statGemini').textContent = stats.geminiRequests || 0;
-    document.getElementById('statDeepseek').textContent = stats.deepseekRequests || 0;
-    document.getElementById('statImages').textContent = stats.imagesGenerated || 0;
-    document.getElementById('statSaved').textContent = savedConversations.length;
-    document.getElementById('statTokens').textContent = (stats.totalTokens || 0).toLocaleString();
+    const statGemini = document.getElementById('statGemini');
+    const statDeepseek = document.getElementById('statDeepseek');
+    const statImages = document.getElementById('statImages');
+    const statSaved = document.getElementById('statSaved');
+    const statTokens = document.getElementById('statTokens');
+    const statDays = document.getElementById('statDays');
     
-    if (stats.firstUse) {
+    if (statGemini) statGemini.textContent = stats.geminiRequests || 0;
+    if (statDeepseek) statDeepseek.textContent = stats.deepseekRequests || 0;
+    if (statImages) statImages.textContent = stats.imagesGenerated || 0;
+    if (statSaved) statSaved.textContent = savedConversations.length;
+    if (statTokens) statTokens.textContent = (stats.totalTokens || 0).toLocaleString();
+    
+    if (stats.firstUse && statDays) {
         const days = Math.floor((Date.now() - stats.firstUse) / (1000 * 60 * 60 * 24));
-        document.getElementById('statDays').textContent = days + 1;
+        statDays.textContent = days + 1;
     }
 }
 
@@ -96,12 +103,12 @@ function saveSettings() {
 function clearAllData() {
     if (confirm('⚠️ Видалити всі дані (історію, налаштування, ключі)? Цю дію не можна скасувати!')) {
         localStorage.clear();
-        geminiHistory = [];
-        deepseekHistory = [];
-        imageHistory = [];
+        if (typeof geminiHistory !== 'undefined') geminiHistory = [];
+        if (typeof deepseekHistory !== 'undefined') deepseekHistory = [];
+        if (typeof imageHistory !== 'undefined') imageHistory = [];
         savedConversations = [];
-        codeFiles = {};
-        codeHistory = {};
+        if (typeof codeFiles !== 'undefined') window.codeFiles = {};
+        if (typeof codeHistory !== 'undefined') window.codeHistory = {};
         stats = {
             geminiRequests: 0,
             deepseekRequests: 0,
@@ -111,11 +118,17 @@ function clearAllData() {
             firstUse: Date.now()
         };
         
-        document.getElementById('geminiMessages').innerHTML = '';
-        document.getElementById('deepseekMessages').innerHTML = '';
-        document.getElementById('imageGallery').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎨</div><h3>Генерація зображень</h3><p>Опиши що хочеш згенерувати</p></div>';
-        document.getElementById('fileTabs').innerHTML = '';
-        document.getElementById('codeContent').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><h3>Немає файлів</h3><p>Код з\'явиться тут після відповіді AI</p></div>';
+        const geminiMessages = document.getElementById('geminiMessages');
+        const deepseekMessages = document.getElementById('deepseekMessages');
+        const imageGallery = document.getElementById('imageGallery');
+        const fileTabs = document.getElementById('fileTabs');
+        const codeContent = document.getElementById('codeContent');
+        
+        if (geminiMessages) geminiMessages.innerHTML = '';
+        if (deepseekMessages) deepseekMessages.innerHTML = '';
+        if (imageGallery) imageGallery.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎨</div><h3>Генерація зображень</h3><p>Опиши що хочеш згенерувати</p></div>';
+        if (fileTabs) fileTabs.innerHTML = '';
+        if (codeContent) codeContent.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><h3>Немає файлів</h3><p>Код з\'явиться тут після відповіді AI</p></div>';
         
         loadSettings();
         updateStats();
@@ -166,10 +179,10 @@ function confirmSave() {
     let history, preview;
     
     if (currentSaveMode === 'gemini') {
-        history = [...geminiHistory];
+        history = typeof geminiHistory !== 'undefined' ? [...geminiHistory] : [];
         preview = geminiHistory[geminiHistory.length - 1]?.parts?.[0]?.text || 'Немає попереднього перегляду';
     } else if (currentSaveMode === 'deepseek') {
-        history = [...deepseekHistory];
+        history = typeof deepseekHistory !== 'undefined' ? [...deepseekHistory] : [];
         preview = deepseekHistory[deepseekHistory.length - 1]?.content || 'Немає попереднього перегляду';
     }
     
@@ -179,7 +192,7 @@ function confirmSave() {
         mode: currentSaveMode,
         tags: tags,
         history: history,
-        codeFiles: currentSaveMode === 'deepseek' ? {...codeFiles} : null,
+        codeFiles: currentSaveMode === 'deepseek' && typeof codeFiles !== 'undefined' ? {...codeFiles} : null,
         preview: preview.substring(0, 200),
         date: new Date().toLocaleDateString('uk-UA'),
         favorite: false
@@ -195,6 +208,8 @@ function confirmSave() {
 // Відобразити бібліотеку
 function displayLibrary() {
     const content = document.getElementById('libraryContent');
+    
+    if (!content) return;
     
     if (savedConversations.length === 0) {
         content.innerHTML = `
@@ -244,15 +259,17 @@ function loadConversation(id) {
     const conv = savedConversations.find(c => c.id === id);
     if (!conv) return;
     
-    if (conv.mode === 'gemini') {
+    if (conv.mode === 'gemini' && typeof geminiHistory !== 'undefined') {
         geminiHistory = [...conv.history];
         switchMode('gemini');
         displayHistory('geminiMessages', geminiHistory, 'gemini');
-    } else if (conv.mode === 'deepseek') {
+    } else if (conv.mode === 'deepseek' && typeof deepseekHistory !== 'undefined') {
         deepseekHistory = [...conv.history];
         if (conv.codeFiles) {
-            codeFiles = {...conv.codeFiles};
-            displayCodeFiles();
+            window.codeFiles = {...conv.codeFiles};
+            if (typeof displayCodeFiles === 'function') {
+                displayCodeFiles();
+            }
         }
         switchMode('deepseek');
         displayHistory('deepseekMessages', deepseekHistory, 'deepseek');
@@ -264,12 +281,14 @@ function loadConversation(id) {
 // Відобразити історію
 function displayHistory(containerId, history, mode) {
     const container = document.getElementById(containerId);
+    if (!container) return;
+    
     container.innerHTML = '';
     
     history.forEach(msg => {
         const role = msg.role === 'user' || msg.role === 'user' ? 'user' : 'assistant';
         const content = msg.content || msg.parts?.[0]?.text || '';
-        if (content) {
+        if (content && typeof addMessage === 'function') {
             addMessage(content, role, containerId);
         }
     });
