@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - Refactored & Enhanced
+// ✨ Gemini Chat - ВИПРАВЛЕНО
 
 class GeminiChat {
     constructor() {
@@ -46,7 +46,9 @@ class GeminiChat {
 
         // Підписатися на зміни в appState
         if (window.appState) {
-            appState.on('gemini:message', () => this.renderMessages());
+            appState.on('gemini:message', () => {
+                // НЕ рендерити тут - вже зроблено в addUserMessage/addAssistantMessage
+            });
             appState.on('gemini:clear', () => this.clearUI());
         }
     }
@@ -151,7 +153,7 @@ class GeminiChat {
                 localStorage.getItem('gemini_system_prompt') ||
                 'Ти корисний AI асістент. Говори українською мовою.';
 
-            // Побудувати запит
+            // ВИПРАВЛЕНО: Правильний формат для Gemini API
             const requestBody = {
                 contents: history,
                 systemInstruction: {
@@ -250,6 +252,7 @@ class GeminiChat {
             appState.addGeminiMessage('user', content);
         }
         
+        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
         this.renderMessage(content, 'user');
         this.scrollToBottom();
     }
@@ -259,6 +262,7 @@ class GeminiChat {
             appState.addGeminiMessage('model', content);
         }
         
+        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
         this.renderMessage(content, 'assistant');
         this.scrollToBottom();
 
@@ -393,22 +397,22 @@ class GeminiChat {
 
         if (error.name === 'AbortError') {
             message += 'Запит скасовано';
-        } else if (error.message.includes('API key')) {
+        } else if (error.message.includes('API key') || error.message.includes('401')) {
             message += 'Невірний API ключ';
-        } else if (error.message.includes('quota')) {
+        } else if (error.message.includes('quota') || error.message.includes('429')) {
             message += 'Перевищено ліміт запитів';
-        } else if (error.message.includes('network')) {
+        } else if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
             message += 'Проблеми з інтернетом';
         } else {
             message += error.message || 'Щось пішло не так';
         }
 
-        // Показати toast
+        // Показати toast ОДИН раз
         if (window.showToast) {
             showToast(message, 'error', 7000);
         }
 
-        // Додати в чат
+        // Додати в чат ОДИН раз
         this.renderMessage(message, 'assistant');
     }
 
@@ -548,4 +552,4 @@ document.addEventListener('DOMContentLoaded', () => {
 window.GeminiChat = GeminiChat;
 window.geminiChat = geminiChat;
 
-console.log('✅ Gemini Chat module loaded');
+console.log('✅ Gemini Chat module loaded (FIXED)');
