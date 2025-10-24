@@ -265,8 +265,24 @@ class MemoryManager {
     }
 
     async deleteMemory(id) {
-        if (!confirm('⚠️ Видалити цей спогад?')) return;
+        // ВИПРАВЛЕНО: Спочатку підтвердження, потім видалення
+        const memories = window.appState?.getMemories?.() || [];
+        const memory = memories.find(m => m.id === id);
+        
+        if (!memory) {
+            console.warn('Memory not found:', id);
+            return;
+        }
 
+        // Показати підтвердження з назвою спогаду
+        const confirmMessage = `⚠️ Видалити спогад "${memory.title}"?\n\nЦю дію не можна скасувати!`;
+        
+        if (!confirm(confirmMessage)) {
+            console.log('Видалення скасовано користувачем');
+            return; // Користувач скасував - НЕ видаляємо
+        }
+
+        // Тільки ПІСЛЯ підтвердження видаляємо
         try {
             const arr = window.appState?.agent?.memory || [];
             const i = arr.findIndex(m => m.id === id);
@@ -274,15 +290,17 @@ class MemoryManager {
 
             await window.storageManager?.delete?.(window.storageManager.stores.memories, id);
             
-            // ДОДАНО: Оновити localStorage
+            // Оновити localStorage
             await this.saveToLocalStorage();
             
             this.updateMemoryStats();
             this.displayMemories();
 
             window.showToast?.('✅ Спогад видалено', 'success');
+            console.log('✅ Спогад успішно видалено:', memory.title);
         } catch (e) {
-            console.error(e);
+            console.error('❌ Помилка видалення:', e);
+            window.showToast?.('❌ Помилка видалення', 'error');
         }
     }
 
