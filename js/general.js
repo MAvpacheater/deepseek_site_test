@@ -1,4 +1,4 @@
-// 🎮 General UI Logic - Refactored & Enhanced
+// 🎮 General UI Logic - Refactored & Enhanced with Dashboard
 
 class UIManager {
     constructor() {
@@ -124,6 +124,12 @@ class UIManager {
     handleModeSpecificActions(mode) {
         try {
             switch (mode) {
+                case 'dashboard':
+                    // Рендерити Dashboard
+                    if (window.dashboardManager) {
+                        dashboardManager.render();
+                    }
+                    break;
                 case 'library':
                     if (typeof displayLibrary === 'function') {
                         displayLibrary();
@@ -368,10 +374,10 @@ class UIManager {
                 }
             }
 
-            // Цифри 1-7 для переключення режимів (якщо не в input)
-            if (e.altKey && /^[1-7]$/.test(e.key)) {
+            // Alt + цифри для переключення режимів
+            if (e.altKey && /^[1-8]$/.test(e.key)) {
                 e.preventDefault();
-                const modes = ['gemini', 'deepseek', 'image', 'planner', 'memory', 'library', 'settings'];
+                const modes = ['dashboard', 'gemini', 'deepseek', 'image', 'planner', 'memory', 'library', 'settings'];
                 const index = parseInt(e.key) - 1;
                 if (modes[index]) {
                     this.switchMode(modes[index]);
@@ -403,8 +409,25 @@ class UIManager {
     // ========================================
 
     clearChat(mode) {
-        if (!confirm('⚠️ Очистити історію цього чату?')) return;
+        if (window.modalManager) {
+            modalManager.confirm('Очистити історію цього чату?', {
+                title: 'Підтвердження',
+                icon: '🗑️',
+                confirmText: 'Очистити',
+                cancelText: 'Скасувати',
+                danger: true
+            }).then(confirmed => {
+                if (confirmed) {
+                    this.executeClearChat(mode);
+                }
+            });
+        } else {
+            if (!confirm('⚠️ Очистити історію цього чату?')) return;
+            this.executeClearChat(mode);
+        }
+    }
 
+    executeClearChat(mode) {
         try {
             if (mode === 'gemini' && window.geminiChat) {
                 geminiChat.clearHistory();
@@ -541,32 +564,24 @@ class UIManager {
     showSuccessMessage(message) {
         if (window.showToast) {
             showToast(`✅ ${message}`, 'success');
-        } else {
-            alert(message);
         }
     }
 
     showErrorMessage(message) {
         if (window.showToast) {
             showToast(`❌ ${message}`, 'error');
-        } else {
-            alert(message);
         }
     }
 
     showWarningMessage(message) {
         if (window.showToast) {
             showToast(`⚠️ ${message}`, 'warning');
-        } else {
-            alert(message);
         }
     }
 
     showInfoMessage(message) {
         if (window.showToast) {
             showToast(`ℹ️ ${message}`, 'info');
-        } else {
-            alert(message);
         }
     }
 }
@@ -643,4 +658,5 @@ window.escapeHTML = function(text) {
     return div.innerHTML;
 };
 
-console.log('✅ General UI module loaded');
+console.log('✅ General UI module loaded with Dashboard support');
+console.log('💡 Shortcuts: Alt+1 (Dashboard), Alt+2 (Gemini), Alt+3 (DeepSeek)...');
