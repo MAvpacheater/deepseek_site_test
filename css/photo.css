@@ -1,4 +1,4 @@
-/* Image Gallery Styles */
+/* Image Gallery Styles - Dark Professional Theme */
 .image-gallery {
     flex: 1;
     overflow-y: auto;
@@ -7,14 +7,23 @@
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
     align-content: start;
+    background: #0d1117;
 }
 
 .image-item {
-    background: var(--bg-card);
+    background: #161b22;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid #30363d;
+    transition: all 0.3s ease;
     animation: fadeIn 0.5s ease;
+}
+
+.image-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.3);
+    border-color: #58a6ff;
 }
 
 .image-item img {
@@ -22,14 +31,16 @@
     height: 300px;
     object-fit: cover;
     display: block;
+    border-bottom: 1px solid #30363d;
 }
 
 .image-item-footer {
     padding: 15px;
+    background: #161b22;
 }
 
 .image-item-prompt {
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 14px;
     margin-bottom: 10px;
     line-height: 1.4;
@@ -43,21 +54,37 @@
 .image-item-actions button {
     flex: 1;
     padding: 8px;
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
+    font-weight: 500;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
 }
 
 .image-item-actions button:hover {
-    background: var(--accent-secondary);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.4);
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .image-gallery {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
 }
