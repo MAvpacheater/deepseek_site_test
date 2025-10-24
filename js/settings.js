@@ -15,16 +15,30 @@ class SettingsManager {
 
     async loadSettings() {
         try {
-            // API Keys (зашифровані)
+            // API Keys (зашифровані) - використовуємо функції з security.js
             const geminiInput = document.getElementById('geminiApiKey');
             const groqInput = document.getElementById('groqApiKey');
             
-            if (geminiInput && typeof getGeminiApiKey === 'function') {
-                geminiInput.value = getGeminiApiKey();
+            if (geminiInput) {
+                const geminiKey = typeof getGeminiApiKey === 'function' ? 
+                    getGeminiApiKey() : '';
+                geminiInput.value = geminiKey;
+                
+                // Debug
+                if (!geminiKey) {
+                    console.log('Gemini API key not found in storage');
+                }
             }
             
-            if (groqInput && typeof getGroqApiKey === 'function') {
-                groqInput.value = getGroqApiKey();
+            if (groqInput) {
+                const groqKey = typeof getGroqApiKey === 'function' ? 
+                    getGroqApiKey() : '';
+                groqInput.value = groqKey;
+                
+                // Debug
+                if (!groqKey) {
+                    console.log('Groq API key not found in storage');
+                }
             }
 
             // System Prompts
@@ -66,26 +80,58 @@ class SettingsManager {
             const geminiPrompt = document.getElementById('geminiSystemPrompt')?.value.trim();
             const deepseekPrompt = document.getElementById('deepseekSystemPrompt')?.value.trim();
 
-            // Валідація та збереження API ключів (використовуємо security.js)
-            if (geminiKey && typeof saveSettingsSecure === 'function') {
-                // Функція з security.js зробить валідацію та шифрування
-                const validation = validateApiKey(geminiKey, 'gemini');
-                if (!validation.valid) {
-                    if (window.showToast) {
-                        showToast(`⚠️ Gemini: ${validation.message}`, 'error');
+            let hasErrors = false;
+
+            // Валідація та збереження Gemini ключа
+            if (geminiKey) {
+                if (typeof validateApiKey === 'function') {
+                    const validation = validateApiKey(geminiKey, 'gemini');
+                    if (!validation.valid) {
+                        if (window.showToast) {
+                            showToast(`⚠️ Gemini: ${validation.message}`, 'error');
+                        }
+                        hasErrors = true;
+                    } else {
+                        // Зберегти зашифрований ключ
+                        if (typeof encryptApiKey === 'function') {
+                            localStorage.setItem('gemini_api_key', encryptApiKey(geminiKey));
+                            localStorage.setItem('gemini_encrypted', 'true');
+                        } else {
+                            localStorage.setItem('gemini_api_key', geminiKey);
+                        }
                     }
-                    return;
+                } else {
+                    // Fallback якщо немає security.js
+                    localStorage.setItem('gemini_api_key', geminiKey);
                 }
             }
 
-            if (groqKey && typeof validateApiKey === 'function') {
-                const validation = validateApiKey(groqKey, 'groq');
-                if (!validation.valid) {
-                    if (window.showToast) {
-                        showToast(`⚠️ Groq: ${validation.message}`, 'error');
+            // Валідація та збереження Groq ключа
+            if (groqKey) {
+                if (typeof validateApiKey === 'function') {
+                    const validation = validateApiKey(groqKey, 'groq');
+                    if (!validation.valid) {
+                        if (window.showToast) {
+                            showToast(`⚠️ Groq: ${validation.message}`, 'error');
+                        }
+                        hasErrors = true;
+                    } else {
+                        // Зберегти зашифрований ключ
+                        if (typeof encryptApiKey === 'function') {
+                            localStorage.setItem('groq_api_key', encryptApiKey(groqKey));
+                            localStorage.setItem('groq_encrypted', 'true');
+                        } else {
+                            localStorage.setItem('groq_api_key', groqKey);
+                        }
                     }
-                    return;
+                } else {
+                    // Fallback якщо немає security.js
+                    localStorage.setItem('groq_api_key', groqKey);
                 }
+            }
+
+            if (hasErrors) {
+                return;
             }
 
             // Зберегти промпти через appState
@@ -95,11 +141,6 @@ class SettingsManager {
 
             if (deepseekPrompt && window.appState) {
                 appState.setSetting('deepseekSystemPrompt', deepseekPrompt);
-            }
-
-            // Викликати безпечне збереження ключів
-            if (typeof saveSettingsSecure === 'function') {
-                saveSettingsSecure();
             }
 
             if (window.showToast) {
