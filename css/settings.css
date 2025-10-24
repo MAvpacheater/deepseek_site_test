@@ -1,26 +1,26 @@
-/* Settings Styles - Dark Professional */
+/* Settings Styles - Dark Professional Theme */
 .settings-container {
     flex: 1;
     overflow-y: auto;
-    background: var(--bg-primary);
+    background: #0d1117;
 }
 
 .settings-header {
     padding: 24px 32px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
 }
 
 .settings-header h1 {
     font-size: 24px;
     font-weight: 600;
     margin-bottom: 6px;
-    color: var(--text-primary);
+    color: #58a6ff;
     letter-spacing: -0.02em;
 }
 
 .settings-header p {
-    color: var(--text-secondary);
+    color: #6e7681;
     font-size: 14px;
 }
 
@@ -31,16 +31,16 @@
 }
 
 .settings-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 10px;
     padding: 24px;
     margin-bottom: 24px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .settings-section h2 {
-    color: var(--text-primary);
+    color: #58a6ff;
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 20px;
@@ -60,7 +60,7 @@
 
 .setting-item label {
     display: block;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-weight: 500;
     margin-bottom: 8px;
     font-size: 13px;
@@ -70,13 +70,13 @@
 .setting-item textarea {
     width: 100%;
     padding: 10px 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: #0d1117;
+    border: 1px solid #30363d;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 14px;
     font-family: inherit;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .setting-item input[type="password"] {
@@ -87,8 +87,8 @@
 .setting-item input:focus,
 .setting-item textarea:focus {
     outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
 }
 
 .setting-item textarea {
@@ -98,20 +98,20 @@
 
 .setting-item small {
     display: block;
-    color: var(--text-tertiary);
+    color: #6e7681;
     font-size: 12px;
     margin-top: 6px;
     line-height: 1.4;
 }
 
 .setting-item small a {
-    color: var(--accent-primary);
+    color: #58a6ff;
     text-decoration: none;
-    transition: color var(--transition-fast);
+    transition: color 0.2s ease;
 }
 
 .setting-item small a:hover {
-    color: var(--accent-hover);
+    color: #79c0ff;
     text-decoration: underline;
 }
 
@@ -130,29 +130,29 @@
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .save-btn {
-    background: var(--accent-primary);
-    color: var(--bg-primary);
+    background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
 }
 
 .save-btn:hover {
-    background: var(--accent-hover);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
 }
 
 .clear-btn {
     background: rgba(248, 81, 73, 0.15);
-    color: var(--error);
+    color: #f85149;
     border: 1px solid rgba(248, 81, 73, 0.3);
 }
 
 .clear-btn:hover {
     background: rgba(248, 81, 73, 0.25);
-    border-color: var(--error);
+    border-color: #f85149;
 }
 
 /* Statistics */
@@ -164,20 +164,20 @@
 }
 
 .stat-card {
-    background: var(--bg-card);
+    background: #0d1117;
     padding: 16px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 12px;
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-fast);
+    border: 1px solid #30363d;
+    transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-    border-color: var(--accent-primary);
+    border-color: #58a6ff;
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
 }
 
 .stat-icon {
@@ -187,7 +187,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(88, 166, 255, 0.1);
+    background: rgba(88, 166, 255, 0.15);
     border-radius: 8px;
     flex-shrink: 0;
 }
@@ -198,14 +198,14 @@
 }
 
 .stat-label {
-    color: var(--text-secondary);
+    color: #6e7681;
     font-size: 12px;
     margin-bottom: 4px;
     font-weight: 500;
 }
 
 .stat-value {
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 22px;
     font-weight: 700;
     line-height: 1;
@@ -214,19 +214,19 @@
 .reset-stats-btn {
     width: 100%;
     padding: 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #e6edf3;
     cursor: pointer;
     font-weight: 500;
     font-size: 13px;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .reset-stats-btn:hover {
-    border-color: var(--error);
-    color: var(--error);
+    border-color: #f85149;
+    color: #f85149;
     background: rgba(248, 81, 73, 0.05);
 }
 
@@ -235,41 +235,41 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-primary);
+    background: #0d1117;
 }
 
 .library-filters {
     display: flex;
     gap: 8px;
     padding: 16px 24px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
     overflow-x: auto;
 }
 
 .filter-btn {
     padding: 8px 16px;
     background: transparent;
-    border: 1px solid var(--border-color);
+    border: 1px solid #30363d;
     border-radius: 6px;
-    color: var(--text-secondary);
+    color: #6e7681;
     cursor: pointer;
     font-weight: 500;
     font-size: 13px;
     white-space: nowrap;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .filter-btn:hover {
-    border-color: var(--accent-primary);
-    color: var(--text-primary);
-    background: var(--bg-hover);
+    border-color: #58a6ff;
+    color: #e6edf3;
+    background: rgba(88, 166, 255, 0.1);
 }
 
 .filter-btn.active {
     background: rgba(88, 166, 255, 0.15);
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
+    color: #58a6ff;
+    border-color: #58a6ff;
     font-weight: 600;
 }
 
@@ -284,18 +284,18 @@
 }
 
 .library-item {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #161b22;
+    border: 1px solid #30363d;
     border-radius: 10px;
     padding: 16px;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     cursor: pointer;
 }
 
 .library-item:hover {
-    border-color: var(--accent-primary);
+    border-color: #58a6ff;
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
 }
 
 .library-item-header {
@@ -308,13 +308,13 @@
 .library-item-title {
     font-size: 15px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #e6edf3;
     margin-bottom: 4px;
 }
 
 .library-item-meta {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: #6e7681;
 }
 
 .library-item-favorite {
@@ -322,7 +322,7 @@
     border: none;
     font-size: 20px;
     cursor: pointer;
-    transition: transform var(--transition-fast);
+    transition: transform 0.2s ease;
     padding: 0;
     line-height: 1;
 }
@@ -332,7 +332,7 @@
 }
 
 .library-item-preview {
-    color: var(--text-secondary);
+    color: #6e7681;
     font-size: 13px;
     line-height: 1.5;
     margin-bottom: 12px;
@@ -352,8 +352,8 @@
 
 .library-tag {
     padding: 4px 10px;
-    background: rgba(88, 166, 255, 0.1);
-    color: var(--accent-primary);
+    background: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
     border-radius: 12px;
     font-size: 11px;
     font-weight: 500;
@@ -367,40 +367,40 @@
 .library-item-actions button {
     flex: 1;
     padding: 7px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: #0d1117;
+    border: 1px solid #30363d;
     border-radius: 6px;
-    color: var(--text-primary);
+    color: #e6edf3;
     cursor: pointer;
     font-size: 12px;
     font-weight: 500;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .library-item-actions button:hover {
-    background: var(--bg-hover);
-    border-color: var(--accent-primary);
+    background: rgba(88, 166, 255, 0.15);
+    border-color: #58a6ff;
 }
 
 #librarySearch {
     padding: 8px 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: #0d1117;
+    border: 1px solid #30363d;
     border-radius: 6px;
-    color: var(--text-primary);
+    color: #e6edf3;
     font-size: 13px;
     width: 240px;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 #librarySearch:focus {
     outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
 }
 
 #librarySearch::placeholder {
-    color: var(--text-tertiary);
+    color: #6e7681;
 }
 
 /* Responsive */
