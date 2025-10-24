@@ -1,4 +1,4 @@
-// 🧠 Agent Memory System - Refactored to use AppState & StorageManager
+// 🧠 Agent Memory System - ВИПРАВЛЕНО відображення спогадів
 
 class MemoryManager {
     constructor() {
@@ -35,38 +35,6 @@ class MemoryManager {
 
         } catch (error) {
             console.error('Failed to load memories:', error);
-            if (window.errorHandler) {
-                errorHandler.logError({
-                    type: 'memory_error',
-                    message: 'Failed to load memories',
-                    error: error.message,
-                    severity: 'medium'
-                });
-            }
-        }
-    }
-
-    // ========================================
-    // ЗБЕРЕЖЕННЯ СПОГАДІВ
-    // ========================================
-
-    async saveMemories() {
-        try {
-            const memories = window.appState ? appState.getMemories() : [];
-
-            if (window.storageManager) {
-                // Зберегти кожен спогад окремо
-                for (const memory of memories) {
-                    if (memory.id) {
-                        await storageManager.update(storageManager.stores.memories, memory);
-                    }
-                }
-            }
-
-            this.updateMemoryStats();
-
-        } catch (error) {
-            console.error('Failed to save memories:', error);
         }
     }
 
@@ -96,57 +64,79 @@ class MemoryManager {
     }
 
     // ========================================
-    // ВІДОБРАЖЕННЯ СПОГАДІВ
+    // ВІДОБРАЖЕННЯ СПОГАДІВ - ВИПРАВЛЕНО!
     // ========================================
 
     displayMemories() {
         const list = document.getElementById('memoriesList');
-        if (!list) return;
+        if (!list) {
+            console.warn('memoriesList element not found');
+            return;
+        }
 
         const memories = window.appState ? appState.getMemories() : [];
+
+        console.log('📊 Displaying memories:', memories.length);
 
         if (memories.length === 0) {
             list.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">🧠</div>
                     <h3>Пам'ять порожня</h3>
-                    <p>Агент запам'ятає важливу інформацію автоматично</p>
+                    <p>Додай перший спогад або агент запам'ятає автоматично</p>
                 </div>
             `;
             return;
         }
 
         // Сортувати за датою (новіші зверху)
-        const sorted = [...memories].sort((a, b) => 
-            new Date(b.timestamp || b.created) - new Date(a.timestamp || a.created)
-        );
+        const sorted = [...memories].sort((a, b) => {
+            const dateA = a.timestamp || a.created || a.id || 0;
+            const dateB = b.timestamp || b.created || b.id || 0;
+            return dateB - dateA;
+        });
 
-        list.innerHTML = sorted.map(memory => this.createMemoryCard(memory)).join('');
+        // Створити HTML для кожного спогаду
+        const memoriesHTML = sorted.map(memory => this.createMemoryCard(memory)).join('');
+        
+        list.innerHTML = memoriesHTML;
+
+        console.log('✅ Memories displayed successfully');
     }
 
     createMemoryCard(memory) {
         const icon = memory.important ? '⭐' : this.getMemoryIcon(memory.category);
-        const date = this.formatDate(memory.timestamp || memory.created);
+        const date = this.formatDate(memory.timestamp || memory.created || memory.id);
+        const category = memory.category || 'загальне';
+        const tags = memory.tags || [];
+
+        // Безпечний escapeHTML
+        const escapeHTML = (text) => {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
 
         return `
             <div class="memory-card ${memory.important ? 'important' : ''}" data-id="${memory.id}">
                 <div class="memory-header">
                     <div class="memory-icon">${icon}</div>
                     <div class="memory-info">
-                        <div class="memory-title">${this.escapeHTML(memory.title)}</div>
+                        <div class="memory-title">${escapeHTML(memory.title)}</div>
                         <div class="memory-meta">
-                            <span class="memory-category">${memory.category || 'загальне'}</span>
+                            <span class="memory-category">${category}</span>
                             <span class="memory-date">${date}</span>
                         </div>
                     </div>
                     <button class="memory-menu-btn" onclick="memoryManager.toggleMemoryMenu(${memory.id})">⋮</button>
                 </div>
                 
-                <div class="memory-content">${this.escapeHTML(memory.content)}</div>
+                <div class="memory-content">${escapeHTML(memory.content)}</div>
                 
-                ${memory.tags && memory.tags.length > 0 ? `
+                ${tags.length > 0 ? `
                     <div class="memory-tags">
-                        ${memory.tags.map(tag => `<span class="memory-tag">${this.escapeHTML(tag)}</span>`).join('')}
+                        ${tags.map(tag => `<span class="memory-tag">${escapeHTML(tag)}</span>`).join('')}
                     </div>
                 ` : ''}
                 
@@ -223,6 +213,7 @@ class MemoryManager {
                 await storageManager.saveMemory(memory);
             }
 
+            this.updateMemoryStats();
             this.displayMemories();
             this.closeModal('memoryModal');
 
@@ -271,6 +262,7 @@ class MemoryManager {
                 await storageManager.update(storageManager.stores.memories, memory);
             }
 
+            this.updateMemoryStats();
             this.displayMemories();
         }
     }
@@ -292,6 +284,7 @@ class MemoryManager {
                 await storageManager.delete(storageManager.stores.memories, memoryId);
             }
 
+            this.updateMemoryStats();
             this.displayMemories();
 
             if (window.showToast) {
@@ -341,17 +334,27 @@ class MemoryManager {
 
     searchMemories() {
         const query = document.getElementById('memorySearch')?.value.toLowerCase();
-        if (!query) {
+        
+        if (!query || query === '') {
+            // Показати всі спогади
             this.displayMemories();
             return;
         }
 
         const cards = document.querySelectorAll('.memory-card');
+        let visibleCount = 0;
         
         cards.forEach(card => {
             const text = card.textContent.toLowerCase();
-            card.style.display = text.includes(query) ? 'block' : 'none';
+            if (text.includes(query)) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
         });
+
+        console.log(`🔍 Search: "${query}" - found ${visibleCount} memories`);
     }
 
     // ========================================
@@ -418,24 +421,11 @@ class MemoryManager {
                     await storageManager.saveMemory(memory);
                 }
 
-                // Обмежити автоматичні спогади (залишити тільки 50)
-                const memories = window.appState ? appState.getMemories() : [];
-                const autoMemories = memories.filter(m => m.auto);
-                
-                if (autoMemories.length > 50) {
-                    const toRemove = autoMemories[autoMemories.length - 1];
-                    
-                    if (window.appState) {
-                        const index = appState.agent.memory.findIndex(m => m.id === toRemove.id);
-                        if (index !== -1) {
-                            appState.agent.memory.splice(index, 1);
-                        }
-                    }
+                // Оновити відображення
+                this.updateMemoryStats();
+                this.displayMemories();
 
-                    if (window.storageManager) {
-                        await storageManager.delete(storageManager.stores.memories, toRemove.id);
-                    }
-                }
+                console.log('🤖 Auto-remembered:', title);
 
             } catch (error) {
                 console.error('Auto-remember failed:', error);
@@ -479,7 +469,7 @@ class MemoryManager {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'agent-memory.md';
+        a.download = `agent-memory-${Date.now()}.md`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -541,6 +531,8 @@ class MemoryManager {
     }
 
     formatDate(date) {
+        if (!date) return 'невідомо';
+
         const d = new Date(date);
         const now = new Date();
         const diff = now - d;
@@ -578,14 +570,54 @@ class MemoryManager {
         }
     }
 
-    escapeHTML(text) {
-        if (window.sanitizer) {
-            return sanitizer.escapeHTML(text);
+    // ========================================
+    // ТЕСТОВІ ДАНІ (для демонстрації)
+    // ========================================
+
+    addTestMemories() {
+        const testMemories = [
+            {
+                title: 'Перший проект',
+                content: 'Створено AI додаток з використанням Gemini та DeepSeek',
+                important: true
+            },
+            {
+                title: 'Налаштування теми',
+                content: 'Користувач любить темну тему #дизайн',
+                important: false
+            },
+            {
+                title: 'Важливе завдання',
+                content: 'Треба додати функцію експорту даних #todo #фіча',
+                important: true
+            }
+        ];
+
+        testMemories.forEach(test => {
+            const memory = {
+                id: Date.now() + Math.random(),
+                title: test.title,
+                content: test.content,
+                category: this.detectCategory(test.title, test.content),
+                important: test.important,
+                tags: this.extractTags(test.content),
+                timestamp: Date.now() - Math.random() * 86400000,
+                created: new Date().toISOString(),
+                accessed: 0,
+                auto: false
+            };
+
+            if (window.appState) {
+                appState.addMemory(memory);
+            }
+        });
+
+        this.updateMemoryStats();
+        this.displayMemories();
+
+        if (window.showToast) {
+            showToast('✅ Додано 3 тестових спогади!', 'success');
         }
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 }
 
@@ -610,8 +642,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.displayMemories = () => memoryManager.displayMemories();
     window.toggleMemoryMenu = (id) => memoryManager.toggleMemoryMenu(id);
     window.autoRemember = (type, data) => memoryManager.autoRemember(type, data);
+    
+    // Додати тестові дані (для демонстрації)
+    window.addTestMemories = () => memoryManager.addTestMemories();
 
-    console.log('✅ Memory module loaded');
+    console.log('✅ Memory module loaded (FIXED display)');
+    console.log('💡 Використай addTestMemories() для додавання тестових спогадів');
 });
 
 // Експорт класу
