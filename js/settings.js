@@ -1,4 +1,4 @@
-// ⚙️ Settings Module - Refactored to use AppState & StorageManager
+// ⚙️ Settings Module - ВИПРАВЛЕНО
 
 class SettingsManager {
     constructor() {
@@ -15,30 +15,22 @@ class SettingsManager {
 
     async loadSettings() {
         try {
-            // API Keys (зашифровані) - використовуємо функції з security.js
+            // API Keys (зашифровані)
             const geminiInput = document.getElementById('geminiApiKey');
             const groqInput = document.getElementById('groqApiKey');
             
             if (geminiInput) {
                 const geminiKey = typeof getGeminiApiKey === 'function' ? 
-                    getGeminiApiKey() : '';
+                    getGeminiApiKey() : 
+                    localStorage.getItem('gemini_api_key') || '';
                 geminiInput.value = geminiKey;
-                
-                // Debug
-                if (!geminiKey) {
-                    console.log('Gemini API key not found in storage');
-                }
             }
             
             if (groqInput) {
                 const groqKey = typeof getGroqApiKey === 'function' ? 
-                    getGroqApiKey() : '';
+                    getGroqApiKey() : 
+                    localStorage.getItem('groq_api_key') || '';
                 groqInput.value = groqKey;
-                
-                // Debug
-                if (!groqKey) {
-                    console.log('Groq API key not found in storage');
-                }
             }
 
             // System Prompts
@@ -70,7 +62,7 @@ class SettingsManager {
     }
 
     // ========================================
-    // ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ
+    // ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ - ВИПРАВЛЕНО
     // ========================================
 
     async saveSettings() {
@@ -82,7 +74,7 @@ class SettingsManager {
 
             let hasErrors = false;
 
-            // Валідація та збереження Gemini ключа
+            // ВИПРАВЛЕНО: Валідація та збереження Gemini ключа
             if (geminiKey) {
                 if (typeof validateApiKey === 'function') {
                     const validation = validateApiKey(geminiKey, 'gemini');
@@ -94,19 +86,31 @@ class SettingsManager {
                     } else {
                         // Зберегти зашифрований ключ
                         if (typeof encryptApiKey === 'function') {
-                            localStorage.setItem('gemini_api_key', encryptApiKey(geminiKey));
+                            const encrypted = encryptApiKey(geminiKey);
+                            localStorage.setItem('gemini_api_key', encrypted);
                             localStorage.setItem('gemini_encrypted', 'true');
+                            
+                            // ВАЖЛИВО: Оновити в appState
+                            if (window.appState) {
+                                appState.setApiKey('gemini', geminiKey);
+                            }
                         } else {
                             localStorage.setItem('gemini_api_key', geminiKey);
+                            if (window.appState) {
+                                appState.setApiKey('gemini', geminiKey);
+                            }
                         }
                     }
                 } else {
                     // Fallback якщо немає security.js
                     localStorage.setItem('gemini_api_key', geminiKey);
+                    if (window.appState) {
+                        appState.setApiKey('gemini', geminiKey);
+                    }
                 }
             }
 
-            // Валідація та збереження Groq ключа
+            // ВИПРАВЛЕНО: Валідація та збереження Groq ключа
             if (groqKey) {
                 if (typeof validateApiKey === 'function') {
                     const validation = validateApiKey(groqKey, 'groq');
@@ -118,15 +122,27 @@ class SettingsManager {
                     } else {
                         // Зберегти зашифрований ключ
                         if (typeof encryptApiKey === 'function') {
-                            localStorage.setItem('groq_api_key', encryptApiKey(groqKey));
+                            const encrypted = encryptApiKey(groqKey);
+                            localStorage.setItem('groq_api_key', encrypted);
                             localStorage.setItem('groq_encrypted', 'true');
+                            
+                            // ВАЖЛИВО: Оновити в appState
+                            if (window.appState) {
+                                appState.setApiKey('groq', groqKey);
+                            }
                         } else {
                             localStorage.setItem('groq_api_key', groqKey);
+                            if (window.appState) {
+                                appState.setApiKey('groq', groqKey);
+                            }
                         }
                     }
                 } else {
                     // Fallback якщо немає security.js
                     localStorage.setItem('groq_api_key', groqKey);
+                    if (window.appState) {
+                        appState.setApiKey('groq', groqKey);
+                    }
                 }
             }
 
@@ -222,8 +238,23 @@ class SettingsManager {
                 await storageManager.clearAllData();
             }
 
-            // Очистити localStorage
+            // Очистити localStorage (але зберегти API ключі)
+            const geminiKey = localStorage.getItem('gemini_api_key');
+            const groqKey = localStorage.getItem('groq_api_key');
+            const geminiEncrypted = localStorage.getItem('gemini_encrypted');
+            const groqEncrypted = localStorage.getItem('groq_encrypted');
+            
             localStorage.clear();
+            
+            // Відновити API ключі
+            if (geminiKey) {
+                localStorage.setItem('gemini_api_key', geminiKey);
+                if (geminiEncrypted) localStorage.setItem('gemini_encrypted', geminiEncrypted);
+            }
+            if (groqKey) {
+                localStorage.setItem('groq_api_key', groqKey);
+                if (groqEncrypted) localStorage.setItem('groq_encrypted', groqEncrypted);
+            }
 
             // Очистити UI
             this.clearAllUI();
@@ -232,7 +263,7 @@ class SettingsManager {
             await this.loadSettings();
 
             if (window.showToast) {
-                showToast('🗑️ Всі дані видалено!', 'success');
+                showToast('🗑️ Всі дані видалено (API ключі збережено)!', 'success');
             }
 
         } catch (error) {
@@ -395,7 +426,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.importData = () => settingsManager.importData();
     window.showStorageInfo = () => settingsManager.showStorageInfo();
 
-    console.log('✅ Settings module loaded');
+    console.log('✅ Settings module loaded (FIXED)');
 });
 
 // Експорт класу
