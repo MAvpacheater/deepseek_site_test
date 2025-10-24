@@ -28,6 +28,20 @@ class MemoryManager {
             // Завантаження із storageManager
             if (window.storageManager && typeof storageManager.getMemories === "function") {
                 memories = await storageManager.getMemories();
+                console.log('📦 Завантажено з IndexedDB:', memories.length);
+            }
+
+            // Fallback до localStorage
+            if (memories.length === 0) {
+                const localMemories = localStorage.getItem('agent_memories');
+                if (localMemories) {
+                    try {
+                        memories = JSON.parse(localMemories);
+                        console.log('📦 Завантажено з localStorage:', memories.length);
+                    } catch (e) {
+                        console.error('Failed to parse localStorage memories:', e);
+                    }
+                }
             }
 
             // Якщо appState існує — синхронізуємо
@@ -195,15 +209,23 @@ class MemoryManager {
         };
 
         try {
+            // Додати в appState
             window.appState?.addMemory?.(memory);
+            
+            // Зберегти в IndexedDB
             await window.storageManager?.saveMemory?.(memory);
+            
+            // ДОДАНО: Зберегти в localStorage як backup
+            await this.saveToLocalStorage();
 
             this.updateMemoryStats();
             this.displayMemories();
             this.closeModal('memoryModal');
             window.showToast?.('✅ Спогад збережено!', 'success');
+            
+            console.log('💾 Спогад збережено:', memory.title);
         } catch (e) {
-            console.error(e);
+            console.error('❌ Помилка збереження:', e);
             window.showToast?.('❌ Помилка збереження', 'error');
         }
     }
@@ -234,6 +256,9 @@ class MemoryManager {
 
         memory.important = !memory.important;
         await window.storageManager?.update?.(window.storageManager.stores.memories, memory);
+        
+        // ДОДАНО: Зберегти в localStorage
+        await this.saveToLocalStorage();
 
         this.updateMemoryStats();
         this.displayMemories();
@@ -248,6 +273,10 @@ class MemoryManager {
             if (i !== -1) arr.splice(i, 1);
 
             await window.storageManager?.delete?.(window.storageManager.stores.memories, id);
+            
+            // ДОДАНО: Оновити localStorage
+            await this.saveToLocalStorage();
+            
             this.updateMemoryStats();
             this.displayMemories();
 
@@ -268,6 +297,79 @@ class MemoryManager {
             const text = item.textContent.toLowerCase();
             item.style.display = text.includes(query) ? 'flex' : 'none';
         });
+    }
+
+    // ========================================
+    // ЗБЕРЕЖЕННЯ В LOCALSTORAGE (BACKUP)
+    // ========================================
+
+    async saveToLocalStorage() {
+        try {
+            const memories = window.appState?.getMemories?.() || [];
+            localStorage.setItem('agent_memories', JSON.stringify(memories));
+            console.log('💾 Backup в localStorage:', memories.length);
+        } catch (e) {
+            console.error('Failed to save to localStorage:', e);
+        }
+    }
+
+    // ========================================
+    // ЕКСПОРТ/ІМПОРТ
+    // ========================================
+
+    async exportMemories() {
+        const memories = window.appState?.getMemories?.() || [];
+        
+        if (memories.length === 0) {
+            window.showToast?.('⚠️ Немає спогадів для експорту', 'warning');
+            return;
+        }
+
+        const data = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            count: memories.length,
+            memories: memories
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `memories-backup-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        window.showToast?.('✅ Спогади експортовано!', 'success');
+    }
+
+    async clearMemories() {
+        if (!confirm('⚠️ Видалити ВСІ спогади? Цю дію не можна скасувати!')) return;
+
+        try {
+            // Очистити appState
+            if (window.appState && window.appState.agent) {
+                window.appState.agent.memory = [];
+            }
+
+            // Очистити IndexedDB
+            if (window.storageManager) {
+                await window.storageManager.clear(window.storageManager.stores.memories);
+            }
+
+            // Очистити localStorage
+            localStorage.removeItem('agent_memories');
+
+            this.updateMemoryStats();
+            this.displayMemories();
+
+            window.showToast?.('🗑️ Всі спогади видалено', 'success');
+        } catch (e) {
+            console.error('Failed to clear memories:', e);
+            window.showToast?.('❌ Помилка очищення', 'error');
+        }
     }
 
     // ========================================
@@ -341,6 +443,9 @@ class MemoryManager {
             window.appState?.addMemory?.(memory);
         });
 
+        // Зберегти тестові дані
+        this.saveToLocalStorage();
+
         this.updateMemoryStats();
         this.displayMemories();
         window.showToast?.('✅ Додано тестові спогади!', 'success');
@@ -358,8 +463,16 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addMemory = () => memoryManager.addMemory();
     window.saveMemory = () => memoryManager.saveMemory();
     window.searchMemories = () => memoryManager.searchMemories();
-    window.clearMemories = () => memoryManager.clearMemories?.();
+    window.clearMemories = () => memoryManager.clearMemories();
+    window.exportMemories = () => memoryManager.exportMemories();
     window.addTestMemories = () => memoryManager.addTestMemories();
 
-    console.log('✅ Memory module loaded (LIST VIEW)');
+    console.log('✅ Memory module loaded (WITH PERSISTENCE)');
 });
+
+// Автоматичне збереження кожні 30 секунд
+setInterval(() => {
+    if (window.memoryManager) {
+        memoryManager.saveToLocalStorage();
+    }
+}, 30000);
