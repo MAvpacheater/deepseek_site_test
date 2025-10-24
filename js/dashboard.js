@@ -1,4 +1,4 @@
-// 📊 Dashboard Manager - Головна панель
+// 📊 Dashboard Manager - Головна панель з РЕАЛЬНИМИ ДАНИМИ
 
 class DashboardManager {
     constructor() {
@@ -25,8 +25,9 @@ class DashboardManager {
 
         container.innerHTML = '';
 
-        const stats = this.getStats();
-        const activities = this.getRecentActivities();
+        // Отримати РЕАЛЬНІ дані
+        const stats = await this.getStats();
+        const activities = await this.getRecentActivities();
 
         const quickAccessSection = this.createQuickAccessSection(stats);
         container.appendChild(quickAccessSection);
@@ -66,8 +67,8 @@ class DashboardManager {
             subtitle: 'Розумовий асистент',
             description: 'Gemini 2.0 Flash для загальних питань, планування та аналізу',
             requestsCount: stats.geminiRequests,
-            messagesCount: this.getMessagesCount('gemini'),
-            lastActivity: this.getLastActivity('gemini'),
+            messagesCount: stats.geminiMessages,
+            lastActivity: this.getLastActivity('gemini', stats.geminiLastActivity),
             color: '#58a6ff'
         });
 
@@ -78,8 +79,8 @@ class DashboardManager {
             subtitle: 'Генерація коду',
             description: 'Llama 3.3 70B для створення, аналізу та рефакторингу коду',
             requestsCount: stats.deepseekRequests,
-            messagesCount: this.getMessagesCount('deepseek'),
-            lastActivity: this.getLastActivity('deepseek'),
+            messagesCount: stats.deepseekMessages,
+            lastActivity: this.getLastActivity('deepseek', stats.deepseekLastActivity),
             color: '#3fb950'
         });
 
@@ -91,7 +92,7 @@ class DashboardManager {
             description: 'Pollinations.ai для створення унікальних зображень за описом',
             requestsCount: stats.imagesGenerated,
             messagesCount: stats.imagesGenerated,
-            lastActivity: this.getLastActivity('image'),
+            lastActivity: this.getLastActivity('image', stats.imageLastActivity),
             color: '#d29922'
         });
 
@@ -164,9 +165,9 @@ class DashboardManager {
         grid.className = 'stats-overview';
 
         const statsData = [
-            { icon: '✨', value: stats.geminiRequests, label: 'Gemini запитів', color: '#58a6ff', trend: this.calculateTrend('gemini') },
-            { icon: '💻', value: stats.deepseekRequests, label: 'DeepSeek запитів', color: '#3fb950', trend: this.calculateTrend('deepseek') },
-            { icon: '🖼️', value: stats.imagesGenerated, label: 'Згенеровано зображень', color: '#d29922', trend: this.calculateTrend('images') },
+            { icon: '✨', value: stats.geminiRequests, label: 'Gemini запитів', color: '#58a6ff', trend: this.calculateTrend('gemini', stats) },
+            { icon: '💻', value: stats.deepseekRequests, label: 'DeepSeek запитів', color: '#3fb950', trend: this.calculateTrend('deepseek', stats) },
+            { icon: '🖼️', value: stats.imagesGenerated, label: 'Згенеровано зображень', color: '#d29922', trend: this.calculateTrend('images', stats) },
             { icon: '📚', value: stats.savedProjects, label: 'Збережених проектів', color: '#a371f7', trend: null },
             { icon: '🔢', value: this.formatNumber(stats.totalTokens), label: 'Використано токенів', color: '#f85149', trend: null },
             { icon: '📅', value: this.calculateDaysUsed(stats.firstUse), label: 'Днів використання', color: '#8b949e', trend: null }
@@ -244,18 +245,19 @@ class DashboardManager {
                 <div class="dashboard-empty-state">
                     <div class="dashboard-empty-state-icon">⏱️</div>
                     <h3>Немає активності</h3>
-                    <p>Почніть роботу, і тут з’являться події вашої історії.</p>
+                    <p>Почніть роботу, і тут з'являться події вашої історії.</p>
                 </div>
             `;
         } else {
             activities.forEach(act => {
                 const item = document.createElement('div');
                 item.className = `timeline-item ${act.type}`;
+                item.style.setProperty('--timeline-color', act.color || '#58a6ff');
                 item.innerHTML = `
                     <div class="timeline-icon">${act.icon}</div>
                     <div class="timeline-content">
                         <div class="timeline-title">${act.title}</div>
-                        <div class="timeline-desc">${act.description}</div>
+                        <div class="timeline-description">${act.description}</div>
                         <div class="timeline-time">${act.time}</div>
                     </div>
                 `;
@@ -274,7 +276,7 @@ class DashboardManager {
         this.activityFilter = type;
         const buttons = document.querySelectorAll('.filter-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
-        const active = Array.from(buttons).find(b => b.textContent.toLowerCase().includes(type));
+        const active = Array.from(buttons).find(b => b.textContent.toLowerCase().includes(type === 'all' ? 'всі' : type));
         if (active) active.classList.add('active');
 
         const items = document.querySelectorAll('.timeline-item');
@@ -299,10 +301,12 @@ class DashboardManager {
         grid.className = 'quick-actions-grid';
 
         const actions = [
-            { icon: '💬', label: 'Новий чат', action: () => alert('Створення нового чату...') },
-            { icon: '🧠', label: 'AI-аналіз', action: () => alert('Запуск AI аналізу...') },
-            { icon: '📂', label: 'Мої проекти', action: () => alert('Відкриваю проекти...') },
-            { icon: '⚙️', label: 'Налаштування', action: () => alert('Перехід у налаштування...') }
+            { icon: '💬', label: 'Новий чат', action: () => switchMode('gemini') },
+            { icon: '💻', label: 'Створити код', action: () => switchMode('deepseek') },
+            { icon: '🖼️', label: 'Згенерувати зображення', action: () => switchMode('image') },
+            { icon: '📚', label: 'Мої проекти', action: () => switchMode('library') },
+            { icon: '📅', label: 'Планувальник', action: () => switchMode('planner') },
+            { icon: '⚙️', label: 'Налаштування', action: () => switchMode('settings') }
         ];
 
         actions.forEach(a => {
@@ -334,11 +338,39 @@ class DashboardManager {
         info.className = 'system-info';
 
         const uptimeDays = this.calculateDaysUsed(stats.firstUse);
+        const firstUseDate = stats.firstUse ? new Date(stats.firstUse).toLocaleDateString('uk-UA') : 'Сьогодні';
+        
         info.innerHTML = `
-            <p>🧭 Перше використання: ${new Date(stats.firstUse).toLocaleDateString()}</p>
-            <p>📅 Активність триває вже ${uptimeDays} днів</p>
-            <p>🧩 Поточна версія системи: <strong>v2.3.1</strong></p>
-            <p>🕓 Останнє оновлення: ${new Date().toLocaleString()}</p>
+            <div class="system-info-grid">
+                <div class="info-item">
+                    <div class="info-item-icon">🧭</div>
+                    <div class="info-item-content">
+                        <div class="info-item-label">Перше використання</div>
+                        <div class="info-item-value">${firstUseDate}</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-icon">📅</div>
+                    <div class="info-item-content">
+                        <div class="info-item-label">Активність триває</div>
+                        <div class="info-item-value">${uptimeDays} днів</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-icon">🧩</div>
+                    <div class="info-item-content">
+                        <div class="info-item-label">Версія системи</div>
+                        <div class="info-item-value">v2.3.1</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-item-icon">🕓</div>
+                    <div class="info-item-content">
+                        <div class="info-item-label">Останнє оновлення</div>
+                        <div class="info-item-value">${new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                </div>
+            </div>
         `;
 
         section.appendChild(title);
@@ -347,54 +379,279 @@ class DashboardManager {
     }
 
     // ========================================
-    // ДОПОМІЖНІ МЕТОДИ
+    // ДОПОМІЖНІ МЕТОДИ - РЕАЛЬНІ ДАНІ
     // ========================================
 
-    getStats() {
-        return {
-            geminiRequests: 124,
-            deepseekRequests: 78,
-            imagesGenerated: 42,
-            savedProjects: 12,
-            totalTokens: 487213,
-            firstUse: '2024-11-12T10:00:00Z'
+    async getStats() {
+        // Отримати статистику з appState
+        const stats = window.appState ? appState.getStats() : {
+            geminiRequests: 0,
+            deepseekRequests: 0,
+            imagesGenerated: 0,
+            savedProjects: 0,
+            totalTokens: 0,
+            firstUse: Date.now()
         };
+
+        // Додати додаткову інформацію
+        if (window.appState) {
+            const geminiHistory = appState.getGeminiHistory();
+            const deepseekHistory = appState.getDeepSeekHistory();
+            const imageGallery = appState.chat.image.gallery;
+
+            stats.geminiMessages = geminiHistory.length;
+            stats.deepseekMessages = deepseekHistory.length;
+            
+            // Останні активності
+            stats.geminiLastActivity = this.getLastMessageTime(geminiHistory);
+            stats.deepseekLastActivity = this.getLastMessageTime(deepseekHistory);
+            stats.imageLastActivity = imageGallery.length > 0 ? imageGallery[0].timestamp : null;
+        } else {
+            stats.geminiMessages = 0;
+            stats.deepseekMessages = 0;
+            stats.geminiLastActivity = null;
+            stats.deepseekLastActivity = null;
+            stats.imageLastActivity = null;
+        }
+
+        // Отримати збережені проекти з storageManager
+        if (window.storageManager) {
+            try {
+                const conversations = await storageManager.getConversations();
+                const codeProjects = await storageManager.getCodeProjects();
+                stats.savedProjects = conversations.length + codeProjects.length;
+            } catch (error) {
+                console.error('Failed to get saved projects:', error);
+            }
+        }
+
+        return stats;
     }
 
-    getRecentActivities() {
-        return [
-            { type: 'chat', icon: '💬', title: 'Новий чат з Gemini', description: 'Користувач створив нову сесію', time: '2 хв тому' },
-            { type: 'code', icon: '💻', title: 'DeepSeek створив код', description: 'Сгенеровано функцію калькулятора', time: '10 хв тому' },
-            { type: 'system', icon: '⚙️', title: 'Оновлено статистику', description: 'Панель оновила дані', time: '30 хв тому' }
-        ];
+    getLastMessageTime(history) {
+        if (!history || history.length === 0) return null;
+        
+        // Шукати timestamp в останньому повідомленні
+        const lastMessage = history[history.length - 1];
+        return lastMessage.timestamp || lastMessage.created || Date.now();
     }
 
-    getMessagesCount(model) {
-        return Math.floor(Math.random() * 300) + 20;
+    async getRecentActivities() {
+        const activities = [];
+
+        try {
+            // Активність з чатів
+            if (window.appState) {
+                const geminiHistory = appState.getGeminiHistory();
+                const deepseekHistory = appState.getDeepSeekHistory();
+                const imageGallery = appState.chat.image.gallery;
+
+                // Gemini активність
+                if (geminiHistory.length > 0) {
+                    const lastTime = this.getLastMessageTime(geminiHistory);
+                    activities.push({
+                        type: 'chat',
+                        icon: '✨',
+                        color: '#58a6ff',
+                        title: 'Gemini Chat',
+                        description: `${geminiHistory.length} повідомлень`,
+                        time: this.formatTimeAgo(lastTime),
+                        timestamp: lastTime
+                    });
+                }
+
+                // DeepSeek активність
+                if (deepseekHistory.length > 0) {
+                    const lastTime = this.getLastMessageTime(deepseekHistory);
+                    const codeFiles = appState.getAllCodeFiles();
+                    activities.push({
+                        type: 'code',
+                        icon: '💻',
+                        color: '#3fb950',
+                        title: 'DeepSeek Coder',
+                        description: `${Object.keys(codeFiles).length} файлів створено`,
+                        time: this.formatTimeAgo(lastTime),
+                        timestamp: lastTime
+                    });
+                }
+
+                // Image активність
+                if (imageGallery.length > 0) {
+                    const lastImage = imageGallery[0];
+                    activities.push({
+                        type: 'chat',
+                        icon: '🖼️',
+                        color: '#d29922',
+                        title: 'Image Generator',
+                        description: lastImage.prompt.substring(0, 50) + '...',
+                        time: this.formatTimeAgo(lastImage.timestamp),
+                        timestamp: lastImage.timestamp
+                    });
+                }
+
+                // Плани
+                const plans = appState.getPlans();
+                const completedPlans = plans.filter(p => p.status === 'completed');
+                if (completedPlans.length > 0) {
+                    const lastPlan = completedPlans[completedPlans.length - 1];
+                    activities.push({
+                        type: 'system',
+                        icon: '✅',
+                        color: '#3fb950',
+                        title: 'План завершено',
+                        description: lastPlan.title,
+                        time: this.formatTimeAgo(lastPlan.updatedAt || lastPlan.created),
+                        timestamp: lastPlan.updatedAt || lastPlan.created
+                    });
+                }
+
+                // Спогади
+                const memories = appState.getMemories();
+                if (memories.length > 0) {
+                    const lastMemory = memories[0];
+                    activities.push({
+                        type: 'system',
+                        icon: '🧠',
+                        color: '#a371f7',
+                        title: 'Новий спогад',
+                        description: lastMemory.title,
+                        time: this.formatTimeAgo(lastMemory.timestamp),
+                        timestamp: lastMemory.timestamp
+                    });
+                }
+            }
+
+            // Збережені проекти
+            if (window.storageManager) {
+                const conversations = await storageManager.getConversations();
+                if (conversations.length > 0) {
+                    const lastSaved = conversations[conversations.length - 1];
+                    activities.push({
+                        type: 'system',
+                        icon: '💾',
+                        color: '#58a6ff',
+                        title: 'Проект збережено',
+                        description: lastSaved.title,
+                        time: this.formatTimeAgo(lastSaved.createdAt),
+                        timestamp: new Date(lastSaved.createdAt).getTime()
+                    });
+                }
+            }
+
+            // Сортувати за часом (новіші зверху)
+            activities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            // Повернути останні 10
+            return activities.slice(0, 10);
+
+        } catch (error) {
+            console.error('Failed to get activities:', error);
+            return [];
+        }
     }
 
-    getLastActivity(model) {
-        const minutesAgo = Math.floor(Math.random() * 120);
-        return `${minutesAgo} хв тому`;
+    getLastActivity(model, lastActivityTime) {
+        if (!lastActivityTime) {
+            return 'Немає активності';
+        }
+        return this.formatTimeAgo(lastActivityTime);
     }
 
-    calculateTrend(type) {
-        const val = Math.floor(Math.random() * 20 - 10);
-        return val;
+    calculateTrend(type, stats) {
+        // Розрахувати тренд на основі збережених даних
+        const trendKey = `${type}_trend`;
+        const previousValue = parseInt(localStorage.getItem(trendKey) || '0');
+        
+        let currentValue = 0;
+        switch(type) {
+            case 'gemini':
+                currentValue = stats.geminiRequests;
+                break;
+            case 'deepseek':
+                currentValue = stats.deepseekRequests;
+                break;
+            case 'images':
+                currentValue = stats.imagesGenerated;
+                break;
+        }
+
+        if (previousValue === 0) {
+            localStorage.setItem(trendKey, currentValue.toString());
+            return 0;
+        }
+
+        const trend = Math.round(((currentValue - previousValue) / previousValue) * 100);
+        localStorage.setItem(trendKey, currentValue.toString());
+        
+        return trend;
     }
 
     calculateDaysUsed(firstUse) {
+        if (!firstUse) return 1;
         const start = new Date(firstUse);
         const now = new Date();
         const diff = now - start;
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
+        return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
     }
 
     formatNumber(num) {
+        if (!num) return '0';
         return num.toLocaleString('uk-UA');
+    }
+
+    formatTimeAgo(timestamp) {
+        if (!timestamp) return 'невідомо';
+
+        const now = Date.now();
+        const time = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+        const diff = now - time;
+
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return 'щойно';
+        if (minutes < 60) return `${minutes} хв тому`;
+        if (hours < 24) return `${hours} год тому`;
+        if (days < 7) return `${days} дн тому`;
+        if (days < 30) return `${Math.floor(days / 7)} тиж тому`;
+        
+        return new Date(time).toLocaleDateString('uk-UA');
     }
 }
 
-// Ініціалізація
+// ========================================
+// ІНІЦІАЛІЗАЦІЯ
+// ========================================
+
 const dashboardManager = new DashboardManager();
-document.addEventListener('DOMContentLoaded', () => dashboardManager.render());
+
+// Автоматичне оновлення кожні 30 секунд
+setInterval(() => {
+    const dashboardMode = document.getElementById('dashboardMode');
+    if (dashboardMode && dashboardMode.classList.contains('active')) {
+        dashboardManager.render();
+    }
+}, 30000);
+
+// Рендерити при переключенні на dashboard
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.appState) {
+        appState.on('mode:change', ({ newMode }) => {
+            if (newMode === 'dashboard') {
+                setTimeout(() => dashboardManager.render(), 100);
+            }
+        });
+    }
+    
+    // Початковий рендер якщо dashboard активний
+    const dashboardMode = document.getElementById('dashboardMode');
+    if (dashboardMode && dashboardMode.classList.contains('active')) {
+        dashboardManager.render();
+    }
+});
+
+// Експорт
+window.dashboardManager = dashboardManager;
+
+console.log('✅ Dashboard Manager loaded with REAL DATA');
