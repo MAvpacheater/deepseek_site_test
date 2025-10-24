@@ -17,7 +17,7 @@
             rgba(22, 27, 34, 0.92) 50%,
             rgba(13, 17, 23, 0.95) 100%
         ),
-        url('https://github.com/MAvpacheater/deepseek_site_test/blob/main/img/img7.png') center/cover no-repeat fixed;
+        url('../img/img7.png') center/cover no-repeat fixed;
     
     /* Альтернативний варіант з паттерном */
     background-blend-mode: overlay;
@@ -94,7 +94,8 @@
             rgba(22, 27, 34, 0.92) 50%,
             rgba(13, 17, 23, 0.95) 100%
         ),
-        url('https://github.com/MAvpacheater/deepseek_site_test/blob/main/img/img7.png')
+        url('../img/img7.png') center/cover no-repeat fixed;
+}
 
 /* DeepSeek Messages - специфічний стиль */
 #deepseekMessages {
@@ -105,7 +106,7 @@
             rgba(22, 27, 34, 0.92) 50%,
             rgba(13, 17, 23, 0.95) 100%
         ),
-        url('https://github.com/MAvpacheater/deepseek_site_test/blob/main/img/img7.png') center/cover no-repeat fixed;
+        url('../img/img1') center/cover no-repeat fixed;
 }
 
 /* Анімація появи повідомлень */
@@ -184,7 +185,7 @@ body.light-theme .messages {
             rgba(246, 248, 250, 0.92) 50%,
             rgba(255, 255, 255, 0.95) 100%
         ),
-        url('../img/img1') center/cover no-repeat fixed;
+        url('../img/img7.png') center/cover no-repeat fixed;
 }
 
 body.light-theme .messages::before {
