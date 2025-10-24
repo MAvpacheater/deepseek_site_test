@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/photo.css">
     <link rel="stylesheet" href="css/planner.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
     
     <!-- Prism.js -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
@@ -25,7 +27,11 @@
             </div>
             
             <div class="sidebar-menu">
-                <button class="menu-btn active" onclick="switchMode('gemini')">
+                <button class="menu-btn active" onclick="switchMode('dashboard')">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-text">Dashboard</span>
+                </button>
+                <button class="menu-btn" onclick="switchMode('gemini')">
                     <span class="menu-icon">✨</span>
                     <span class="menu-text">Gemini Chat</span>
                 </button>
@@ -74,9 +80,19 @@
                 </button>
             </div>
         </div>
-
+        <div class="mode-content active" id="dashboardMode">
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <h1>📊 Dashboard</h1>
+                    <p>Швидкий огляд вашої активності та статистики</p>
+                </div>
+                <div class="dashboard-content" id="dashboardContent">
+                    <!-- Dashboard content буде рендеритись тут через JS -->
+                </div>
+            </div>
+        </div>
         <!-- Gemini Chat -->
-        <div class="mode-content active" id="geminiMode">
+        <div class="mode-content" id="geminiMode">
             <div class="chat-section full-width">
                 <div class="header">
                     <div class="header-left">
@@ -463,6 +479,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <script src="js/dashboard.js"></script>
     <script src="js/modal-manager.js"></script>
     <script src="js/general.js"></script>
     <script src="js/settings.js"></script>
