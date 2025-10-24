@@ -220,26 +220,50 @@
 }
 
 .memory-card {
-    background: #161b22;
-    border-radius: 12px;
-    padding: 20px;
+    background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
+    border-radius: 16px;
+    padding: 24px;
     border: 2px solid #30363d;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    min-height: 200px;
+    min-height: 220px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.memory-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #58a6ff 0%, #1f6feb 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .memory-card:hover {
     border-color: #58a6ff;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(88, 166, 255, 0.3);
+}
+
+.memory-card:hover::before {
+    opacity: 1;
 }
 
 .memory-card.important {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.05) 100%);
     border-left: 4px solid #ffc107;
+    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.2);
+}
+
+.memory-card.important:hover {
+    box-shadow: 0 12px 32px rgba(255, 193, 7, 0.4);
 }
 
 .memory-header {
@@ -250,14 +274,21 @@
 }
 
 .memory-icon {
-    font-size: 28px;
-    min-width: 40px;
-    height: 40px;
+    font-size: 32px;
+    min-width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(88, 166, 255, 0.1);
-    border-radius: 10px;
+    background: rgba(88, 166, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.memory-card:hover .memory-icon {
+    transform: scale(1.1);
+    background: rgba(88, 166, 255, 0.25);
 }
 
 .memory-info {
@@ -266,11 +297,13 @@
 }
 
 .memory-title {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 19px;
+    font-weight: 700;
     color: #e6edf3;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     word-wrap: break-word;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
 }
 
 .memory-meta {
@@ -282,11 +315,15 @@
 }
 
 .memory-category {
-    background: rgba(88, 166, 255, 0.15);
-    padding: 4px 10px;
-    border-radius: 12px;
+    background: rgba(88, 166, 255, 0.2);
+    padding: 5px 12px;
+    border-radius: 14px;
     color: #58a6ff;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(88, 166, 255, 0.1);
 }
 
 .memory-date {
@@ -332,12 +369,20 @@
 }
 
 .memory-tag {
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: rgba(88, 166, 255, 0.15);
     color: #58a6ff;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 500;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.memory-tag:hover {
+    background: rgba(88, 166, 255, 0.25);
+    border-color: rgba(88, 166, 255, 0.4);
+    transform: translateY(-2px);
 }
 
 .memory-actions {
@@ -350,20 +395,26 @@
 }
 
 .memory-actions button {
-    padding: 8px 12px;
-    background: #0d1117;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #1c2128 0%, #0d1117 100%);
     border: 1px solid #30363d;
-    border-radius: 6px;
+    border-radius: 8px;
     color: #e6edf3;
     cursor: pointer;
     font-size: 13px;
+    font-weight: 600;
     transition: all 0.2s ease;
     text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .memory-actions button:hover {
     background: rgba(88, 166, 255, 0.15);
     border-color: #58a6ff;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
 }
 
 /* Agent Status */
