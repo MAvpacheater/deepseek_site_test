@@ -1,4 +1,4 @@
-// 📦 App State Manager - Централізоване управління станом додатку
+// 📦 App State Manager - ВИПРАВЛЕНО timestamp проблему
 
 class AppState {
     constructor() {
@@ -224,15 +224,15 @@ class AppState {
     }
 
     // ========================================
-    // CHAT STATE MANAGEMENT
+    // CHAT STATE MANAGEMENT - ВИПРАВЛЕНО
     // ========================================
 
-    // Gemini
+    // Gemini - ВИПРАВЛЕНО: без timestamp
     addGeminiMessage(role, content) {
         const message = {
-            role,
-            parts: [{ text: content }],
-            timestamp: Date.now()
+            role: role,
+            parts: [{ text: content }]
+            // ВИДАЛЕНО timestamp - Gemini API його не приймає!
         };
 
         this.chat.gemini.history.push(message);
@@ -265,9 +265,9 @@ class AppState {
     // DeepSeek
     addDeepSeekMessage(role, content) {
         const message = {
-            role,
-            content,
-            timestamp: Date.now()
+            role: role,
+            content: content
+            // DeepSeek (Groq) теж не потребує timestamp в історії
         };
 
         this.chat.deepseek.history.push(message);
@@ -667,28 +667,28 @@ class AppState {
 
 const appState = new AppState();
 
-// Експортувати в window для сумісності
+// Експортувати в window
 window.appState = appState;
 
-// Compatibility layer - backward compatibility з глобальними змінними
+// Compatibility layer
 Object.defineProperty(window, 'geminiHistory', {
     get: () => appState.getGeminiHistory(),
     set: (value) => {
-        console.warn('Direct assignment to geminiHistory is deprecated. Use appState.addGeminiMessage()');
+        console.warn('Direct assignment to geminiHistory is deprecated');
     }
 });
 
 Object.defineProperty(window, 'deepseekHistory', {
     get: () => appState.getDeepSeekHistory(),
     set: (value) => {
-        console.warn('Direct assignment to deepseekHistory is deprecated. Use appState.addDeepSeekMessage()');
+        console.warn('Direct assignment to deepseekHistory is deprecated');
     }
 });
 
 Object.defineProperty(window, 'codeFiles', {
     get: () => appState.getAllCodeFiles(),
     set: (value) => {
-        console.warn('Direct assignment to codeFiles is deprecated. Use appState.setCodeFile()');
+        console.warn('Direct assignment to codeFiles is deprecated');
     }
 });
 
@@ -700,7 +700,7 @@ Object.defineProperty(window, 'currentMode', {
 Object.defineProperty(window, 'stats', {
     get: () => appState.getStats(),
     set: (value) => {
-        console.warn('Direct assignment to stats is deprecated. Use appState.setStat()');
+        console.warn('Direct assignment to stats is deprecated');
     }
 });
 
@@ -708,7 +708,6 @@ Object.defineProperty(window, 'stats', {
 // HELPER FUNCTIONS
 // ========================================
 
-// Оновити UI елементи при зміні стану
 appState.on('stat:increment', ({ statName, value }) => {
     const element = document.getElementById(`stat${statName.charAt(0).toUpperCase() + statName.slice(1).replace(/([A-Z])/g, match => match)}`);
     if (element) {
@@ -724,7 +723,6 @@ appState.on('theme:change', ({ theme }) => {
 });
 
 appState.on('mode:change', ({ newMode }) => {
-    // Оновити активну кнопку в меню
     document.querySelectorAll('.menu-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -740,4 +738,4 @@ setInterval(() => {
     appState.saveStats();
 }, 30000);
 
-console.log('✅ App State Manager initialized');
+console.log('✅ App State Manager initialized (FIXED timestamp)');
