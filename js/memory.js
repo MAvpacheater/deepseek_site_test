@@ -1,4 +1,4 @@
-// 🧠 Agent Memory System - FIXED DISPLAY (2025 version)
+// 🧠 Agent Memory System - LIST VIEW (2025 version)
 
 class MemoryManager {
     constructor() {
@@ -64,7 +64,7 @@ class MemoryManager {
     }
 
     // ========================================
-    // ВІДОБРАЖЕННЯ СПОГАДІВ
+    // ВІДОБРАЖЕННЯ СПОГАДІВ - ВИПРАВЛЕНО НА СПИСОК
     // ========================================
 
     displayMemories() {
@@ -92,15 +92,21 @@ class MemoryManager {
         // Сортувати за датою
         const sorted = [...memories].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-        list.innerHTML = sorted.map(memory => this.createMemoryCard(memory)).join('');
-        console.log('✅ Спогади відображено');
+        // ВИПРАВЛЕНО: Створюємо список замість карток
+        list.innerHTML = `
+            <div class="memory-list-container">
+                ${sorted.map(memory => this.createMemoryListItem(memory)).join('')}
+            </div>
+        `;
+        
+        console.log('✅ Спогади відображено списком');
     }
 
     // ========================================
-    // СТВОРЕННЯ КАРТКИ СПОГАДУ
+    // СТВОРЕННЯ ЕЛЕМЕНТА СПИСКУ - НОВИЙ МЕТОД
     // ========================================
 
-    createMemoryCard(memory) {
+    createMemoryListItem(memory) {
         const icon = memory.important ? '⭐' : this.getMemoryIcon(memory.category);
         const date = this.formatDate(memory.timestamp || memory.created || memory.id);
         const category = memory.category || 'загальне';
@@ -113,33 +119,35 @@ class MemoryManager {
         };
 
         return `
-            <div class="memory-card ${memory.important ? 'important' : ''}" data-id="${memory.id}">
-                <div class="memory-header">
-                    <div class="memory-icon">${icon}</div>
-                    <div class="memory-info">
-                        <div class="memory-title">${escapeHTML(memory.title)}</div>
-                        <div class="memory-meta">
+            <div class="memory-list-item ${memory.important ? 'important' : ''}" data-id="${memory.id}">
+                <div class="memory-list-left">
+                    <div class="memory-list-icon">${icon}</div>
+                </div>
+                
+                <div class="memory-list-content">
+                    <div class="memory-list-header">
+                        <h3 class="memory-list-title">${escapeHTML(memory.title)}</h3>
+                        <div class="memory-list-meta">
                             <span class="memory-category">${category}</span>
                             <span class="memory-date">${date}</span>
                         </div>
                     </div>
-                    <button class="memory-menu-btn" onclick="memoryManager.toggleMemoryMenu(${memory.id})">⋮</button>
+                    
+                    <p class="memory-list-text">${escapeHTML(memory.content)}</p>
+                    
+                    ${tags.length > 0 ? `
+                        <div class="memory-tags">
+                            ${tags.map(tag => `<span class="memory-tag">${escapeHTML(tag)}</span>`).join('')}
+                        </div>
+                    ` : ''}
                 </div>
-
-                <div class="memory-content">${escapeHTML(memory.content)}</div>
-
-                ${tags.length > 0 ? `
-                    <div class="memory-tags">
-                        ${tags.map(tag => `<span class="memory-tag">${escapeHTML(tag)}</span>`).join('')}
-                    </div>
-                ` : ''}
-
-                <div class="memory-actions" id="memory-menu-${memory.id}" style="display: none;">
-                    <button onclick="memoryManager.editMemory(${memory.id})">✏️ Редагувати</button>
-                    <button onclick="memoryManager.toggleImportant(${memory.id})">
-                        ${memory.important ? '☆ Зняти важливість' : '⭐ Важливо'}
+                
+                <div class="memory-list-actions">
+                    <button class="memory-action-btn" onclick="memoryManager.editMemory(${memory.id})" title="Редагувати">✏️</button>
+                    <button class="memory-action-btn" onclick="memoryManager.toggleImportant(${memory.id})" title="${memory.important ? 'Зняти важливість' : 'Важливо'}">
+                        ${memory.important ? '☆' : '⭐'}
                     </button>
-                    <button onclick="memoryManager.deleteMemory(${memory.id})">🗑️ Видалити</button>
+                    <button class="memory-action-btn delete" onclick="memoryManager.deleteMemory(${memory.id})" title="Видалити">🗑️</button>
                 </div>
             </div>
         `;
@@ -200,6 +208,25 @@ class MemoryManager {
         }
     }
 
+    async editMemory(id) {
+        const memories = window.appState?.getMemories?.() || [];
+        const memory = memories.find(m => m.id === id);
+        if (!memory) return;
+
+        const modal = document.getElementById('memoryModal');
+        if (modal) modal.classList.add('active');
+
+        document.getElementById('memoryTitle').value = memory.title;
+        document.getElementById('memoryContent').value = memory.content;
+        document.getElementById('memoryImportant').checked = memory.important;
+
+        // Видалити старий спогад
+        const arr = window.appState?.agent?.memory || [];
+        const i = arr.findIndex(m => m.id === id);
+        if (i !== -1) arr.splice(i, 1);
+        await window.storageManager?.delete?.(window.storageManager.stores.memories, id);
+    }
+
     async toggleImportant(id) {
         const memories = window.appState?.getMemories?.() || [];
         const memory = memories.find(m => m.id === id);
@@ -236,10 +263,10 @@ class MemoryManager {
 
     searchMemories() {
         const query = document.getElementById('memorySearch')?.value.toLowerCase() || '';
-        const cards = document.querySelectorAll('.memory-card');
-        cards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            card.style.display = text.includes(query) ? 'block' : 'none';
+        const items = document.querySelectorAll('.memory-list-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(query) ? 'flex' : 'none';
         });
     }
 
@@ -334,5 +361,5 @@ window.addEventListener('DOMContentLoaded', () => {
     window.clearMemories = () => memoryManager.clearMemories?.();
     window.addTestMemories = () => memoryManager.addTestMemories();
 
-    console.log('✅ Memory module loaded (display fixed)');
+    console.log('✅ Memory module loaded (LIST VIEW)');
 });
