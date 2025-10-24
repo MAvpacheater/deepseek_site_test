@@ -94,8 +94,7 @@
             rgba(22, 27, 34, 0.92) 50%,
             rgba(13, 17, 23, 0.95) 100%
         ),
-        url('../img/img1') center/cover no-repeat fixed;
-}
+        url('https://github.com/MAvpacheater/deepseek_site_test/blob/main/img/img7.png')
 
 /* DeepSeek Messages - специфічний стиль */
 #deepseekMessages {
@@ -106,7 +105,7 @@
             rgba(22, 27, 34, 0.92) 50%,
             rgba(13, 17, 23, 0.95) 100%
         ),
-        url('../img/img1') center/cover no-repeat fixed;
+        url('https://github.com/MAvpacheater/deepseek_site_test/blob/main/img/img7.png') center/cover no-repeat fixed;
 }
 
 /* Анімація появи повідомлень */
