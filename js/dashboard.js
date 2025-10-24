@@ -202,9 +202,6 @@ class DashboardManager {
                 <div class="stat-card-value" style="color: ${stat.color}">${stat.value}</div>
                 <div class="stat-card-label">${stat.label}</div>
             </div>
-            <div class="stat-card-footer">
-                <span>📊</span><span>Загальна статистика</span>
-            </div>
         `;
         return card;
     }
