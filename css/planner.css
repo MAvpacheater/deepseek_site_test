@@ -1,4 +1,4 @@
-/* Planner & Memory Styles - Dark Professional Theme */
+/* Planner & Memory Styles - Dark Professional Theme - FIXED */
 
 .planner-container,
 .memory-container {
@@ -6,12 +6,13 @@
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+    overflow: hidden; /* ВИПРАВЛЕНО: запобігає обрізанню */
 }
 
 .planner-content,
 .memory-content {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* ВИПРАВЛЕНО: дозволяє скролити весь контент */
     padding: 30px;
 }
 
@@ -21,6 +22,8 @@
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 20px;
     align-content: start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
 }
 
 .plan-card {
@@ -175,7 +178,7 @@
     border-color: #58a6ff;
 }
 
-/* Memory Styles */
+/* Memory Styles - ВИПРАВЛЕНО */
 .memory-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -212,6 +215,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 15px;
+    margin-bottom: 30px; /* ДОДАНО */
+    padding-bottom: 20px; /* ДОДАНО */
 }
 
 .memory-card {
@@ -221,6 +226,7 @@
     border: 2px solid #30363d;
     transition: all 0.3s ease;
     cursor: pointer;
+    min-height: 200px; /* ДОДАНО */
 }
 
 .memory-card:hover {
@@ -413,6 +419,8 @@
     padding: 30px;
     width: 100%;
     max-width: 500px;
+    max-height: 90vh; /* ДОДАНО */
+    overflow-y: auto; /* ДОДАНО */
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     border: 2px solid #30363d;
     animation: modalSlideIn 0.3s ease;
@@ -533,6 +541,11 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .planner-content,
+    .memory-content {
+        padding: 20px 16px;
+    }
+    
     .plans-grid,
     .memories-list {
         grid-template-columns: 1fr;
@@ -544,5 +557,35 @@
     
     .modal-content {
         max-width: 90%;
+        padding: 20px;
     }
+}
+
+/* Empty State для Memory */
+.memory-content .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px; /* ДОДАНО */
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #e6edf3;
+}
+
+.empty-state p {
+    font-size: 14px;
+    opacity: 0.7;
+    color: #8b949e;
 }
