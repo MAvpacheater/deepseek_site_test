@@ -1,4 +1,4 @@
-// 💻 DeepSeek Coder - Refactored & Enhanced
+// 💻 DeepSeek Coder - ВИПРАВЛЕНО
 
 class DeepSeekCoder {
     constructor() {
@@ -47,7 +47,9 @@ class DeepSeekCoder {
 
         // Підписатися на зміни в appState
         if (window.appState) {
-            appState.on('deepseek:message', () => this.renderMessages());
+            appState.on('deepseek:message', () => {
+                // НЕ рендерити тут - вже зроблено
+            });
             appState.on('deepseek:clear', () => this.clearUI());
             appState.on('codeFile:set', () => this.displayCodeFiles());
         }
@@ -185,7 +187,7 @@ class DeepSeekCoder {
                         },
                         body: JSON.stringify(requestBody),
                         signal: this.abortController.signal,
-                        timeout: 45000 // DeepSeek може бути повільніший
+                        timeout: 45000
                     }
                 );
             } else {
@@ -423,6 +425,7 @@ class DeepSeekCoder {
             appState.addDeepSeekMessage('user', content);
         }
         
+        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
         this.renderMessage(content, 'user');
         this.scrollToBottom();
     }
@@ -431,6 +434,7 @@ class DeepSeekCoder {
         if (window.appState) {
             appState.addDeepSeekMessage('assistant', content);
         }
+        // НЕ рендерити тут - зробимо в processResponse
     }
 
     renderMessage(text, sender) {
@@ -925,10 +929,12 @@ class DeepSeekCoder {
             message += error.message || 'Щось пішло не так';
         }
 
+        // ВИПРАВЛЕНО: Показати toast ОДИН раз
         if (window.showToast) {
             showToast(message, 'error', 7000);
         }
 
+        // ВИПРАВЛЕНО: Додати в чат ОДИН раз
         this.renderMessage(message, 'assistant');
     }
 
@@ -994,4 +1000,4 @@ document.addEventListener('DOMContentLoaded', () => {
 window.DeepSeekCoder = DeepSeekCoder;
 window.deepseekCoder = deepseekCoder;
 
-console.log('✅ DeepSeek Coder module loaded');
+console.log('✅ DeepSeek Coder module loaded (FIXED)');
