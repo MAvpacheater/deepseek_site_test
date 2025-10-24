@@ -329,6 +329,21 @@ class LibraryManager {
 
         const mode = conv.mode || 'gemini';
 
+        // Показати модальне вікно з попередженням
+        if (window.modalManager) {
+            const confirmed = await modalManager.confirm(
+                `Завантажити розмову "${conv.title}"?\n\nПоточна історія чату буде замінена.`,
+                {
+                    title: '📖 Відкрити розмову',
+                    icon: '💬',
+                    confirmText: 'Відкрити',
+                    cancelText: 'Скасувати'
+                }
+            );
+
+            if (!confirmed) return;
+        }
+
         // Завантажити розмову в appState
         if (window.appState) {
             if (mode === 'gemini') {
@@ -362,6 +377,21 @@ class LibraryManager {
                 showToast('❌ Проект не знайдено', 'error');
             }
             return;
+        }
+
+        // Показати модальне вікно з попередженням
+        if (window.modalManager) {
+            const confirmed = await modalManager.confirm(
+                `Завантажити проект "${project.title}"?\n\nПоточні файли коду будуть замінені.`,
+                {
+                    title: '📖 Відкрити проект',
+                    icon: '💻',
+                    confirmText: 'Відкрити',
+                    cancelText: 'Скасувати'
+                }
+            );
+
+            if (!confirmed) return;
         }
 
         // Завантажити файли в appState
@@ -457,7 +487,26 @@ class LibraryManager {
     }
 
     async deleteItem(id, type) {
-        if (!confirm('⚠️ Видалити цей елемент?')) return;
+        // Використати modalManager для підтвердження
+        let confirmed = false;
+
+        if (window.modalManager) {
+            confirmed = await modalManager.confirm(
+                'Цей елемент буде видалено назавжди!',
+                {
+                    title: '⚠️ Видалити елемент?',
+                    icon: '🗑️',
+                    confirmText: 'Так, видалити',
+                    cancelText: 'Скасувати',
+                    danger: true
+                }
+            );
+        } else {
+            // Fallback на стандартний confirm
+            confirmed = window.confirm('⚠️ Видалити цей елемент? Цю дію не можна скасувати!');
+        }
+
+        if (!confirmed) return;
 
         try {
             const storeName = type === 'conversation' ? 
