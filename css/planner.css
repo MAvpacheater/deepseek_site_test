@@ -53,158 +53,134 @@
 }
 
 /* ========================================
-   MEMORY LIST - СПИСОК СПОГАДІВ
+   MEMORY LIST - ГРІД ЯК У ПЛАНАХ
    ======================================== */
 
 .memories-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
     margin-bottom: 30px;
     padding-bottom: 20px;
 }
 
 .memory-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: contents;
 }
 
 /* ========================================
-   MEMORY LIST ITEM - ЕЛЕМЕНТ СПИСКУ
+   MEMORY CARD - КАРТКА ЯК У ПЛАНАХ
    ======================================== */
 
 .memory-list-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
-    border: 2px solid #30363d;
+    background: #161b22;
     border-radius: 12px;
-    padding: 20px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    border-left: 4px solid #58a6ff;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.memory-list-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(180deg, #58a6ff 0%, #1f6feb 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
 }
 
 .memory-list-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.3);
     border-color: #58a6ff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.2);
-}
-
-.memory-list-item:hover::before {
-    opacity: 1;
 }
 
 .memory-list-item.important {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
-    border-color: rgba(255, 193, 7, 0.3);
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, #161b22 100%);
 }
 
-.memory-list-item.important::before {
-    background: linear-gradient(180deg, #ffc107 0%, #ff9800 100%);
-    opacity: 1;
+.memory-list-item.important:hover {
+    box-shadow: 0 8px 24px rgba(255, 193, 7, 0.3);
 }
 
-/* Icon */
+/* Header з іконкою */
 .memory-list-left {
-    flex-shrink: 0;
+    display: none;
 }
 
-.memory-list-icon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    background: rgba(88, 166, 255, 0.15);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
-}
-
-/* Content */
 .memory-list-content {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
 }
 
 .memory-list-header {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.memory-list-icon {
+    font-size: 20px;
+    flex-shrink: 0;
 }
 
 .memory-list-title {
-    font-size: 18px;
-    font-weight: 700;
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
     color: #e6edf3;
     margin: 0;
     line-height: 1.3;
     word-wrap: break-word;
 }
 
+/* Meta інформація */
 .memory-list-meta {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
+    margin-bottom: 8px;
     flex-wrap: wrap;
 }
 
 .memory-category {
     background: rgba(88, 166, 255, 0.2);
-    padding: 4px 10px;
-    border-radius: 12px;
+    padding: 3px 8px;
+    border-radius: 10px;
     color: #58a6ff;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .memory-date {
-    font-size: 12px;
-    color: #8b949e;
+    font-size: 11px;
+    color: #6e7681;
 }
 
+/* Текст спогаду */
 .memory-list-text {
     color: #8b949e;
-    font-size: 14px;
-    line-height: 1.6;
-    margin: 0 0 12px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 10px 0;
     word-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 /* Tags */
 .memory-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
+    gap: 4px;
+    margin-bottom: 10px;
 }
 
 .memory-tag {
-    padding: 4px 10px;
+    padding: 3px 8px;
     background: rgba(88, 166, 255, 0.15);
     color: #58a6ff;
-    border-radius: 12px;
-    font-size: 11px;
+    border-radius: 10px;
+    font-size: 10px;
     font-weight: 600;
     border: 1px solid rgba(88, 166, 255, 0.2);
     transition: all 0.2s ease;
@@ -218,18 +194,19 @@
 /* Actions */
 .memory-list-actions {
     display: flex;
-    gap: 8px;
-    flex-shrink: 0;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #30363d;
 }
 
 .memory-action-btn {
-    width: 36px;
-    height: 36px;
-    background: rgba(88, 166, 255, 0.1);
+    flex: 1;
+    padding: 7px;
+    background: #0d1117;
     border: 1px solid #30363d;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #e6edf3;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -238,13 +215,14 @@
 }
 
 .memory-action-btn:hover {
-    background: rgba(88, 166, 255, 0.2);
+    background: rgba(88, 166, 255, 0.15);
     border-color: #58a6ff;
-    transform: scale(1.1);
+    color: #58a6ff;
+    transform: translateY(-1px);
 }
 
 .memory-action-btn.delete:hover {
-    background: rgba(248, 81, 73, 0.2);
+    background: rgba(248, 81, 73, 0.15);
     border-color: #f85149;
     color: #f85149;
 }
