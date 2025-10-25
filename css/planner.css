@@ -1,4 +1,4 @@
-/* Planner & Memory Styles - Dark Professional Theme - FULL */
+/* Planner & Memory Styles - Dark Professional Theme - ПОВНИЙ */
 
 .planner-container,
 .memory-container {
@@ -16,7 +16,243 @@
     padding: 30px;
 }
 
-/* Plans Grid */
+/* ========================================
+   MEMORY STYLES - КАРТКИ СПОГАДІВ
+   ======================================== */
+
+.memory-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.memory-search {
+    margin-bottom: 20px;
+}
+
+#memorySearch {
+    width: 100%;
+    padding: 12px 16px;
+    background: #161b22;
+    border: 2px solid #30363d;
+    border-radius: 8px;
+    color: #e6edf3;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+#memorySearch:focus {
+    outline: none;
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+#memorySearch::placeholder {
+    color: #6e7681;
+}
+
+/* ========================================
+   MEMORY LIST - СПИСОК СПОГАДІВ
+   ======================================== */
+
+.memories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+}
+
+.memory-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ========================================
+   MEMORY LIST ITEM - ЕЛЕМЕНТ СПИСКУ
+   ======================================== */
+
+.memory-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
+    border: 2px solid #30363d;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.memory-list-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #58a6ff 0%, #1f6feb 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.memory-list-item:hover {
+    border-color: #58a6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.2);
+}
+
+.memory-list-item:hover::before {
+    opacity: 1;
+}
+
+.memory-list-item.important {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.memory-list-item.important::before {
+    background: linear-gradient(180deg, #ffc107 0%, #ff9800 100%);
+    opacity: 1;
+}
+
+/* Icon */
+.memory-list-left {
+    flex-shrink: 0;
+}
+
+.memory-list-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: rgba(88, 166, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
+}
+
+/* Content */
+.memory-list-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.memory-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.memory-list-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e6edf3;
+    margin: 0;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+.memory-list-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.memory-category {
+    background: rgba(88, 166, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    color: #58a6ff;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.memory-date {
+    font-size: 12px;
+    color: #8b949e;
+}
+
+.memory-list-text {
+    color: #8b949e;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+    word-wrap: break-word;
+}
+
+/* Tags */
+.memory-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.memory-tag {
+    padding: 4px 10px;
+    background: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.memory-tag:hover {
+    background: rgba(88, 166, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Actions */
+.memory-list-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.memory-action-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #e6edf3;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-action-btn:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: #58a6ff;
+    transform: scale(1.1);
+}
+
+.memory-action-btn.delete:hover {
+    background: rgba(248, 81, 73, 0.2);
+    border-color: #f85149;
+    color: #f85149;
+}
+
+/* ========================================
+   PLANS GRID
+   ======================================== */
+
 .plans-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -178,246 +414,60 @@
     border-color: #58a6ff;
 }
 
-/* Memory Styles - КАРТКИ */
-.memory-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
+/* ========================================
+   STAT CARD (для Memory Stats)
+   ======================================== */
 
-.memory-search {
-    margin-bottom: 20px;
-}
-
-#memorySearch {
-    width: 100%;
-    padding: 12px 16px;
-    background: #161b22;
+.stat-card {
+    background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
     border: 2px solid #30363d;
-    border-radius: 8px;
-    color: #e6edf3;
-    font-size: 14px;
+    border-radius: 12px;
+    padding: 20px;
     transition: all 0.3s ease;
 }
 
-#memorySearch:focus {
-    outline: none;
+.stat-card:hover {
     border-color: #58a6ff;
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.2);
 }
 
-#memorySearch::placeholder {
-    color: #6e7681;
-}
-
-.memories-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-}
-
-.memory-card {
-    background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
-    border-radius: 16px;
-    padding: 24px;
-    border: 2px solid #30363d;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    min-height: 220px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.memory-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #58a6ff 0%, #1f6feb 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.memory-card:hover {
-    border-color: #58a6ff;
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(88, 166, 255, 0.3);
-}
-
-.memory-card:hover::before {
-    opacity: 1;
-}
-
-.memory-card.important {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.05) 100%);
-    border-left: 4px solid #ffc107;
-    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.2);
-}
-
-.memory-card.important:hover {
-    box-shadow: 0 12px 32px rgba(255, 193, 7, 0.4);
-}
-
-.memory-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.memory-icon {
-    font-size: 32px;
-    min-width: 48px;
+.stat-icon {
+    font-size: 28px;
+    width: 48px;
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(88, 166, 255, 0.15);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.memory-card:hover .memory-icon {
-    transform: scale(1.1);
-    background: rgba(88, 166, 255, 0.25);
-}
-
-.memory-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.memory-title {
-    font-size: 19px;
-    font-weight: 700;
-    color: #e6edf3;
-    margin-bottom: 8px;
-    word-wrap: break-word;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-}
-
-.memory-meta {
-    display: flex;
-    gap: 12px;
-    font-size: 12px;
-    color: #8b949e;
-    flex-wrap: wrap;
-}
-
-.memory-category {
-    background: rgba(88, 166, 255, 0.2);
-    padding: 5px 12px;
-    border-radius: 14px;
-    color: #58a6ff;
-    font-weight: 600;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(88, 166, 255, 0.1);
-}
-
-.memory-date {
-    opacity: 0.7;
-}
-
-.memory-menu-btn {
-    background: transparent;
-    border: none;
-    color: #6e7681;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
-.memory-menu-btn:hover {
-    color: #58a6ff;
-    background: rgba(88, 166, 255, 0.1);
-}
-
-.memory-content {
-    color: #8b949e;
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 12px;
-    flex: 1;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-.memory-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-}
-
-.memory-tag {
-    padding: 5px 12px;
-    background: rgba(88, 166, 255, 0.15);
-    color: #58a6ff;
-    border-radius: 14px;
-    font-size: 12px;
-    font-weight: 600;
-    border: 1px solid rgba(88, 166, 255, 0.2);
-    transition: all 0.2s ease;
-}
-
-.memory-tag:hover {
-    background: rgba(88, 166, 255, 0.25);
-    border-color: rgba(88, 166, 255, 0.4);
-    transform: translateY(-2px);
-}
-
-.memory-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: auto;
-    padding-top: 12px;
-    border-top: 1px solid #30363d;
-}
-
-.memory-actions button {
-    padding: 10px 14px;
-    background: linear-gradient(135deg, #1c2128 0%, #0d1117 100%);
-    border: 1px solid #30363d;
     border-radius: 8px;
-    color: #e6edf3;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-shrink: 0;
+    margin-bottom: 12px;
 }
 
-.memory-actions button:hover {
-    background: rgba(88, 166, 255, 0.15);
-    border-color: #58a6ff;
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+.stat-info {
+    flex: 1;
 }
 
-/* Agent Status */
+.stat-label {
+    color: #6e7681;
+    font-size: 12px;
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    color: #58a6ff;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* ========================================
+   AGENT STATUS
+   ======================================== */
+
 .agent-status {
     padding: 15px;
     background: linear-gradient(135deg, rgba(88, 166, 255, 0.1) 0%, rgba(31, 111, 235, 0.1) 100%);
@@ -465,7 +515,10 @@
     gap: 8px;
 }
 
-/* Modals */
+/* ========================================
+   MODALS
+   ======================================== */
+
 .modal {
     display: none;
     position: fixed;
@@ -599,7 +652,10 @@
     border-color: #58a6ff;
 }
 
-/* Badge */
+/* ========================================
+   BADGE
+   ======================================== */
+
 .badge {
     display: inline-block;
     background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
@@ -611,7 +667,10 @@
     margin-left: 6px;
 }
 
-/* Empty State */
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -640,7 +699,10 @@
     color: #8b949e;
 }
 
-/* Responsive */
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
 @media (max-width: 768px) {
     .planner-content,
     .memory-content {
@@ -664,12 +726,19 @@
         padding: 20px;
     }
     
-    .memory-card {
-        min-height: auto;
+    .memory-list-item {
+        flex-direction: column;
+        padding: 16px;
     }
     
-    .memory-meta {
+    .memory-list-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .memory-list-meta {
         flex-direction: column;
         gap: 6px;
+        align-items: flex-start;
     }
 }
