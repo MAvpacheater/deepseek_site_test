@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - ВИПРАВЛЕНО
+// ✨ Gemini Chat - ВИПРАВЛЕНО (ВСІ ПОМИЛКИ)
 
 class GeminiChat {
     constructor() {
@@ -17,7 +17,7 @@ class GeminiChat {
     init() {
         this.setupEventListeners();
         this.loadHistory();
-        console.log('✅ Gemini Chat initialized');
+        console.log('✅ Gemini Chat initialized (FIXED)');
     }
 
     setupEventListeners() {
@@ -44,11 +44,17 @@ class GeminiChat {
             sendBtn.addEventListener('click', () => this.sendMessage());
         }
 
-        // Підписатися на зміни в appState
+        // ✅ ВИПРАВЛЕНО: Підписатися на зміни в appState і рендерити тут
         if (window.appState) {
-            appState.on('gemini:message', () => {
-                // НЕ рендерити тут - вже зроблено в addUserMessage/addAssistantMessage
+            appState.on('gemini:message', ({ message }) => {
+                const role = message.role === 'user' ? 'user' : 'assistant';
+                const content = message.parts?.[0]?.text || '';
+                if (content) {
+                    this.renderMessage(content, role);
+                    this.scrollToBottom();
+                }
             });
+            
             appState.on('gemini:clear', () => this.clearUI());
         }
     }
@@ -108,7 +114,7 @@ class GeminiChat {
         input.value = '';
         input.style.height = 'auto';
 
-        // Додати повідомлення користувача
+        // ✅ ВИПРАВЛЕНО: Додати повідомлення користувача (БЕЗ рендерингу тут)
         this.addUserMessage(message);
 
         // Показати loading
@@ -118,7 +124,7 @@ class GeminiChat {
             // Відправити запит
             const response = await this.callGeminiAPI(apiKey, message);
             
-            // Додати відповідь AI
+            // ✅ ВИПРАВЛЕНО: Додати відповідь AI (БЕЗ рендерингу тут)
             this.addAssistantMessage(response);
 
             // Оновити статистику
@@ -134,7 +140,7 @@ class GeminiChat {
     }
 
     // ========================================
-    // API ВИКЛИКИ
+    // API ВИКЛИКИ - ВИПРАВЛЕНО ПОМИЛКА #1
     // ========================================
 
     async callGeminiAPI(apiKey, message) {
@@ -142,7 +148,7 @@ class GeminiChat {
         this.abortController = new AbortController();
 
         try {
-            // Отримати історію
+            // ✅ ВИПРАВЛЕНО: Отримати стару історію
             const history = window.appState ? 
                 appState.getGeminiHistory() : 
                 [];
@@ -153,9 +159,18 @@ class GeminiChat {
                 localStorage.getItem('gemini_system_prompt') ||
                 'Ти корисний AI асістент. Говори українською мовою.';
 
-            // ВИПРАВЛЕНО: Правильний формат для Gemini API
+            // ✅ ВИПРАВЛЕНО: Додати нове повідомлення користувача до історії
+            const updatedHistory = [
+                ...history,
+                {
+                    role: 'user',
+                    parts: [{ text: message }]
+                }
+            ];
+
+            // ✅ ВИПРАВЛЕНО: Тепер contents містить ВСЮ історію + нове повідомлення
             const requestBody = {
-                contents: history,
+                contents: updatedHistory,  // ✅ Правильно!
                 systemInstruction: {
                     parts: [{ text: systemPrompt }]
                 },
@@ -244,7 +259,7 @@ class GeminiChat {
     }
 
     // ========================================
-    // УПРАВЛІННЯ ПОВІДОМЛЕННЯМИ
+    // УПРАВЛІННЯ ПОВІДОМЛЕННЯМИ - ВИПРАВЛЕНО ПОМИЛКА #2
     // ========================================
 
     addUserMessage(content) {
@@ -252,8 +267,9 @@ class GeminiChat {
             appState.addGeminiMessage('user', content);
         }
         
-        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
-        this.renderMessage(content, 'user');
+        // ✅ ВИПРАВЛЕНО: НЕ рендерити тут - це зробить обробник події
+        // Рендеринг відбувається в setupEventListeners через appState.on('gemini:message')
+        
         this.scrollToBottom();
     }
 
@@ -262,8 +278,9 @@ class GeminiChat {
             appState.addGeminiMessage('model', content);
         }
         
-        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
-        this.renderMessage(content, 'assistant');
+        // ✅ ВИПРАВЛЕНО: НЕ рендерити тут - це зробить обробник події
+        // Рендеринг відбувається в setupEventListeners через appState.on('gemini:message')
+        
         this.scrollToBottom();
 
         // Автоматично запам'ятати важливу інформацію
@@ -305,17 +322,19 @@ class GeminiChat {
         messagesDiv.appendChild(messageElement);
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #3: Використовувати getGeminiMessages() для UI
     renderMessages() {
         const messagesDiv = document.getElementById('geminiMessages');
         if (!messagesDiv) return;
 
         messagesDiv.innerHTML = '';
 
-        const history = window.appState ? 
-            appState.getGeminiHistory() : 
+        // ✅ ВИПРАВЛЕНО: Використовувати getGeminiMessages() замість getGeminiHistory()
+        const messages = window.appState ? 
+            appState.getGeminiMessages() : 
             [];
 
-        history.forEach(msg => {
+        messages.forEach(msg => {
             const role = msg.role === 'user' ? 'user' : 'assistant';
             const content = msg.parts?.[0]?.text || '';
             if (content) {
@@ -407,21 +426,21 @@ class GeminiChat {
             message += error.message || 'Щось пішло не так';
         }
 
-        // Показати toast ОДИН раз
+        // Показати toast
         if (window.showToast) {
             showToast(message, 'error', 7000);
         }
 
-        // Додати в чат ОДИН раз
+        // Додати в чат
         this.renderMessage(message, 'assistant');
     }
 
     // ========================================
-    // HISTORY MANAGEMENT
+    // HISTORY MANAGEMENT - ВИПРАВЛЕНО ПОМИЛКА #4
     // ========================================
 
     loadHistory() {
-        // Історія тепер в appState
+        // ✅ ВИПРАВЛЕНО: Тепер loadHistory() робить щось корисне
         if (window.appState) {
             this.renderMessages();
         }
@@ -431,9 +450,9 @@ class GeminiChat {
         if (!window.storageManager || !window.appState) return;
 
         try {
-            const history = appState.getGeminiHistory();
+            const messages = appState.getGeminiMessages();
             
-            if (history.length === 0) {
+            if (messages.length === 0) {
                 if (window.showToast) {
                     showToast('⚠️ Немає повідомлень для збереження', 'warning');
                 }
@@ -472,11 +491,11 @@ class GeminiChat {
     // ========================================
 
     async exportToMarkdown() {
-        const history = window.appState ? 
-            appState.getGeminiHistory() : 
+        const messages = window.appState ? 
+            appState.getGeminiMessages() : 
             [];
 
-        if (history.length === 0) {
+        if (messages.length === 0) {
             if (window.showToast) {
                 showToast('⚠️ Немає повідомлень для експорту', 'warning');
             }
@@ -487,14 +506,14 @@ class GeminiChat {
         markdown += `Експортовано: ${new Date().toLocaleString('uk-UA')}\n\n`;
         markdown += '---\n\n';
 
-        history.forEach((msg, i) => {
+        messages.forEach((msg, i) => {
             const role = msg.role === 'user' ? '👤 Користувач' : '🤖 Gemini';
             const content = msg.parts?.[0]?.text || '';
             
             markdown += `## ${role}\n\n`;
             markdown += `${content}\n\n`;
             
-            if (i < history.length - 1) {
+            if (i < messages.length - 1) {
                 markdown += '---\n\n';
             }
         });
@@ -552,4 +571,4 @@ document.addEventListener('DOMContentLoaded', () => {
 window.GeminiChat = GeminiChat;
 window.geminiChat = geminiChat;
 
-console.log('✅ Gemini Chat module loaded (FIXED)');
+console.log('✅ Gemini Chat module loaded (ALL BUGS FIXED)');
