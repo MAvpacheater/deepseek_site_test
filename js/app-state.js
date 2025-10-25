@@ -1,4 +1,4 @@
-// 📦 App State Manager - ВИПРАВЛЕНО timestamp проблему
+// 📦 App State Manager - ПОВНІСТЮ ВИПРАВЛЕНО (БЕЗ TIMESTAMP)
 
 class AppState {
     constructor() {
@@ -84,7 +84,7 @@ class AppState {
             // Завантажити API ключі
             await this.loadApiKeys();
             
-            console.log('✅ App State initialized');
+            console.log('✅ App State initialized (БЕЗ TIMESTAMP)');
         } catch (error) {
             console.error('❌ App State initialization failed:', error);
             if (window.errorHandler) {
@@ -224,15 +224,15 @@ class AppState {
     }
 
     // ========================================
-    // CHAT STATE MANAGEMENT - ВИПРАВЛЕНО
+    // CHAT STATE MANAGEMENT - БЕЗ TIMESTAMP
     // ========================================
 
-    // Gemini - ВИПРАВЛЕНО: без timestamp
+    // Gemini - БЕЗ TIMESTAMP (Gemini API його не приймає!)
     addGeminiMessage(role, content) {
         const message = {
             role: role,
             parts: [{ text: content }]
-            // ВИДАЛЕНО timestamp - Gemini API його не приймає!
+            // Gemini API НЕ потребує і НЕ приймає timestamp в історії!
         };
 
         this.chat.gemini.history.push(message);
@@ -262,12 +262,12 @@ class AppState {
         return this;
     }
 
-    // DeepSeek
+    // DeepSeek - БЕЗ TIMESTAMP (Groq також не потребує)
     addDeepSeekMessage(role, content) {
         const message = {
             role: role,
             content: content
-            // DeepSeek (Groq) теж не потребує timestamp в історії
+            // Groq (DeepSeek) теж не потребує timestamp в історії API
         };
 
         this.chat.deepseek.history.push(message);
@@ -365,11 +365,11 @@ class AppState {
         return this.chat.deepseek.projectContext;
     }
 
-    // Images
+    // Images - З timestamp (для UI відображення)
     addImage(imageData) {
         this.chat.image.gallery.push({
             ...imageData,
-            timestamp: Date.now()
+            timestamp: Date.now() // Тут timestamp потрібен для сортування в UI
         });
         this.incrementStat('imagesGenerated');
         this.notify('image:add', { imageData });
@@ -645,7 +645,7 @@ class AppState {
         console.group('🔍 App State Debug');
         console.log('UI:', this.ui);
         console.log('Chat:', {
-            gemini: `${this.chat.gemini.history.length} messages`,
+            gemini: `${this.chat.gemini.history.length} messages (NO TIMESTAMP)`,
             deepseek: `${this.chat.deepseek.history.length} messages, ${Object.keys(this.chat.deepseek.codeFiles).length} files`,
             image: `${this.chat.image.gallery.length} images`
         });
@@ -738,4 +738,4 @@ setInterval(() => {
     appState.saveStats();
 }, 30000);
 
-console.log('✅ App State Manager initialized (FIXED timestamp)');
+console.log('✅ App State Manager initialized (БЕЗ TIMESTAMP - ВИПРАВЛЕНО)');
