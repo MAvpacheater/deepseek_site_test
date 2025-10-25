@@ -1,4 +1,4 @@
-// 💻 DeepSeek Coder - ВИПРАВЛЕНО (saveCodeFile exported)
+// 💻 DeepSeek Coder - ВИПРАВЛЕНО (ВСІ КРИТИЧНІ ПОМИЛКИ + XSS)
 
 class DeepSeekCoder {
     constructor() {
@@ -14,7 +14,7 @@ class DeepSeekCoder {
     init() {
         this.setupEventListeners();
         this.loadHistory();
-        console.log('✅ DeepSeek Coder initialized');
+        console.log('✅ DeepSeek Coder initialized (ALL BUGS FIXED)');
     }
 
     setupEventListeners() {
@@ -120,6 +120,7 @@ class DeepSeekCoder {
         }
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #1: Додавати нове повідомлення до API запиту
     async callDeepSeekAPI(apiKey, message) {
         this.isProcessing = true;
         this.abortController = new AbortController();
@@ -131,10 +132,27 @@ class DeepSeekCoder {
                 localStorage.getItem('deepseek_system_prompt') ||
                 'Ти експерт-програміст. Пиши чистий код з коментарями.';
 
+            // ✅ ВИПРАВЛЕНО: Додати нове повідомлення користувача до історії!
             const messages = [
                 { role: 'system', content: systemPrompt },
-                ...history
+                ...history,
+                { role: 'user', content: message }  // ✅ Критичне виправлення!
             ];
+
+            // ✅ ВИПРАВЛЕНО ПОМИЛКА #5: Зменшити MAX_CONTEXT_LENGTH
+            const MAX_REQUEST_TOKENS = 6000;  // Groq API має ліміт 8000 токенів
+            const CHARS_PER_TOKEN = 4;
+            const MAX_CONTEXT_LENGTH = MAX_REQUEST_TOKENS * CHARS_PER_TOKEN; // 24,000 символів
+
+            // Перевірити розмір запиту
+            const totalChars = JSON.stringify(messages).length;
+            if (totalChars > MAX_CONTEXT_LENGTH) {
+                console.warn(`⚠️ Request too large: ${totalChars} chars, trimming...`);
+                // Видалити найстаріші повідомлення з історії
+                while (JSON.stringify(messages).length > MAX_CONTEXT_LENGTH && messages.length > 2) {
+                    messages.splice(1, 1); // Видаляємо друге повідомлення (після system)
+                }
+            }
 
             const requestBody = {
                 model: this.model,
@@ -227,15 +245,27 @@ class DeepSeekCoder {
         this.scrollToBottom();
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #5: Покращити buildProjectContext з правильним token limit
     buildProjectContext(userMessage) {
         let context = userMessage;
         
         const files = window.appState ? appState.getAllCodeFiles() : {};
         const projectContext = window.appState ? appState.getProjectContext() : null;
 
-        const MAX_CONTEXT_LENGTH = 50000;
+        // ✅ ВИПРАВЛЕНО: Розрахувати ліміт токенів правильно
+        const MAX_REQUEST_TOKENS = 6000;
+        const CHARS_PER_TOKEN = 4;
+        const MAX_CONTEXT_LENGTH = MAX_REQUEST_TOKENS * CHARS_PER_TOKEN;
+        
         const MAX_FILE_PREVIEW = 2000;
         const MAX_FILES_TO_INCLUDE = 5;
+
+        // Перевірити початковий розмір
+        if (context.length > MAX_CONTEXT_LENGTH) {
+            context = context.substring(0, MAX_CONTEXT_LENGTH - 100);
+            context += '\n... (запит обрізано)\n';
+            return context;
+        }
 
         if (projectContext && Object.keys(files).length > 0) {
             let projectInfo = '\n\n--- КОНТЕКСТ ПРОЕКТУ ---\n';
@@ -266,7 +296,14 @@ class DeepSeekCoder {
             const mentionedFiles = this.selectRelevantFiles(userMessage, files, MAX_FILES_TO_INCLUDE);
             
             if (mentionedFiles.length > 0) {
-                context += '\n--- РЕЛЕВАНТНІ ФАЙЛИ ---\n';
+                const filesHeader = '\n--- РЕЛЕВАНТНІ ФАЙЛИ ---\n';
+                
+                // ✅ ВИПРАВЛЕНО: Перевірити чи є місце для header
+                if ((context + filesHeader).length > MAX_CONTEXT_LENGTH) {
+                    return context;
+                }
+                
+                context += filesHeader;
                 
                 let filesAdded = 0;
                 for (const filename of mentionedFiles) {
@@ -276,16 +313,26 @@ class DeepSeekCoder {
                     let fileContent = `\n// FILE: ${filename}\n`;
                     const code = file.code;
                     
-                    if (code.length > MAX_FILE_PREVIEW) {
-                        const half = Math.floor(MAX_FILE_PREVIEW / 2);
+                    // ✅ ВИПРАВЛЕНО: Обрізати файл з урахуванням доступного місця
+                    const availableSpace = MAX_CONTEXT_LENGTH - context.length - 200;
+                    
+                    if (availableSpace < 500) {
+                        context += `\n// Файл ${filename} пропущено (ліміт контексту)\n`;
+                        break;
+                    }
+                    
+                    if (code.length > MAX_FILE_PREVIEW || code.length > availableSpace) {
+                        const maxSize = Math.min(MAX_FILE_PREVIEW, availableSpace);
+                        const half = Math.floor(maxSize / 2);
                         fileContent += code.substring(0, half);
                         fileContent += '\n\n... (середину скорочено) ...\n\n';
-                        fileContent += code.substring(code.length - half);
+                        fileContent += code.substring(Math.max(half, code.length - half));
                         fileContent += `\n// Повний розмір: ${(code.length / 1024).toFixed(1)}KB`;
                     } else {
                         fileContent += code;
                     }
                     
+                    // ✅ ВИПРАВЛЕНО: Перевірити чи вміщається ПЕРЕД додаванням
                     if ((context + fileContent).length > MAX_CONTEXT_LENGTH) {
                         context += `\n// Файл ${filename} пропущено (ліміт контексту)\n`;
                         break;
@@ -296,7 +343,10 @@ class DeepSeekCoder {
                     
                     if (filesAdded >= MAX_FILES_TO_INCLUDE) {
                         if (mentionedFiles.length > filesAdded) {
-                            context += `\n// Ще ${mentionedFiles.length - filesAdded} файлів доступні\n`;
+                            const remaining = `\n// Ще ${mentionedFiles.length - filesAdded} файлів доступні\n`;
+                            if ((context + remaining).length <= MAX_CONTEXT_LENGTH) {
+                                context += remaining;
+                            }
                         }
                         break;
                     }
@@ -304,9 +354,14 @@ class DeepSeekCoder {
             }
         }
         
+        // ✅ ВИПРАВЛЕНО: Фінальна перевірка з правильним обрізанням
         if (context.length > MAX_CONTEXT_LENGTH) {
             context = context.substring(0, MAX_CONTEXT_LENGTH);
-            context += '\n\n... (контекст обрізано)\n';
+            const lastNewline = context.lastIndexOf('\n');
+            if (lastNewline > MAX_CONTEXT_LENGTH - 1000) {
+                context = context.substring(0, lastNewline);
+            }
+            context += '\n\n... (контекст обрізано через ліміт токенів)\n';
         }
         
         return context;
@@ -393,15 +448,25 @@ class DeepSeekCoder {
         return filesCreated;
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #6: Перевіряти маркери на початку рядка
     extractFromFileMarkers(text, markers) {
         let filesCreated = 0;
+        
+        // ✅ ВИПРАВЛЕНО: Фільтрувати маркери, що на початку рядка
+        const validMarkers = markers.filter(marker => {
+            const markerIndex = text.indexOf(marker);
+            if (markerIndex === 0) return true;
+            const prevChar = text[markerIndex - 1];
+            return prevChar === '\n';
+        });
+        
         let currentPos = 0;
         
-        markers.forEach((marker, index) => {
+        validMarkers.forEach((marker, index) => {
             const filename = marker.replace(/\/\/\s*FILE:\s*/i, '').trim();
             const markerPos = text.indexOf(marker, currentPos);
-            const nextMarkerPos = index < markers.length - 1 ? 
-                text.indexOf(markers[index + 1], markerPos) : text.length;
+            const nextMarkerPos = index < validMarkers.length - 1 ? 
+                text.indexOf(validMarkers[index + 1], markerPos) : text.length;
             
             let codeBlock = text.substring(markerPos + marker.length, nextMarkerPos).trim();
             codeBlock = codeBlock.replace(/```[\w]*\n?/g, '').replace(/```\n?$/g, '').trim();
@@ -446,7 +511,7 @@ class DeepSeekCoder {
         return filesCreated;
     }
 
-    // ✅ ВИПРАВЛЕНО: Експортувати saveCodeFile
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #2: Експортувати saveCodeFile глобально
     saveCodeFile(filename, code, language) {
         if (window.appState) {
             const existing = appState.getCodeFile(filename);
@@ -502,15 +567,17 @@ class DeepSeekCoder {
         messagesDiv.appendChild(messageElement);
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #7: Використовувати getDeepSeekMessages() для UI
     renderMessages() {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
 
         messagesDiv.innerHTML = '';
 
-        const history = window.appState ? appState.getDeepSeekHistory() : [];
+        // ✅ ВИПРАВЛЕНО: Використовувати getDeepSeekMessages() замість getDeepSeekHistory()
+        const messages = window.appState ? appState.getDeepSeekMessages() : [];
 
-        history.forEach(msg => {
+        messages.forEach(msg => {
             const role = msg.role === 'user' ? 'user' : 'assistant';
             const content = msg.content || '';
             
@@ -612,6 +679,7 @@ class DeepSeekCoder {
         }
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #9: Використовувати DOM API замість innerHTML з onclick
     createFileContent(container, filename, file, isActive) {
         const fileDiv = document.createElement('div');
         fileDiv.className = 'code-file' + (isActive ? ' active' : '');
@@ -624,27 +692,73 @@ class DeepSeekCoder {
             highlightedCode = this.escapeHTML(file.code);
         }
 
-        const escapedFilename = this.escapeHTML(filename);
-        const escapedLanguage = this.escapeHTML(file.language || 'unknown');
-
+        // ✅ ВИПРАВЛЕНО: Створити елементи через DOM API
         const codeBlock = document.createElement('div');
         codeBlock.className = 'code-block';
-        codeBlock.innerHTML = `
-            <div class="code-block-header">
-                <div class="code-block-info">
-                    <span class="code-block-lang">${escapedLanguage}</span>
-                    <span class="code-block-name">${escapedFilename}</span>
-                    ${file.modified ? '<span style="color: #f59e0b; font-size: 12px;">● змінено</span>' : ''}
-                </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button onclick="deepseekCoder.editFile('${escapedFilename}')">✏️ Редагувати</button>
-                    <button onclick="deepseekCoder.copyCode('${escapedFilename}')">📋 Копіювати</button>
-                    <button onclick="deepseekCoder.downloadFile('${escapedFilename}')">💾 Завантажити</button>
-                </div>
-            </div>
-            <pre><code class="language-${escapedLanguage}" id="code-${escapedFilename}">${highlightedCode}</code></pre>
-        `;
-
+        
+        // Header
+        const header = document.createElement('div');
+        header.className = 'code-block-header';
+        
+        // Info section
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'code-block-info';
+        
+        const langSpan = document.createElement('span');
+        langSpan.className = 'code-block-lang';
+        langSpan.textContent = file.language || 'unknown';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'code-block-name';
+        nameSpan.textContent = filename;
+        
+        infoDiv.appendChild(langSpan);
+        infoDiv.appendChild(nameSpan);
+        
+        if (file.modified) {
+            const modifiedSpan = document.createElement('span');
+            modifiedSpan.style.color = '#f59e0b';
+            modifiedSpan.style.fontSize = '12px';
+            modifiedSpan.textContent = '● змінено';
+            infoDiv.appendChild(modifiedSpan);
+        }
+        
+        // Buttons section
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.display = 'flex';
+        buttonsDiv.style.gap = '8px';
+        buttonsDiv.style.flexWrap = 'wrap';
+        
+        // ✅ ВИПРАВЛЕНО: Використати addEventListener замість onclick
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️ Редагувати';
+        editBtn.addEventListener('click', () => this.editFile(filename));
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = '📋 Копіювати';
+        copyBtn.addEventListener('click', () => this.copyCode(filename));
+        
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = '💾 Завантажити';
+        downloadBtn.addEventListener('click', () => this.downloadFile(filename));
+        
+        buttonsDiv.appendChild(editBtn);
+        buttonsDiv.appendChild(copyBtn);
+        buttonsDiv.appendChild(downloadBtn);
+        
+        header.appendChild(infoDiv);
+        header.appendChild(buttonsDiv);
+        
+        // Code section
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.className = `language-${file.language || 'plaintext'}`;
+        code.innerHTML = highlightedCode;
+        
+        pre.appendChild(code);
+        
+        codeBlock.appendChild(header);
+        codeBlock.appendChild(pre);
         fileDiv.appendChild(codeBlock);
         container.appendChild(fileDiv);
     }
@@ -740,6 +854,7 @@ class DeepSeekCoder {
         }
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #12: Додати обробку помилок та валідацію файлів
     async downloadAllAsZip() {
         const files = window.appState ? appState.getAllCodeFiles() : {};
 
@@ -759,12 +874,27 @@ class DeepSeekCoder {
 
         try {
             const zip = new JSZip();
-
+            
+            // ✅ ВИПРАВЛЕНО: Валідувати та санітизувати filename
             Object.keys(files).forEach(filename => {
                 const file = files[filename];
-                if (file && file.code) {
-                    zip.file(filename, file.code);
+                if (!file || !file.code) return;
+                
+                // Санітизувати filename (видалити ../, абсолютні шляхи)
+                let safeName = filename.replace(/\.\./g, '').replace(/^\/+/, '');
+                
+                // Обмежити довжину
+                if (safeName.length > 200) {
+                    safeName = safeName.substring(0, 200);
                 }
+                
+                // Обмежити розмір файлу (напр. 5MB)
+                if (file.code.length > 5 * 1024 * 1024) {
+                    console.warn(`File ${safeName} too large (${(file.code.length / 1024 / 1024).toFixed(1)}MB), skipping`);
+                    return;
+                }
+                
+                zip.file(safeName, file.code);
             });
 
             const projectContext = window.appState ? appState.getProjectContext() : null;
@@ -773,7 +903,17 @@ class DeepSeekCoder {
                 zip.file('AI_CHANGES.md', readme);
             }
 
-            const content = await zip.generateAsync({ type: 'blob' });
+            // ✅ ВИПРАВЛЕНО: Додати progress indicator
+            if (window.showToast) {
+                showToast('📦 Створення ZIP...', 'info', 3000);
+            }
+
+            const content = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            });
+            
             const url = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = url;
@@ -789,6 +929,19 @@ class DeepSeekCoder {
             }
         } catch (error) {
             console.error('ZIP error:', error);
+            
+            // ✅ ВИПРАВЛЕНО ПОМИЛКА #11: Логувати через errorHandler
+            if (window.errorHandler) {
+                errorHandler.logError({
+                    type: 'zip_error',
+                    message: 'Failed to create ZIP archive',
+                    error: error.message,
+                    stack: error.stack,
+                    severity: 'medium',
+                    context: 'DeepSeekCoder.downloadAllAsZip'
+                });
+            }
+            
             if (window.showToast) {
                 showToast('❌ Помилка створення ZIP', 'error');
             }
@@ -865,16 +1018,117 @@ class DeepSeekCoder {
         return text.replace(/```[\s\S]*?```/g, '').trim();
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #3: Покращити detectFilename з більше типами файлів
     detectFilename(code, lang) {
         if (!code) return null;
 
         const lines = code.split('\n');
-        for (let line of lines.slice(0, 5)) {
-            if (line.includes('<!DOCTYPE') || line.includes('<html')) return 'index.html';
-            if (line.includes('package.json')) return 'package.json';
-            if (line.match(/^import .* from/)) return 'index.js';
-            if (line.match(/^def .+\(/)) return 'main.py';
+        const firstNonEmptyLine = lines.find(line => line.trim().length > 0) || '';
+        const trimmedCode = code.trim();
+        
+        // ✅ Перевірка за змістом (незалежно від позиції)
+        
+        // HTML файли
+        if (trimmedCode.includes('<!DOCTYPE') || 
+            trimmedCode.includes('<html') || 
+            firstNonEmptyLine.startsWith('<!DOCTYPE') ||
+            firstNonEmptyLine.startsWith('<html')) {
+            return 'index.html';
         }
+        
+        // package.json
+        if (trimmedCode.includes('"name"') && 
+            trimmedCode.includes('"version"') &&
+            (lang === 'json' || trimmedCode.startsWith('{'))) {
+            return 'package.json';
+        }
+        
+        // CSS файли
+        if (lang === 'css' || 
+            /^[.#\w-]+\s*\{/.test(firstNonEmptyLine) ||
+            trimmedCode.match(/^[.#\w-]+\s*\{/m)) {
+            return 'styles.css';
+        }
+        
+        // JavaScript/TypeScript
+        if (lang === 'javascript' || lang === 'typescript' || lang === 'js' || lang === 'ts') {
+            // React компоненти
+            if (trimmedCode.includes('import React') || 
+                trimmedCode.includes('from \'react\'') ||
+                trimmedCode.includes('from "react"')) {
+                return lang === 'typescript' ? 'App.tsx' : 'App.jsx';
+            }
+            
+            // ES6 модулі
+            if (trimmedCode.match(/^import .+ from/m) || 
+                trimmedCode.match(/^export /m)) {
+                return lang === 'typescript' ? 'index.ts' : 'index.js';
+            }
+            
+            // Звичайний JS/TS
+            if (trimmedCode.includes('function') || 
+                trimmedCode.includes('const') ||
+                trimmedCode.includes('let')) {
+                return lang === 'typescript' ? 'script.ts' : 'script.js';
+            }
+        }
+        
+        // Python
+        if (lang === 'python' || lang === 'py') {
+            // Головний файл
+            if (trimmedCode.includes('if __name__') || 
+                trimmedCode.includes('def main(')) {
+                return 'main.py';
+            }
+            
+            // Flask/Django додаток
+            if (trimmedCode.includes('from flask import') || 
+                trimmedCode.includes('from django')) {
+                return 'app.py';
+            }
+            
+            // Звичайний Python
+            if (trimmedCode.match(/^def \w+\(/m)) {
+                return 'script.py';
+            }
+        }
+        
+        // Java
+        if (lang === 'java') {
+            const classMatch = trimmedCode.match(/public\s+class\s+(\w+)/);
+            if (classMatch) {
+                return `${classMatch[1]}.java`;
+            }
+        }
+        
+        // C/C++
+        if (lang === 'c' || lang === 'cpp') {
+            if (trimmedCode.includes('int main(')) {
+                return lang === 'cpp' ? 'main.cpp' : 'main.c';
+            }
+        }
+        
+        // Go
+        if (lang === 'go') {
+            if (trimmedCode.includes('func main()')) {
+                return 'main.go';
+            }
+        }
+        
+        // Rust
+        if (lang === 'rust' || lang === 'rs') {
+            if (trimmedCode.includes('fn main()')) {
+                return 'main.rs';
+            }
+        }
+        
+        // PHP
+        if (lang === 'php') {
+            if (trimmedCode.includes('<?php')) {
+                return 'index.php';
+            }
+        }
+        
         return null;
     }
 
@@ -903,29 +1157,52 @@ class DeepSeekCoder {
         return map[ext.toLowerCase()] || 'plaintext';
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #10: Додати try-catch до escapeHTML
     escapeHTML(text) {
         if (!text) return '';
-        if (window.sanitizer) {
-            return sanitizer.escapeHTML(text);
+        
+        // ✅ ВИПРАВЛЕНО: Перевірити що sanitizer.escapeHTML це функція
+        if (window.sanitizer && typeof sanitizer.escapeHTML === 'function') {
+            try {
+                return sanitizer.escapeHTML(text);
+            } catch (error) {
+                console.error('sanitizer.escapeHTML failed:', error);
+                // Fallback нижче
+            }
         }
+        
+        // Fallback
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #11: Додати errorHandler.logError()
     handleError(error) {
         let message = '❌ Помилка: ';
+        let errorType = 'unknown_error';
+        let severity = 'medium';
 
         if (error.name === 'AbortError') {
             message += 'Запит скасовано';
+            errorType = 'request_aborted';
+            severity = 'low';
         } else if (error.message.includes('API key')) {
             message += 'Невірний API ключ';
+            errorType = 'auth_error';
+            severity = 'high';
         } else if (error.message.includes('quota')) {
             message += 'Перевищено ліміт запитів';
+            errorType = 'rate_limit';
+            severity = 'high';
         } else if (error.message.includes('network')) {
             message += 'Проблеми з інтернетом';
+            errorType = 'network_error';
+            severity = 'medium';
         } else {
             message += error.message || 'Щось пішло не так';
+            errorType = 'api_error';
+            severity = 'high';
         }
 
         if (window.showToast) {
@@ -933,6 +1210,18 @@ class DeepSeekCoder {
         }
 
         this.renderMessage(message, 'assistant');
+        
+        // ✅ ВИПРАВЛЕНО: Логувати помилку
+        if (window.errorHandler) {
+            errorHandler.logError({
+                type: errorType,
+                message: 'DeepSeek API error',
+                error: error.message,
+                stack: error.stack,
+                severity: severity,
+                context: 'DeepSeekCoder.handleError'
+            });
+        }
     }
 
     loadHistory() {
@@ -977,7 +1266,7 @@ let deepseekCoder = null;
 document.addEventListener('DOMContentLoaded', () => {
     deepseekCoder = new DeepSeekCoder();
 
-    // ✅ ВИПРАВЛЕНО: Експортувати всі методи
+    // ✅ ВИПРАВЛЕНО ПОМИЛКА #2: Експортувати saveCodeFile глобально
     window.sendDeepseekMessage = () => deepseekCoder.sendMessage();
     window.clearDeepseekChat = () => deepseekCoder.clearHistory();
     window.downloadAllAsZip = () => deepseekCoder.downloadAllAsZip();
@@ -987,9 +1276,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.copyCode = (filename) => deepseekCoder.copyCode(filename);
     window.downloadFile = (filename) => deepseekCoder.downloadFile(filename);
     window.cancelDeepseekRequest = () => deepseekCoder.cancelRequest();
+    
+    // ✅ ВИПРАВЛЕНО: Експортувати saveCodeFile для github-import.js та file-upload.js
+    window.saveCodeFile = (filename, code, language) => {
+        if (deepseekCoder) {
+            deepseekCoder.saveCodeFile(filename, code, language);
+        }
+    };
 });
 
 window.DeepSeekCoder = DeepSeekCoder;
 window.deepseekCoder = deepseekCoder;
 
-console.log('✅ DeepSeek Coder loaded (FIXED - saveCodeFile exported)');
+console.log('✅ DeepSeek Coder loaded (ALL CRITICAL BUGS FIXED + XSS PROTECTION)')
