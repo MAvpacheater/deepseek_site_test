@@ -3,69 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 AI Agent Hub</title>
-    <!-- 🧩 Favicon -->
-    <link rel="icon" type="image/png" href="img/img1.png">
-    <link rel="shortcut icon" href="img/img1.png" type="image/png">
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/general.css">
-    <link rel="stylesheet" href="css/chats.css">
-    <link rel="stylesheet" href="css/settings.css">
-    <link rel="stylesheet" href="css/photo.css">
-    <link rel="stylesheet" href="css/planner.css">
-    <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="css/chat-background.css">
-    <link rel="stylesheet" href="css/library.css">
-
-
+    <title>🤖 AI Assistant Hub</title>
     
-    <!-- Prism.js -->
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+    
+    <!-- CSS Files -->
+    <!-- Base Styles -->
+    <link rel="stylesheet" href="css/base/variables.css">
+    <link rel="stylesheet" href="css/base/reset.css">
+    
+    <!-- Components -->
+    <link rel="stylesheet" href="css/components/buttons.css">
+    <link rel="stylesheet" href="css/components/inputs.css">
+    <link rel="stylesheet" href="css/components/cards.css">
+    <link rel="stylesheet" href="css/components/modals.css">
+    
+    <!-- Layout -->
+    <link rel="stylesheet" href="css/layout/sidebar.css">
+    <link rel="stylesheet" href="css/layout/header.css">
+    <link rel="stylesheet" href="css/layout/grid.css">
+    
+    <!-- Pages -->
+    <link rel="stylesheet" href="css/pages/dashboard.css">
+    <link rel="stylesheet" href="css/pages/chat.css">
+    <link rel="stylesheet" href="css/pages/code-editor.css">
+    <link rel="stylesheet" href="css/pages/library.css">
+    <link rel="stylesheet" href="css/pages/planner.css">
+    <link rel="stylesheet" href="css/pages/memory.css">
+    <link rel="stylesheet" href="css/pages/settings.css">
+    
+    <!-- External Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container" id="mainContainer">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
+<body class="preload">
+    <!-- Main Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
-                <h2>🤖 AI Agent Hub</h2>
-                <p style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Розумний автономний асистент</p>
+                <h1 class="sidebar-logo">
+                    <span class="logo-icon">🤖</span>
+                    <span class="logo-text">AI Hub</span>
+                </h1>
+                <p class="sidebar-subtitle">Розумний автономний асистент</p>
             </div>
             
-            <div class="sidebar-menu">
-                <button class="menu-btn active" onclick="switchMode('dashboard')">
+            <nav class="sidebar-menu">
+                <button class="menu-btn active" data-mode="dashboard">
                     <span class="menu-icon">📊</span>
                     <span class="menu-text">Dashboard</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('gemini')">
+                
+                <button class="menu-btn" data-mode="gemini">
                     <span class="menu-icon">✨</span>
                     <span class="menu-text">Gemini Chat</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('deepseek')">
+                
+                <button class="menu-btn" data-mode="deepseek">
                     <span class="menu-icon">💻</span>
                     <span class="menu-text">DeepSeek Coder</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('image')">
+                
+                <button class="menu-btn" data-mode="image">
                     <span class="menu-icon">🖼️</span>
                     <span class="menu-text">Image Generator</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('planner')">
+                
+                <button class="menu-btn" data-mode="planner">
                     <span class="menu-icon">📅</span>
                     <span class="menu-text">Планувальник</span>
-                    <span class="badge" id="plansBadge" style="display: none;">0</span>
+                    <span class="badge" id="plansBadge">0</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('memory')">
+                
+                <button class="menu-btn" data-mode="memory">
                     <span class="menu-icon">🧠</span>
                     <span class="menu-text">Пам'ять агента</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('library')">
+                
+                <button class="menu-btn" data-mode="library">
                     <span class="menu-icon">📚</span>
                     <span class="menu-text">Бібліотека</span>
                 </button>
-                <button class="menu-btn" onclick="switchMode('settings')">
+                
+                <button class="menu-btn" data-mode="settings">
                     <span class="menu-icon">⚙️</span>
                     <span class="menu-text">Налаштування</span>
                 </button>
-            </div>
+            </nav>
             
             <!-- Agent Status -->
             <div class="agent-status" id="agentStatus">
@@ -80,426 +106,108 @@
             </div>
             
             <div class="sidebar-footer">
-                <button class="theme-toggle" onclick="toggleTheme()" title="Перемкнути тему">
+                <button class="theme-toggle" id="themeToggle" title="Перемкнути тему">
                     <span id="themeIcon">🌙</span>
                 </button>
             </div>
-        </div>
-        <div class="mode-content active" id="dashboardMode">
-            <div class="dashboard-container">
-                <div class="dashboard-header">
-                    <h1>📊 Dashboard</h1>
-                    <p>Швидкий огляд вашої активності та статистики</p>
-                </div>
-                <div class="dashboard-content" id="dashboardContent">
-                    <!-- Dashboard content буде рендеритись тут через JS -->
-                </div>
-            </div>
-        </div>
-        <!-- Gemini Chat -->
-        <div class="mode-content" id="geminiMode">
-            <div class="chat-section full-width">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>✨ Gemini Chat</h1>
-                    </div>
-                    <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="saveConversation('gemini')">💾</button>
-                        <button class="clear-chat-btn" onclick="clearChat('gemini')">🗑️</button>
-                    </div>
-                </div>
-                <div class="messages" id="geminiMessages"></div>
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <textarea id="geminiInput" placeholder="Задай питання (Ctrl+Enter)..." rows="1"></textarea>
-                        <button id="geminiSendBtn" onclick="sendGeminiMessage()">Надіслати</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- DeepSeek Coder -->
-        <div class="mode-content" id="deepseekMode">
-            <div class="chat-section" id="deepseekChatSection">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>💻 DeepSeek Coder</h1>
-                    </div>
-                    <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="uploadLocalFile()" title="Завантажити файл">📁 Файл</button>
-                        <button class="clear-chat-btn" onclick="importFromGitHub()" title="Імпорт з GitHub">🐙 GitHub</button>
-                        <button class="preview-toggle-btn" onclick="togglePreview()" title="Preview HTML">👁️ Preview</button>
-                        <button class="clear-chat-btn" onclick="toggleCodePanel()" title="Показати код">⚡ Код</button>
-                        <button class="save-chat-btn" onclick="saveConversation('deepseek')">💾</button>
-                        <button class="clear-chat-btn" onclick="clearChat('deepseek')">🗑️</button>
-                    </div>
-                </div>
-                <div class="messages" id="deepseekMessages"></div>
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <textarea id="deepseekInput" placeholder="Опиши що створити... (Ctrl+Enter)" rows="1"></textarea>
-                        <button id="deepseekSendBtn" onclick="sendDeepseekMessage()">Надіслати</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="code-section collapsed" id="codeSection">
-                <div class="code-header">
-                    <div class="code-header-left">
-                        <h2>📁 Файли проекту</h2>
-                        <button class="icon-btn" onclick="toggleCodePanel()" title="Згорнути">✕</button>
-                    </div>
-                    <div class="code-actions">
-                        <button onclick="downloadAllAsZip()" title="Завантажити ZIP">📦 ZIP</button>
-                    </div>
-                </div>
-                
-                <!-- File Navigation -->
-                <div class="file-navigation" id="fileNavigation" style="display: none;">
-                    <div class="file-nav-header">
-                        <button class="nav-btn" onclick="navigateToPreviousFile()" title="Попередній (Alt+←)">◀</button>
-                        <select id="fileSelector" onchange="switchToFile(this.value)" class="file-selector">
-                            <option value="">Виберіть файл...</option>
-                        </select>
-                        <button class="nav-btn" onclick="navigateToNextFile()" title="Наступний (Alt+→)">▶</button>
-                    </div>
-                </div>
-
-                <!-- Version Control -->
-                <div class="version-control" id="versionControl" style="display: none;">
-                    <div class="version-header">
-                        <span class="version-label">📜 Версії:</span>
-                        <div class="version-buttons">
-                            <button class="version-btn" onclick="previousVersion()" title="Попередня">◀</button>
-                            <span id="versionInfo" class="version-info">v1/1</span>
-                            <button class="version-btn" onclick="nextVersion()" title="Наступна">▶</button>
-                            <button class="version-btn" onclick="revertToVersion()" title="Відновити">↶</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- File Tabs -->
-                <div class="file-tabs" id="fileTabs"></div>
-
-                <div class="code-content" id="codeContent">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📝</div>
-                        <h3>Немає файлів</h3>
-                        <p>Завантаж файли або імпортуй з GitHub</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preview Panel -->
-            <div class="preview-panel" id="previewPanel">
-                <div class="preview-header">
-                    <h3>👁️ Попередній перегляд</h3>
-                    <button onclick="togglePreview()" title="Закрити (Esc)">✕</button>
-                </div>
-                <iframe id="previewFrame"></iframe>
-            </div>
-        </div>
-
-        <!-- Image Generator -->
-        <div class="mode-content" id="imageMode">
-            <div class="chat-section full-width">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>🖼️ Image Generator</h1>
-                    </div>
-                    <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="clearChat('image')">🗑️</button>
-                    </div>
-                </div>
-                <div class="image-gallery" id="imageGallery">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🎨</div>
-                        <h3>Генерація зображень</h3>
-                        <p>Опиши що хочеш згенерувати</p>
-                    </div>
-                </div>
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <textarea id="imageInput" placeholder="Опиши зображення англійською..." rows="1"></textarea>
-                        <button id="imageSendBtn" onclick="generateImage()">Генерувати</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Planner -->
-        <div class="mode-content" id="plannerMode">
-            <div class="planner-container">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>📅 Розумний планувальник</h1>
-                    </div>
-                    <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="createPlan()">➕ Новий план</button>
-                    </div>
-                </div>
-                
-                <div class="planner-content">
-                    <div class="plans-grid" id="plansGrid">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📋</div>
-                            <h3>Немає планів</h3>
-                            <p>Створи свій перший план</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Memory -->
-        <div class="mode-content" id="memoryMode">
-            <div class="memory-container">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>🧠 Пам'ять агента</h1>
-                    </div>
-                    <div class="header-actions">
-                        <button class="clear-chat-btn" onclick="addMemory()">➕ Додати</button>
-                        <button class="clear-chat-btn" onclick="exportMemories()">📤 Експорт</button>
-                        <button class="clear-chat-btn" onclick="clearMemories()">🗑️ Очистити</button>
-                    </div>
-                </div>
-                
-                <div class="memory-content">
-                    <div class="memory-stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">💭</div>
-                            <div class="stat-info">
-                                <div class="stat-label">Спогадів</div>
-                                <div class="stat-value" id="totalMemories">0</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">⭐</div>
-                            <div class="stat-info">
-                                <div class="stat-label">Важливих</div>
-                                <div class="stat-value" id="importantMemories">0</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="memory-search">
-                        <input type="text" id="memorySearch" placeholder="🔍 Пошук..." oninput="searchMemories()">
-                    </div>
-                    
-                    <div class="memories-list" id="memoriesList">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">🧠</div>
-                            <h3>Пам'ять порожня</h3>
-                            <p>Додай перший спогад</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Library -->
-        <div class="mode-content" id="libraryMode">
-            <div class="library-container">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>📚 Бібліотека</h1>
-                    </div>
-                    <div class="header-actions">
-                        <input type="text" id="librarySearch" placeholder="🔍 Пошук..." oninput="filterLibrary()">
-                    </div>
-                </div>
-                
-                <div class="library-filters">
-                    <button class="filter-btn active" onclick="filterByType('all')">Всі</button>
-                    <button class="filter-btn" onclick="filterByType('gemini')">✨ Gemini</button>
-                    <button class="filter-btn" onclick="filterByType('deepseek')">💻 DeepSeek</button>
-                    <button class="filter-btn" onclick="filterByType('favorites')">⭐ Улюблені</button>
-                </div>
-
-                <div class="library-content" id="libraryContent">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📚</div>
-                        <h3>Бібліотека порожня</h3>
-                        <p>Збережені проекти з'являться тут</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings -->
-        <div class="mode-content" id="settingsMode">
-            <div class="settings-container">
-                <div class="header">
-                    <div class="header-left">
-                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                        <h1>⚙️ Налаштування</h1>
-                    </div>
-                </div>
-                
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h2>🔑 API Ключі</h2>
-                        <div class="setting-item">
-                            <label>Gemini API Key</label>
-                            <input type="password" id="geminiApiKey" placeholder="AIza...">
-                            <small>Отримати на <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
-                        </div>
-                        <div class="setting-item">
-                            <label>Groq API Key (DeepSeek)</label>
-                            <input type="password" id="groqApiKey" placeholder="gsk_...">
-                            <small>Отримати на <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h2>📊 Статистика</h2>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon">✨</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Gemini запитів</div>
-                                    <div class="stat-value" id="statGemini">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">💻</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">DeepSeek запитів</div>
-                                    <div class="stat-value" id="statDeepseek">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">🖼️</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Зображень</div>
-                                    <div class="stat-value" id="statImages">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📚</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Проектів</div>
-                                    <div class="stat-value" id="statSaved">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">🔢</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Токенів</div>
-                                    <div class="stat-value" id="statTokens">0</div>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">📅</div>
-                                <div class="stat-info">
-                                    <div class="stat-label">Днів використання</div>
-                                    <div class="stat-value" id="statDays">1</div>
-                                </div>
-                            </div>
-                            <div class="setting-item">
-                                <label>Gemini System Prompt</label>
-                                <textarea id="geminiSystemPrompt" rows="3" placeholder="Інструкції для Gemini..."></textarea>
-                                <small>Загальна поведінка Gemini асистента</small>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>DeepSeek System Prompt</label>
-                                <textarea id="deepseekSystemPrompt" rows="3" placeholder="Інструкції для DeepSeek..."></textarea>
-                                <small>Інструкції для генерації коду</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-actions">
-                        <button class="save-btn" onclick="saveSettings()">💾 Зберегти</button>
-                        <button class="clear-btn" onclick="clearAllData()">🗑️ Очистити все</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main id="mainContent" class="main-content">
+            <!-- Content буде динамічно завантажуватись тут -->
+            <div id="pageContainer" class="page-container"></div>
+        </main>
+        
     </div>
-
-    <!-- File Input -->
-    <input type="file" id="fileInput" style="display: none" accept=".html,.css,.js,.json,.txt,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.ts,.tsx,.jsx,.vue,.svelte" multiple>
-
-    <!-- Modals -->
-    <div class="modal" id="planModal">
-        <div class="modal-content">
-            <h3>📅 Створити план</h3>
-            <input type="text" id="planTitle" placeholder="Назва плану...">
-            <textarea id="planDescription" placeholder="Опис завдання..." rows="3"></textarea>
-            <input type="datetime-local" id="planDeadline">
-            <select id="planPriority">
-                <option value="low">🟢 Низький</option>
-                <option value="medium" selected>🟡 Середній</option>
-                <option value="high">🔴 Високий</option>
-            </select>
-            <div class="modal-actions">
-                <button onclick="savePlan()">Створити</button>
-                <button onclick="closeModal('planModal')">Скасувати</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="memoryModal">
-        <div class="modal-content">
-            <h3>🧠 Додати спогад</h3>
-            <input type="text" id="memoryTitle" placeholder="Про що запам'ятати...">
-            <textarea id="memoryContent" placeholder="Детальна інформація..." rows="4"></textarea>
-            <label>
-                <input type="checkbox" id="memoryImportant">
-                ⭐ Важливо
-            </label>
-            <div class="modal-actions">
-                <button onclick="saveMemory()">Зберегти</button>
-                <button onclick="closeModal('memoryModal')">Скасувати</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="saveModal">
-        <div class="modal-content">
-            <h3>💾 Зберегти розмову</h3>
-            <input type="text" id="saveTitle" placeholder="Назва проекту...">
-            <textarea id="saveTags" placeholder="Теги (через кому)..." rows="2"></textarea>
-            <div class="modal-actions">
-                <button onclick="confirmSave()">Зберегти</button>
-                <button onclick="closeSaveModal()">Скасувати</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
+    
+    <!-- File Input (hidden) -->
+    <input type="file" id="fileInput" style="display: none" 
+           accept=".html,.css,.js,.json,.txt,.md,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.ts,.tsx,.jsx,.vue,.svelte" 
+           multiple>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    <!-- Modal Container -->
+    <div id="modalContainer" class="modal-container"></div>
+    
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-    <script src="js/dashboard.js"></script>
-    <script src="js/modal-manager.js"></script>
-    <script src="js/general.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/deepseek-ui-controls.js"></script>
-    <script src="js/photo.js"></script>
-    <script src="js/file-upload.js"></script>
-    <script src="js/planner.js"></script>
-    <script src="js/memory.js"></script>
-    <script src="js/agent-core.js"></script>
-    <script src="js/error-handler.js"></script>
-    <script src="js/storage-manager.js"></script>
-    <script src="js/sanitizer.js"></script>
-    <script src="js/app-state.js"></script>
-    <script src="js/gemini.js"></script>
-    <script src="js/deepseek.js"></script>
-    <script src="js/library.js"></script>
+    
+    <!-- Core Scripts -->
+    <script src="js/core/app.js" defer></script>
+    <script src="js/core/state-manager.js" defer></script>
+    <script src="js/core/chat-state.js" defer></script>
+    <script src="js/core/event-bus.js" defer></script>
+    
+    <!-- Services -->
+    <script src="js/services/api/gemini-api.js" defer></script>
+    <script src="js/services/api/groq-api.js" defer></script>
+    <script src="js/services/api/image-api.js" defer></script>
+    
+    <script src="js/services/storage/indexeddb.js" defer></script>
+    <script src="js/services/storage/migration.js" defer></script>
+    <script src="js/services/storage/cache.js" defer></script>
+    
+    <script src="js/services/security/encryption.js" defer></script>
+    <script src="js/services/security/sanitizer.js" defer></script>
+    <script src="js/services/security/validator.js" defer></script>
+    
+    <!-- Features -->
+    <script src="js/features/chat/gemini-chat.js" defer></script>
+    <script src="js/features/chat/gemini-ui.js" defer></script>
+    <script src="js/features/chat/deepseek-chat.js" defer></script>
+    <script src="js/features/chat/message-renderer.js" defer></script>
+    
+    <script src="js/features/code-editor/deepseek-api.js" defer></script>
+    <script src="js/features/code-editor/code-extractor.js" defer></script>
+    <script src="js/features/code-editor/file-manager.js" defer></script>
+    <script src="js/features/code-editor/ui-controller.js" defer></script>
+    <script src="js/features/code-editor/preview.js" defer></script>
+    
+    <script src="js/features/image-generator/generator.js" defer></script>
+    <script src="js/features/image-generator/gallery.js" defer></script>
+    
+    <script src="js/features/planner/planner.js" defer></script>
+    <script src="js/features/planner/task-manager.js" defer></script>
+    <script src="js/features/planner/ai-subtasks.js" defer></script>
+    
+    <script src="js/features/memory/memory-manager.js" defer></script>
+    <script src="js/features/memory/search.js" defer></script>
+    
+    <script src="js/features/library/library.js" defer></script>
+    <script src="js/features/library/preview-modal.js" defer></script>
+    <script src="js/features/library/filters.js" defer></script>
+    
+    <script src="js/features/dashboard/dashboard.js" defer></script>
+    <script src="js/features/dashboard/stats.js" defer></script>
+    
+    <!-- UI Components -->
+    <script src="js/ui/modal-manager.js" defer></script>
+    <script src="js/ui/toast.js" defer></script>
+    <script src="js/ui/loading.js" defer></script>
+    <script src="js/ui/theme-switcher.js" defer></script>
+    
+    <!-- Utils -->
+    <script src="js/utils/helpers.js" defer></script>
+    <script src="js/utils/date-formatter.js" defer></script>
+    <script src="js/utils/file-utils.js" defer></script>
+    <script src="js/utils/code-analyzer.js" defer></script>
+    
+    <!-- Integrations -->
+    <script src="js/integrations/github.js" defer></script>
+    <script src="js/integrations/export.js" defer></script>
+    
+    <script>
+        // Remove preload class after page loads
+        window.addEventListener('load', () => {
+            document.body.classList.remove('preload');
+        });
+    </script>
 </body>
 </html>
