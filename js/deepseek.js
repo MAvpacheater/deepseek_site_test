@@ -1,4 +1,4 @@
-// 💻 DeepSeek Coder - ВИПРАВЛЕНО
+// 💻 DeepSeek Coder - ВИПРАВЛЕНО (без подвійного рендерингу)
 
 class DeepSeekCoder {
     constructor() {
@@ -47,9 +47,6 @@ class DeepSeekCoder {
 
         // Підписатися на зміни в appState
         if (window.appState) {
-            appState.on('deepseek:message', () => {
-                // НЕ рендерити тут - вже зроблено
-            });
             appState.on('deepseek:clear', () => this.clearUI());
             appState.on('codeFile:set', () => this.displayCodeFiles());
         }
@@ -110,8 +107,11 @@ class DeepSeekCoder {
         input.value = '';
         input.style.height = 'auto';
 
-        // Додати повідомлення користувача
-        this.addUserMessage(message);
+        // ✅ ВИПРАВЛЕНО: Додати в appState БЕЗ рендерингу
+        this.addUserMessageToState(message);
+        
+        // ✅ Рендерити тільки ОДИН раз
+        this.renderMessage(message, 'user');
 
         // Показати loading
         this.setLoading(true);
@@ -191,7 +191,6 @@ class DeepSeekCoder {
                     }
                 );
             } else {
-                // Fallback без errorHandler
                 response = await fetch(this.apiEndpoint, {
                     method: 'POST',
                     headers: {
@@ -247,11 +246,13 @@ class DeepSeekCoder {
     // ========================================
 
     processResponse(response) {
-        // Додати в історію
-        this.addAssistantMessage(response);
+        // ✅ ВИПРАВЛЕНО: Додати в appState БЕЗ рендерингу
+        this.addAssistantMessageToState(response);
 
         // Витягти текст без коду
         const textOnly = this.removeCodeBlocks(response);
+        
+        // ✅ Рендерити текст тільки ОДИН раз
         if (textOnly.trim()) {
             this.renderMessage(textOnly, 'assistant');
         }
@@ -417,26 +418,24 @@ class DeepSeekCoder {
     }
 
     // ========================================
-    // УПРАВЛІННЯ ПОВІДОМЛЕННЯМИ
+    // УПРАВЛІННЯ ПОВІДОМЛЕННЯМИ - ✅ ВИПРАВЛЕНО
     // ========================================
 
-    addUserMessage(content) {
+    // ✅ Додати в appState БЕЗ рендерингу
+    addUserMessageToState(content) {
         if (window.appState) {
             appState.addDeepSeekMessage('user', content);
         }
-        
-        // ВИПРАВЛЕНО: рендерити тільки ОДИН раз
-        this.renderMessage(content, 'user');
-        this.scrollToBottom();
     }
 
-    addAssistantMessage(content) {
+    // ✅ Додати в appState БЕЗ рендерингу
+    addAssistantMessageToState(content) {
         if (window.appState) {
             appState.addDeepSeekMessage('assistant', content);
         }
-        // НЕ рендерити тут - зробимо в processResponse
     }
 
+    // ✅ Рендерити повідомлення (викликається вручну)
     renderMessage(text, sender) {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
@@ -466,6 +465,7 @@ class DeepSeekCoder {
         messagesDiv.appendChild(messageElement);
     }
 
+    // ✅ Рендерити всі повідомлення з історії
     renderMessages() {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
@@ -929,12 +929,12 @@ class DeepSeekCoder {
             message += error.message || 'Щось пішло не так';
         }
 
-        // ВИПРАВЛЕНО: Показати toast ОДИН раз
+        // ✅ ВИПРАВЛЕНО: Показати toast ОДИН раз
         if (window.showToast) {
             showToast(message, 'error', 7000);
         }
 
-        // ВИПРАВЛЕНО: Додати в чат ОДИН раз
+        // ✅ ВИПРАВЛЕНО: Додати в чат ОДИН раз
         this.renderMessage(message, 'assistant');
     }
 
@@ -1000,4 +1000,4 @@ document.addEventListener('DOMContentLoaded', () => {
 window.DeepSeekCoder = DeepSeekCoder;
 window.deepseekCoder = deepseekCoder;
 
-console.log('✅ DeepSeek Coder module loaded (FIXED)');
+console.log('✅ DeepSeek Coder module loaded (FIXED - no double rendering)');
