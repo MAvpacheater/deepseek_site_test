@@ -134,17 +134,15 @@ class MemoryManager {
 
         return `
             <div class="memory-list-item ${memory.important ? 'important' : ''}" data-id="${memory.id}">
-                <div class="memory-list-left">
-                    <div class="memory-list-icon">${icon}</div>
-                </div>
-                
                 <div class="memory-list-content">
                     <div class="memory-list-header">
+                        <span class="memory-list-icon">${icon}</span>
                         <h3 class="memory-list-title">${escapeHTML(memory.title)}</h3>
-                        <div class="memory-list-meta">
-                            <span class="memory-category">${category}</span>
-                            <span class="memory-date">${date}</span>
-                        </div>
+                    </div>
+                    
+                    <div class="memory-list-meta">
+                        <span class="memory-category">${category}</span>
+                        <span class="memory-date">${date}</span>
                     </div>
                     
                     <p class="memory-list-text">${escapeHTML(memory.content)}</p>
@@ -154,14 +152,14 @@ class MemoryManager {
                             ${tags.map(tag => `<span class="memory-tag">${escapeHTML(tag)}</span>`).join('')}
                         </div>
                     ` : ''}
-                </div>
-                
-                <div class="memory-list-actions">
-                    <button class="memory-action-btn" onclick="memoryManager.editMemory(${memory.id})" title="Редагувати">✏️</button>
-                    <button class="memory-action-btn" onclick="memoryManager.toggleImportant(${memory.id})" title="${memory.important ? 'Зняти важливість' : 'Важливо'}">
-                        ${memory.important ? '☆' : '⭐'}
-                    </button>
-                    <button class="memory-action-btn delete" onclick="memoryManager.deleteMemory(${memory.id})" title="Видалити">🗑️</button>
+                    
+                    <div class="memory-list-actions">
+                        <button class="memory-action-btn" onclick="memoryManager.editMemory(${memory.id})" title="Редагувати">✏️</button>
+                        <button class="memory-action-btn" onclick="memoryManager.toggleImportant(${memory.id})" title="${memory.important ? 'Зняти важливість' : 'Важливо'}">
+                            ${memory.important ? '☆' : '⭐'}
+                        </button>
+                        <button class="memory-action-btn delete" onclick="memoryManager.deleteMemory(${memory.id})" title="Видалити">🗑️</button>
+                    </div>
                 </div>
             </div>
         `;
