@@ -7,14 +7,22 @@ class MemoryManager {
     }
 
     // ========================================
-    // ІНІЦІАЛІЗАЦІЯ
+    // ІНІЦІАЛІЗАЦІЯ - ВИПРАВЛЕНО RACE CONDITION
     // ========================================
 
     init() {
-        document.addEventListener("DOMContentLoaded", async () => {
-            await this.loadMemories();
-            console.log('✅ Memory Manager initialized');
-        });
+        // ✅ ВИПРАВЛЕНО: Перевірка стану документа
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", async () => {
+                await this.loadMemories();
+                console.log('✅ Memory Manager initialized (DOM ready)');
+            });
+        } else {
+            // Документ вже завантажений - викликаємо негайно
+            this.loadMemories().then(() => {
+                console.log('✅ Memory Manager initialized (immediate)');
+            });
+        }
     }
 
     // ========================================
@@ -263,7 +271,7 @@ class MemoryManager {
     }
 
     // ========================================
-    // ВИДАЛЕННЯ - ВИПРАВЛЕНО! confirm → delete
+    // ВИДАЛЕННЯ - ВИПРАВЛЕНО
     // ========================================
 
     async deleteMemory(id) {
@@ -490,10 +498,26 @@ class MemoryManager {
 }
 
 // ========================================
-// ІНІЦІАЛІЗАЦІЯ
+// ІНІЦІАЛІЗАЦІЯ - ВИПРАВЛЕНО
 // ========================================
 
-window.addEventListener('DOMContentLoaded', () => {
+// ✅ ВИПРАВЛЕНО: Перевірка стану документа перед ініціалізацією
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => {
+        window.memoryManager = new MemoryManager();
+
+        // Глобальні методи
+        window.addMemory = () => memoryManager.addMemory();
+        window.saveMemory = () => memoryManager.saveMemory();
+        window.searchMemories = () => memoryManager.searchMemories();
+        window.clearMemories = () => memoryManager.clearMemories();
+        window.exportMemories = () => memoryManager.exportMemories();
+        window.addTestMemories = () => memoryManager.addTestMemories();
+
+        console.log('✅ Memory module loaded (FIXED: Race Condition + null checks)');
+    });
+} else {
+    // Документ вже завантажений - ініціалізуємо негайно
     window.memoryManager = new MemoryManager();
 
     // Глобальні методи
@@ -504,8 +528,8 @@ window.addEventListener('DOMContentLoaded', () => {
     window.exportMemories = () => memoryManager.exportMemories();
     window.addTestMemories = () => memoryManager.addTestMemories();
 
-    console.log('✅ Memory module loaded (FIXED: confirm → delete)');
-});
+    console.log('✅ Memory module loaded immediately (FIXED: Race Condition + null checks)');
+}
 
 // Автоматичне збереження кожні 30 секунд
 setInterval(() => {
