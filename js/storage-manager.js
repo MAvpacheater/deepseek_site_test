@@ -16,10 +16,6 @@ class StorageManager {
         this.initPromise = this.initDB();
     }
 
-    // ========================================
-    // ІНІЦІАЛІЗАЦІЯ INDEXEDDB
-    // ========================================
-
     async initDB() {
         return new Promise((resolve, reject) => {
             if (!window.indexedDB) {
@@ -44,7 +40,6 @@ class StorageManager {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
 
-                // Створити object stores
                 if (!db.objectStoreNames.contains(this.stores.conversations)) {
                     const conversationStore = db.createObjectStore(this.stores.conversations, { 
                         keyPath: 'id', 
@@ -95,10 +90,6 @@ class StorageManager {
         });
     }
 
-    // ========================================
-    // БАЗОВІ CRUD ОПЕРАЦІЇ
-    // ========================================
-
     async add(storeName, data) {
         await this.initPromise;
         
@@ -110,7 +101,6 @@ class StorageManager {
             const transaction = this.db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
             
-            // Додати timestamp
             data.createdAt = data.createdAt || new Date().toISOString();
             data.updatedAt = new Date().toISOString();
             
@@ -184,7 +174,6 @@ class StorageManager {
             const transaction = this.db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
             
-            // Оновити timestamp
             data.updatedAt = new Date().toISOString();
             
             const request = store.put(data);
@@ -246,10 +235,6 @@ class StorageManager {
         });
     }
 
-    // ========================================
-    // ПОШУК ТА ФІЛЬТРАЦІЯ
-    // ========================================
-
     async query(storeName, indexName, value) {
         await this.initPromise;
         
@@ -280,11 +265,6 @@ class StorageManager {
         return items.filter(callback);
     }
 
-    // ========================================
-    // СПЕЦИФІЧНІ МЕТОДИ ДЛЯ ДОДАТКУ
-    // ========================================
-
-    // Conversations
     async saveConversation(conversation) {
         try {
             const id = await this.add(this.stores.conversations, conversation);
@@ -326,7 +306,6 @@ class StorageManager {
         }
     }
 
-    // Code Files
     async saveCodeProject(project) {
         try {
             const id = await this.add(this.stores.codeFiles, project);
@@ -356,7 +335,6 @@ class StorageManager {
         }
     }
 
-    // Memories
     async saveMemory(memory) {
         try {
             return await this.add(this.stores.memories, memory);
@@ -387,7 +365,6 @@ class StorageManager {
         }
     }
 
-    // Plans
     async savePlan(plan) {
         try {
             return await this.add(this.stores.plans, plan);
@@ -419,13 +396,11 @@ class StorageManager {
         }
     }
 
-    // Settings
     async saveSetting(key, value) {
         try {
             await this.update(this.stores.settings, { key, value, updatedAt: new Date().toISOString() });
             return true;
         } catch (error) {
-            // Якщо не існує - створити
             try {
                 await this.add(this.stores.settings, { key, value });
                 return true;
@@ -446,8 +421,7 @@ class StorageManager {
         }
     }
 
-    // Cache
-    async setCache(key, value, ttl = 3600000) { // 1 hour default
+    async setCache(key, value, ttl = 3600000) {
         try {
             const expires = Date.now() + ttl;
             await this.update(this.stores.cache, { key, value, expires });
@@ -468,7 +442,6 @@ class StorageManager {
             const cached = await this.get(this.stores.cache, key);
             if (!cached) return null;
             
-            // Перевірити чи не expired
             if (cached.expires && cached.expires < Date.now()) {
                 await this.delete(this.stores.cache, key);
                 return null;
@@ -498,15 +471,10 @@ class StorageManager {
         }
     }
 
-    // ========================================
-    // МІГРАЦІЯ З LOCALSTORAGE
-    // ========================================
-
     async migrateFromLocalStorage() {
-        console.log('🔄 Starting migration from localStorage to IndexedDB...');
+        console.log('🔄 Starting migration from localStorage...');
 
         try {
-            // Міграція розмов
             const savedConversations = localStorage.getItem('saved_conversations');
             if (savedConversations) {
                 const conversations = JSON.parse(savedConversations);
@@ -516,8 +484,7 @@ class StorageManager {
                 console.log(`✅ Migrated ${conversations.length} conversations`);
             }
 
-            // Міграція пам'яті
-            const agentMemory = localStorage.getItem('agent_memory');
+            const agentMemory = localStorage.getItem('agent_memories');
             if (agentMemory) {
                 const memories = JSON.parse(agentMemory);
                 for (const memory of memories) {
@@ -526,7 +493,6 @@ class StorageManager {
                 console.log(`✅ Migrated ${memories.length} memories`);
             }
 
-            // Міграція планів
             const userPlans = localStorage.getItem('user_plans');
             if (userPlans) {
                 const plans = JSON.parse(userPlans);
@@ -536,15 +502,10 @@ class StorageManager {
                 console.log(`✅ Migrated ${plans.length} plans`);
             }
 
-            // Міграція налаштувань
             const settingsKeys = [
-                'gemini_api_key',
-                'groq_api_key',
-                'gemini_system_prompt',
-                'deepseek_system_prompt',
-                'gemini_encrypted',
-                'groq_encrypted',
-                'theme'
+                'gemini_api_key', 'groq_api_key',
+                'gemini_system_prompt', 'deepseek_system_prompt',
+                'gemini_encrypted', 'groq_encrypted', 'theme'
             ];
 
             for (const key of settingsKeys) {
@@ -554,32 +515,19 @@ class StorageManager {
                 }
             }
 
-            console.log('✅ Migration completed successfully!');
+            console.log('✅ Migration completed!');
             
-            // Показати повідомлення
             if (window.showToast) {
-                showToast('✅ Дані успішно мігровано в IndexedDB!', 'success');
+                showToast('✅ Дані мігровано в IndexedDB!', 'success');
             }
 
             return true;
 
         } catch (error) {
             console.error('❌ Migration failed:', error);
-            if (window.errorHandler) {
-                errorHandler.logError({
-                    type: 'migration_error',
-                    message: 'Failed to migrate from localStorage',
-                    error: error.message,
-                    severity: 'high'
-                });
-            }
             return false;
         }
     }
-
-    // ========================================
-    // FALLBACK ДО LOCALSTORAGE
-    // ========================================
 
     fallbackToLocalStorage(operation, storeName, data) {
         const key = `idb_fallback_${storeName}`;
@@ -628,10 +576,6 @@ class StorageManager {
         }
     }
 
-    // ========================================
-    // СТАТИСТИКА ТА УПРАВЛІННЯ
-    // ========================================
-
     async getStorageStats() {
         const stats = {
             conversations: 0,
@@ -649,7 +593,6 @@ class StorageManager {
             stats.plans = (await this.getAll(this.stores.plans)).length;
             stats.cache = (await this.getAll(this.stores.cache)).length;
 
-            // Estimate size (approximation)
             if (navigator.storage && navigator.storage.estimate) {
                 const estimate = await navigator.storage.estimate();
                 stats.usage = estimate.usage;
@@ -703,15 +646,13 @@ class StorageManager {
         try {
             const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 
-            // Import conversations
             if (data.conversations) {
                 for (const conv of data.conversations) {
-                    delete conv.id; // Let DB assign new ID
+                    delete conv.id;
                     await this.add(this.stores.conversations, conv);
                 }
             }
 
-            // Import code files
             if (data.codeFiles) {
                 for (const file of data.codeFiles) {
                     delete file.id;
@@ -719,7 +660,6 @@ class StorageManager {
                 }
             }
 
-            // Import memories
             if (data.memories) {
                 for (const memory of data.memories) {
                     delete memory.id;
@@ -727,7 +667,6 @@ class StorageManager {
                 }
             }
 
-            // Import plans
             if (data.plans) {
                 for (const plan of data.plans) {
                     delete plan.id;
@@ -761,7 +700,6 @@ class StorageManager {
             await this.clear(this.stores.plans);
             await this.clear(this.stores.cache);
             
-            // Також очистити localStorage
             localStorage.clear();
 
             if (window.showToast) {
@@ -779,16 +717,10 @@ class StorageManager {
     }
 }
 
-// ========================================
-// ІНІЦІАЛІЗАЦІЯ
-// ========================================
-
 const storageManager = new StorageManager();
 
-// Автоматична міграція при першому запуску
 storageManager.initPromise.then(async (initialized) => {
     if (initialized) {
-        // Перевірити чи потрібна міграція
         const migrated = localStorage.getItem('indexeddb_migrated');
         if (!migrated) {
             const success = await storageManager.migrateFromLocalStorage();
@@ -797,14 +729,9 @@ storageManager.initPromise.then(async (initialized) => {
             }
         }
 
-        // Очистити expired cache
         await storageManager.clearExpiredCache();
     }
 });
-
-// ========================================
-// EXPORT
-// ========================================
 
 window.storageManager = storageManager;
 
