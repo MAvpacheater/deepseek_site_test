@@ -1,4 +1,4 @@
-// 📚 Library Manager - ВИПРАВЛЕНО для відображення збережених розмов
+// 📚 Library Manager - З МОДАЛЬНИМ ПРЕВ'Ю РОЗМОВИ
 
 class LibraryManager {
     constructor() {
@@ -13,6 +13,7 @@ class LibraryManager {
 
     init() {
         this.setupEventListeners();
+        this.createPreviewModal();
         console.log('✅ Library Manager initialized');
     }
 
@@ -37,6 +38,319 @@ class LibraryManager {
     }
 
     // ========================================
+    // СТВОРЕННЯ МОДАЛЬНОГО ВІКНА ПРЕВ'Ю
+    // ========================================
+
+    createPreviewModal() {
+        // Перевірити чи вже існує
+        if (document.getElementById('conversationPreviewModal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'conversationPreviewModal';
+        modal.className = 'preview-modal';
+        modal.innerHTML = `
+            <div class="preview-modal-overlay" onclick="libraryManager.closePreview()"></div>
+            <div class="preview-modal-content">
+                <div class="preview-modal-header">
+                    <h2 id="previewTitle">📖 Перегляд розмови</h2>
+                    <button class="preview-modal-close" onclick="libraryManager.closePreview()">✕</button>
+                </div>
+                <div class="preview-modal-body" id="previewBody">
+                    <!-- Тут буде контент розмови -->
+                </div>
+                <div class="preview-modal-footer">
+                    <button class="preview-btn preview-btn-secondary" onclick="libraryManager.closePreview()">
+                        Закрити
+                    </button>
+                    <button class="preview-btn preview-btn-primary" id="loadConversationBtn">
+                        📥 Завантажити в чат
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Закривати на Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closePreview();
+            }
+        });
+    }
+
+    // ========================================
+    // ПОКАЗАТИ ПРЕВ'Ю РОЗМОВИ
+    // ========================================
+
+    async showConversationPreview(id) {
+        const conv = await storageManager.get(storageManager.stores.conversations, id);
+        if (!conv) {
+            if (window.showToast) {
+                showToast('❌ Розмову не знайдено', 'error');
+            }
+            return;
+        }
+
+        const modal = document.getElementById('conversationPreviewModal');
+        const titleEl = document.getElementById('previewTitle');
+        const bodyEl = document.getElementById('previewBody');
+        const loadBtn = document.getElementById('loadConversationBtn');
+
+        // Встановити заголовок
+        titleEl.textContent = `📖 ${conv.title}`;
+
+        // Рендерити повідомлення
+        bodyEl.innerHTML = this.renderConversationMessages(conv);
+
+        // Налаштувати кнопку завантаження
+        loadBtn.onclick = async () => {
+            const confirmed = await this.confirmLoadConversation(conv);
+            if (confirmed) {
+                await this.loadConversationToChat(conv);
+                this.closePreview();
+            }
+        };
+
+        // Показати модальне вікно
+        modal.classList.add('active');
+        
+        // Прокрутити до початку
+        setTimeout(() => {
+            bodyEl.scrollTop = 0;
+        }, 100);
+    }
+
+    renderConversationMessages(conv) {
+        if (!conv.messages || conv.messages.length === 0) {
+            return `
+                <div class="preview-empty-state">
+                    <div class="preview-empty-icon">💬</div>
+                    <p>Порожня розмова</p>
+                </div>
+            `;
+        }
+
+        const mode = conv.mode || 'gemini';
+        const modeIcon = mode === 'gemini' ? '✨' : '💻';
+        const modeColor = mode === 'gemini' ? '#58a6ff' : '#3fb950';
+
+        let html = `
+            <div class="preview-info">
+                <span class="preview-badge" style="background: ${modeColor}20; color: ${modeColor};">
+                    ${modeIcon} ${mode === 'gemini' ? 'Gemini' : 'DeepSeek'}
+                </span>
+                <span class="preview-meta">
+                    💬 ${conv.messages.length} повідомлень
+                </span>
+                <span class="preview-meta">
+                    📅 ${this.formatDate(conv.createdAt || conv.date)}
+                </span>
+            </div>
+        `;
+
+        conv.messages.forEach((msg, index) => {
+            const isUser = msg.role === 'user';
+            const content = msg.parts?.[0]?.text || msg.content || '';
+            
+            if (!content) return;
+
+            html += `
+                <div class="preview-message ${isUser ? 'preview-message-user' : 'preview-message-assistant'}">
+                    <div class="preview-message-avatar">
+                        ${isUser ? '👤' : '🤖'}
+                    </div>
+                    <div class="preview-message-content">
+                        <div class="preview-message-header">
+                            <span class="preview-message-role">
+                                ${isUser ? 'Користувач' : (mode === 'gemini' ? 'Gemini' : 'DeepSeek')}
+                            </span>
+                            <span class="preview-message-number">#${index + 1}</span>
+                        </div>
+                        <div class="preview-message-text">${this.escapeHTML(content)}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        return html;
+    }
+
+    async confirmLoadConversation(conv) {
+        if (window.modalManager) {
+            return await modalManager.confirm(
+                `Завантажити розмову "${conv.title}" в чат?\n\nПоточна історія чату буде замінена.`,
+                {
+                    title: '📥 Завантажити розмову',
+                    icon: '💬',
+                    confirmText: 'Завантажити',
+                    cancelText: 'Скасувати'
+                }
+            );
+        } else {
+            return confirm(`Завантажити розмову "${conv.title}"?\n\nПоточна історія буде замінена.`);
+        }
+    }
+
+    async loadConversationToChat(conv) {
+        const mode = conv.mode || 'gemini';
+
+        // Завантажити розмову в appState
+        if (window.appState) {
+            if (mode === 'gemini') {
+                appState.chat.gemini.history = conv.messages || [];
+            } else if (mode === 'deepseek') {
+                appState.chat.deepseek.history = conv.messages || [];
+            }
+        }
+
+        // Перемкнутися на відповідний режим
+        if (typeof switchMode === 'function') {
+            switchMode(mode);
+        }
+
+        // Рендерити повідомлення
+        if (mode === 'gemini' && window.geminiChat) {
+            geminiChat.renderMessages();
+        } else if (mode === 'deepseek' && window.deepseekCoder) {
+            deepseekCoder.renderMessages();
+        }
+
+        if (window.showToast) {
+            showToast('✅ Розмову завантажено в чат!', 'success');
+        }
+    }
+
+    closePreview() {
+        const modal = document.getElementById('conversationPreviewModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    // ========================================
+    // ПОКАЗАТИ ПРЕВ'Ю КОД-ПРОЕКТУ
+    // ========================================
+
+    async showCodeProjectPreview(id) {
+        const project = await storageManager.get(storageManager.stores.codeFiles, id);
+        if (!project || !project.files) {
+            if (window.showToast) {
+                showToast('❌ Проект не знайдено', 'error');
+            }
+            return;
+        }
+
+        const modal = document.getElementById('conversationPreviewModal');
+        const titleEl = document.getElementById('previewTitle');
+        const bodyEl = document.getElementById('previewBody');
+        const loadBtn = document.getElementById('loadConversationBtn');
+
+        titleEl.textContent = `💻 ${project.title}`;
+        bodyEl.innerHTML = this.renderCodeProjectFiles(project);
+
+        loadBtn.onclick = async () => {
+            const confirmed = await this.confirmLoadCodeProject(project);
+            if (confirmed) {
+                await this.loadCodeProjectToEditor(project);
+                this.closePreview();
+            }
+        };
+
+        modal.classList.add('active');
+        setTimeout(() => bodyEl.scrollTop = 0, 100);
+    }
+
+    renderCodeProjectFiles(project) {
+        const files = project.files || {};
+        const fileCount = Object.keys(files).length;
+
+        if (fileCount === 0) {
+            return `
+                <div class="preview-empty-state">
+                    <div class="preview-empty-icon">📁</div>
+                    <p>Немає файлів</p>
+                </div>
+            `;
+        }
+
+        let html = `
+            <div class="preview-info">
+                <span class="preview-badge" style="background: rgba(63, 185, 80, 0.2); color: #3fb950;">
+                    💻 Code Project
+                </span>
+                <span class="preview-meta">
+                    📁 ${fileCount} файлів
+                </span>
+                <span class="preview-meta">
+                    📅 ${this.formatDate(project.createdAt || project.date)}
+                </span>
+            </div>
+            <div class="preview-files-list">
+        `;
+
+        Object.entries(files).forEach(([filename, file]) => {
+            const language = file.language || 'text';
+            const lines = (file.code || '').split('\n').length;
+            
+            html += `
+                <div class="preview-file-item">
+                    <div class="preview-file-header">
+                        <span class="preview-file-icon">📄</span>
+                        <span class="preview-file-name">${this.escapeHTML(filename)}</span>
+                        <span class="preview-file-meta">${language} • ${lines} рядків</span>
+                    </div>
+                    <pre class="preview-code"><code>${this.escapeHTML(file.code || '').substring(0, 500)}${file.code?.length > 500 ? '\n...' : ''}</code></pre>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        return html;
+    }
+
+    async confirmLoadCodeProject(project) {
+        if (window.modalManager) {
+            return await modalManager.confirm(
+                `Завантажити проект "${project.title}"?\n\nПоточні файли коду будуть замінені.`,
+                {
+                    title: '📥 Завантажити проект',
+                    icon: '💻',
+                    confirmText: 'Завантажити',
+                    cancelText: 'Скасувати'
+                }
+            );
+        } else {
+            return confirm(`Завантажити проект "${project.title}"?\n\nПоточні файли будуть замінені.`);
+        }
+    }
+
+    async loadCodeProjectToEditor(project) {
+        // Завантажити файли в appState
+        if (window.appState) {
+            appState.chat.deepseek.codeFiles = project.files;
+            
+            if (project.context) {
+                appState.setProjectContext(project.context);
+            }
+        }
+
+        // Перемкнутися на DeepSeek
+        if (typeof switchMode === 'function') {
+            switchMode('deepseek');
+        }
+
+        // Відобразити файли
+        if (window.deepseekCoder) {
+            deepseekCoder.displayCodeFiles();
+        }
+
+        if (window.showToast) {
+            showToast('✅ Проект завантажено!', 'success');
+        }
+    }
+
+    // ========================================
     // ВІДОБРАЖЕННЯ БІБЛІОТЕКИ
     // ========================================
 
@@ -45,10 +359,7 @@ class LibraryManager {
         if (!content) return;
 
         try {
-            // Отримати всі збережені елементи
             const items = await this.getAllItems();
-
-            // Фільтрувати
             const filtered = this.filterItems(items);
 
             if (filtered.length === 0) {
@@ -56,9 +367,7 @@ class LibraryManager {
                 return;
             }
 
-            // Відобразити елементи
             content.innerHTML = filtered.map(item => this.renderItem(item)).join('');
-
             console.log(`📚 Відображено ${filtered.length} елементів бібліотеки`);
 
         } catch (error) {
@@ -81,7 +390,6 @@ class LibraryManager {
         const items = [];
 
         try {
-            // 1. Збережені розмови з StorageManager
             if (window.storageManager) {
                 const conversations = await storageManager.getConversations();
                 conversations.forEach(conv => {
@@ -98,10 +406,7 @@ class LibraryManager {
                         data: conv
                     });
                 });
-            }
 
-            // 2. Збережені код-проекти
-            if (window.storageManager) {
                 const codeProjects = await storageManager.getCodeProjects();
                 codeProjects.forEach(project => {
                     items.push({
@@ -119,7 +424,6 @@ class LibraryManager {
                 });
             }
 
-            // Сортувати за датою (новіші спочатку)
             items.sort((a, b) => {
                 const dateA = new Date(a.date || 0).getTime();
                 const dateB = new Date(b.date || 0).getTime();
@@ -140,7 +444,6 @@ class LibraryManager {
             return 'Порожня розмова';
         }
 
-        // Знайти перше повідомлення користувача
         const firstUserMsg = conv.messages.find(m => 
             m.role === 'user' || 
             (m.parts && m.parts[0]?.text)
@@ -172,7 +475,6 @@ class LibraryManager {
     filterItems(items) {
         let filtered = [...items];
 
-        // Фільтр за типом
         if (this.currentFilter === 'gemini') {
             filtered = filtered.filter(item => item.mode === 'gemini');
         } else if (this.currentFilter === 'deepseek') {
@@ -181,7 +483,6 @@ class LibraryManager {
             filtered = filtered.filter(item => item.favorite);
         }
 
-        // Пошук
         if (this.searchQuery) {
             filtered = filtered.filter(item => {
                 const searchText = (
@@ -200,7 +501,6 @@ class LibraryManager {
     setFilter(filterType) {
         this.currentFilter = filterType;
 
-        // Оновити UI кнопок
         document.querySelectorAll('.library-filters .filter-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -210,7 +510,6 @@ class LibraryManager {
             activeBtn.classList.add('active');
         }
 
-        // Оновити відображення
         this.display();
     }
 
@@ -250,8 +549,8 @@ class LibraryManager {
                 ` : ''}
 
                 <div class="library-item-actions">
-                    <button onclick="libraryManager.openItem(${item.id}, '${item.type}')">
-                        📖 Відкрити
+                    <button onclick="libraryManager.openItemPreview(${item.id}, '${item.type}')">
+                        👁️ Переглянути
                     </button>
                     <button onclick="libraryManager.exportItem(${item.id}, '${item.type}')">
                         📤 Експорт
@@ -303,119 +602,18 @@ class LibraryManager {
     // ДІЇ З ЕЛЕМЕНТАМИ
     // ========================================
 
-    async openItem(id, type) {
+    async openItemPreview(id, type) {
         try {
             if (type === 'conversation') {
-                await this.openConversation(id);
+                await this.showConversationPreview(id);
             } else if (type === 'code') {
-                await this.openCodeProject(id);
+                await this.showCodeProjectPreview(id);
             }
         } catch (error) {
-            console.error('Failed to open item:', error);
+            console.error('Failed to open preview:', error);
             if (window.showToast) {
                 showToast('❌ Помилка відкриття', 'error');
             }
-        }
-    }
-
-    async openConversation(id) {
-        const conv = await storageManager.get(storageManager.stores.conversations, id);
-        if (!conv) {
-            if (window.showToast) {
-                showToast('❌ Розмову не знайдено', 'error');
-            }
-            return;
-        }
-
-        const mode = conv.mode || 'gemini';
-
-        // Показати модальне вікно з попередженням
-        if (window.modalManager) {
-            const confirmed = await modalManager.confirm(
-                `Завантажити розмову "${conv.title}"?\n\nПоточна історія чату буде замінена.`,
-                {
-                    title: '📖 Відкрити розмову',
-                    icon: '💬',
-                    confirmText: 'Відкрити',
-                    cancelText: 'Скасувати'
-                }
-            );
-
-            if (!confirmed) return;
-        }
-
-        // Завантажити розмову в appState
-        if (window.appState) {
-            if (mode === 'gemini') {
-                appState.chat.gemini.history = conv.messages || [];
-            } else if (mode === 'deepseek') {
-                appState.chat.deepseek.history = conv.messages || [];
-            }
-        }
-
-        // Перемкнутися на відповідний режим
-        if (typeof switchMode === 'function') {
-            switchMode(mode);
-        }
-
-        // Рендерити повідомлення
-        if (mode === 'gemini' && window.geminiChat) {
-            geminiChat.renderMessages();
-        } else if (mode === 'deepseek' && window.deepseekCoder) {
-            deepseekCoder.renderMessages();
-        }
-
-        if (window.showToast) {
-            showToast('✅ Розмову відкрито!', 'success');
-        }
-    }
-
-    async openCodeProject(id) {
-        const project = await storageManager.get(storageManager.stores.codeFiles, id);
-        if (!project || !project.files) {
-            if (window.showToast) {
-                showToast('❌ Проект не знайдено', 'error');
-            }
-            return;
-        }
-
-        // Показати модальне вікно з попередженням
-        if (window.modalManager) {
-            const confirmed = await modalManager.confirm(
-                `Завантажити проект "${project.title}"?\n\nПоточні файли коду будуть замінені.`,
-                {
-                    title: '📖 Відкрити проект',
-                    icon: '💻',
-                    confirmText: 'Відкрити',
-                    cancelText: 'Скасувати'
-                }
-            );
-
-            if (!confirmed) return;
-        }
-
-        // Завантажити файли в appState
-        if (window.appState) {
-            appState.chat.deepseek.codeFiles = project.files;
-            
-            // Встановити контекст проекту
-            if (project.context) {
-                appState.setProjectContext(project.context);
-            }
-        }
-
-        // Перемкнутися на DeepSeek
-        if (typeof switchMode === 'function') {
-            switchMode('deepseek');
-        }
-
-        // Відобразити файли
-        if (window.deepseekCoder) {
-            deepseekCoder.displayCodeFiles();
-        }
-
-        if (window.showToast) {
-            showToast('✅ Проект відкрито!', 'success');
         }
     }
 
@@ -431,7 +629,6 @@ class LibraryManager {
             item.favorite = !item.favorite;
             await storageManager.update(storeName, item);
 
-            // Оновити відображення
             this.display();
 
             const msg = item.favorite ? 
@@ -461,7 +658,6 @@ class LibraryManager {
                 return;
             }
 
-            // Експортувати як JSON
             const blob = new Blob([JSON.stringify(item, null, 2)], { 
                 type: 'application/json' 
             });
@@ -487,7 +683,6 @@ class LibraryManager {
     }
 
     async deleteItem(id, type) {
-        // Використати modalManager для підтвердження
         let confirmed = false;
 
         if (window.modalManager) {
@@ -502,7 +697,6 @@ class LibraryManager {
                 }
             );
         } else {
-            // Fallback на стандартний confirm
             confirmed = window.confirm('⚠️ Видалити цей елемент? Цю дію не можна скасувати!');
         }
 
@@ -514,8 +708,6 @@ class LibraryManager {
                 storageManager.stores.codeFiles;
 
             await storageManager.delete(storeName, id);
-
-            // Оновити відображення
             this.display();
 
             if (window.showToast) {
@@ -527,127 +719,6 @@ class LibraryManager {
             if (window.showToast) {
                 showToast('❌ Помилка видалення', 'error');
             }
-        }
-    }
-
-    // ========================================
-    // ЗБЕРЕЖЕННЯ ПОТОЧНОЇ РОЗМОВИ
-    // ========================================
-
-    async saveCurrentConversation(mode, title = null) {
-        try {
-            if (!window.appState) {
-                throw new Error('AppState not available');
-            }
-
-            let messages = [];
-            let messageCount = 0;
-
-            if (mode === 'gemini') {
-                messages = appState.getGeminiHistory();
-                messageCount = messages.length;
-            } else if (mode === 'deepseek') {
-                messages = appState.getDeepSeekHistory();
-                messageCount = messages.length;
-            }
-
-            if (messageCount === 0) {
-                if (window.showToast) {
-                    showToast('⚠️ Немає повідомлень для збереження', 'warning');
-                }
-                return null;
-            }
-
-            // Згенерувати назву якщо немає
-            if (!title) {
-                const firstUserMsg = messages.find(m => 
-                    m.role === 'user' || 
-                    (m.parts && m.parts[0]?.text)
-                );
-                
-                if (firstUserMsg) {
-                    const text = firstUserMsg.parts?.[0]?.text || firstUserMsg.content || '';
-                    title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
-                } else {
-                    title = `${mode === 'gemini' ? 'Gemini' : 'DeepSeek'} розмова`;
-                }
-            }
-
-            const conversation = {
-                mode: mode,
-                title: title,
-                messages: messages,
-                date: new Date().toISOString(),
-                favorite: false,
-                tags: [],
-                messageCount: messageCount
-            };
-
-            const id = await storageManager.saveConversation(conversation);
-
-            if (window.showToast) {
-                showToast('✅ Розмову збережено в бібліотеку!', 'success');
-            }
-
-            return id;
-
-        } catch (error) {
-            console.error('Failed to save conversation:', error);
-            if (window.showToast) {
-                showToast('❌ Помилка збереження розмови', 'error');
-            }
-            return null;
-        }
-    }
-
-    async saveCurrentCodeProject(title = null) {
-        try {
-            if (!window.appState) {
-                throw new Error('AppState not available');
-            }
-
-            const files = appState.getAllCodeFiles();
-            if (Object.keys(files).length === 0) {
-                if (window.showToast) {
-                    showToast('⚠️ Немає файлів для збереження', 'warning');
-                }
-                return null;
-            }
-
-            // Згенерувати назву
-            if (!title) {
-                const projectContext = appState.getProjectContext();
-                if (projectContext && projectContext.repo) {
-                    title = projectContext.repo;
-                } else {
-                    title = `Код проект - ${new Date().toLocaleDateString('uk-UA')}`;
-                }
-            }
-
-            const project = {
-                title: title,
-                files: files,
-                context: appState.getProjectContext(),
-                date: new Date().toISOString(),
-                favorite: false,
-                tags: [],
-                fileCount: Object.keys(files).length
-            };
-
-            const id = await storageManager.saveCodeProject(project);
-
-            if (window.showToast) {
-                showToast('✅ Проект збережено в бібліотеку!', 'success');
-            }
-
-            return id;
-
-        } catch (error) {
-            console.error('Failed to save code project:', error);
-            if (window.showToast) {
-                showToast('❌ Помилка збереження проекту', 'error');
-            }
-            return null;
         }
     }
 
@@ -714,54 +785,12 @@ let libraryManager = null;
 document.addEventListener('DOMContentLoaded', () => {
     libraryManager = new LibraryManager();
 
-    // Експортувати функції
     window.displayLibrary = () => libraryManager.display();
     window.filterByType = (type) => libraryManager.setFilter(type);
     window.filterLibrary = () => libraryManager.display();
-    window.saveConversation = async (mode) => {
-        if (window.modalManager) {
-            // Показати модальне вікно для назви
-            const title = await modalManager.prompt('Назва розмови:', {
-                title: '💾 Зберегти розмову',
-                icon: '💬',
-                placeholder: 'Введи назву...',
-                defaultValue: `${mode === 'gemini' ? 'Gemini' : 'DeepSeek'} - ${new Date().toLocaleDateString('uk-UA')}`
-            });
 
-            if (title) {
-                await libraryManager.saveCurrentConversation(mode, title);
-            }
-        } else {
-            const title = prompt('💾 Назва розмови:', `${mode === 'gemini' ? 'Gemini' : 'DeepSeek'} - ${new Date().toLocaleDateString('uk-UA')}`);
-            if (title) {
-                await libraryManager.saveCurrentConversation(mode, title);
-            }
-        }
-    };
-
-    window.saveCodeProject = async () => {
-        if (window.modalManager) {
-            const title = await modalManager.prompt('Назва проекту:', {
-                title: '💾 Зберегти проект',
-                icon: '💻',
-                placeholder: 'Введи назву...',
-                defaultValue: `Код проект - ${new Date().toLocaleDateString('uk-UA')}`
-            });
-
-            if (title) {
-                await libraryManager.saveCurrentCodeProject(title);
-            }
-        } else {
-            const title = prompt('💾 Назва проекту:', `Код проект - ${new Date().toLocaleDateString('uk-UA')}`);
-            if (title) {
-                await libraryManager.saveCurrentCodeProject(title);
-            }
-        }
-    };
-
-    console.log('✅ Library module loaded (FIXED)');
+    console.log('✅ Library module loaded (WITH PREVIEW MODAL)');
 });
 
-// Експорт класу
 window.LibraryManager = LibraryManager;
 window.libraryManager = libraryManager;
