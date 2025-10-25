@@ -1,4 +1,4 @@
-// 📊 Dashboard Manager - Головна панель з РЕАЛЬНИМИ ДАНИМИ
+// 📊 Dashboard Manager - ВИПРАВЛЕНО (NULL для порожніх даних)
 
 class DashboardManager {
     constructor() {
@@ -7,17 +7,9 @@ class DashboardManager {
         this.init();
     }
 
-    // ========================================
-    // ІНІЦІАЛІЗАЦІЯ
-    // ========================================
-
     init() {
         console.log('✅ Dashboard Manager initialized');
     }
-
-    // ========================================
-    // РЕНДЕРИНГ DASHBOARD
-    // ========================================
 
     async render() {
         const container = document.getElementById('dashboardContent');
@@ -25,7 +17,6 @@ class DashboardManager {
 
         container.innerHTML = '';
 
-        // Отримати РЕАЛЬНІ дані
         const stats = await this.getStats();
         const activities = await this.getRecentActivities();
 
@@ -44,10 +35,6 @@ class DashboardManager {
         const systemInfoSection = this.createSystemInfoSection(stats);
         container.appendChild(systemInfoSection);
     }
-
-    // ========================================
-    // QUICK ACCESS
-    // ========================================
 
     createQuickAccessSection(stats) {
         const section = document.createElement('div');
@@ -149,10 +136,6 @@ class DashboardManager {
         return card;
     }
 
-    // ========================================
-    // СТАТИСТИКА
-    // ========================================
-
     createStatsSection(stats) {
         const section = document.createElement('div');
         section.className = 'dashboard-section';
@@ -205,10 +188,6 @@ class DashboardManager {
         `;
         return card;
     }
-
-    // ========================================
-    // АКТИВНІСТЬ
-    // ========================================
 
     createActivitySection(activities) {
         const section = document.createElement('div');
@@ -282,10 +261,6 @@ class DashboardManager {
         });
     }
 
-    // ========================================
-    // ШВИДКІ ДІЇ
-    // ========================================
-
     createQuickActionsSection() {
         const section = document.createElement('div');
         section.className = 'dashboard-section';
@@ -318,10 +293,6 @@ class DashboardManager {
         section.appendChild(grid);
         return section;
     }
-
-    // ========================================
-    // СИСТЕМНА ІНФОРМАЦІЯ
-    // ========================================
 
     createSystemInfoSection(stats) {
         const section = document.createElement('div');
@@ -376,11 +347,10 @@ class DashboardManager {
     }
 
     // ========================================
-    // ДОПОМІЖНІ МЕТОДИ - РЕАЛЬНІ ДАНІ
+    // ОТРИМАННЯ ДАНИХ - ВИПРАВЛЕНО NULL CHECKS
     // ========================================
 
     async getStats() {
-        // Отримати статистику з appState
         const stats = window.appState ? appState.getStats() : {
             geminiRequests: 0,
             deepseekRequests: 0,
@@ -390,18 +360,18 @@ class DashboardManager {
             firstUse: Date.now()
         };
 
-        // Додати додаткову інформацію
         if (window.appState) {
-            const geminiHistory = appState.getGeminiHistory();
-            const deepseekHistory = appState.getDeepSeekHistory();
+            // ✅ ВИКОРИСТАТИ НОВІ МЕТОДИ getGeminiMessages() та getDeepSeekMessages()
+            const geminiMessages = appState.getGeminiMessages ? appState.getGeminiMessages() : [];
+            const deepseekMessages = appState.getDeepSeekMessages ? appState.getDeepSeekMessages() : [];
             const imageGallery = appState.chat.image.gallery;
 
-            stats.geminiMessages = geminiHistory.length;
-            stats.deepseekMessages = deepseekHistory.length;
+            stats.geminiMessages = geminiMessages.length;
+            stats.deepseekMessages = deepseekMessages.length;
             
-            // Останні активності
-            stats.geminiLastActivity = this.getLastMessageTime(geminiHistory);
-            stats.deepseekLastActivity = this.getLastMessageTime(deepseekHistory);
+            // ✅ ВИПРАВЛЕНО: getLastMessageTime повертає null якщо немає повідомлень
+            stats.geminiLastActivity = this.getLastMessageTime(geminiMessages);
+            stats.deepseekLastActivity = this.getLastMessageTime(deepseekMessages);
             stats.imageLastActivity = imageGallery.length > 0 ? imageGallery[0].timestamp : null;
         } else {
             stats.geminiMessages = 0;
@@ -411,7 +381,6 @@ class DashboardManager {
             stats.imageLastActivity = null;
         }
 
-        // Отримати збережені проекти з storageManager
         if (window.storageManager) {
             try {
                 const conversations = await storageManager.getConversations();
@@ -425,51 +394,58 @@ class DashboardManager {
         return stats;
     }
 
+    // ✅ ВИПРАВЛЕНО: Повертати null якщо немає повідомлень
     getLastMessageTime(history) {
         if (!history || history.length === 0) return null;
         
-        // Шукати timestamp в останньому повідомленні
         const lastMessage = history[history.length - 1];
-        return lastMessage.timestamp || lastMessage.created || Date.now();
+        // ✅ ВИПРАВЛЕНО: НЕ використовувати Date.now() як fallback!
+        return lastMessage.timestamp || lastMessage.created || null;
     }
 
     async getRecentActivities() {
         const activities = [];
 
         try {
-            // Активність з чатів
             if (window.appState) {
-                const geminiHistory = appState.getGeminiHistory();
-                const deepseekHistory = appState.getDeepSeekHistory();
+                // ✅ ВИКОРИСТАТИ НОВІ МЕТОДИ
+                const geminiMessages = appState.getGeminiMessages ? appState.getGeminiMessages() : [];
+                const deepseekMessages = appState.getDeepSeekMessages ? appState.getDeepSeekMessages() : [];
                 const imageGallery = appState.chat.image.gallery;
 
                 // Gemini активність
-                if (geminiHistory.length > 0) {
-                    const lastTime = this.getLastMessageTime(geminiHistory);
-                    activities.push({
-                        type: 'chat',
-                        icon: '✨',
-                        color: '#58a6ff',
-                        title: 'Gemini Chat',
-                        description: `${geminiHistory.length} повідомлень`,
-                        time: this.formatTimeAgo(lastTime),
-                        timestamp: lastTime
-                    });
+                if (geminiMessages.length > 0) {
+                    const lastTime = this.getLastMessageTime(geminiMessages);
+                    // ✅ ВИПРАВЛЕНО: Перевірка на null
+                    if (lastTime !== null) {
+                        activities.push({
+                            type: 'chat',
+                            icon: '✨',
+                            color: '#58a6ff',
+                            title: 'Gemini Chat',
+                            description: `${geminiMessages.length} повідомлень`,
+                            time: this.formatTimeAgo(lastTime),
+                            timestamp: lastTime
+                        });
+                    }
                 }
 
                 // DeepSeek активність
-                if (deepseekHistory.length > 0) {
-                    const lastTime = this.getLastMessageTime(deepseekHistory);
+                if (deepseekMessages.length > 0) {
+                    const lastTime = this.getLastMessageTime(deepseekMessages);
                     const codeFiles = appState.getAllCodeFiles();
-                    activities.push({
-                        type: 'code',
-                        icon: '💻',
-                        color: '#3fb950',
-                        title: 'DeepSeek Coder',
-                        description: `${Object.keys(codeFiles).length} файлів створено`,
-                        time: this.formatTimeAgo(lastTime),
-                        timestamp: lastTime
-                    });
+                    // ✅ ВИПРАВЛЕНО: Перевірка на null
+                    if (lastTime !== null) {
+                        activities.push({
+                            type: 'code',
+                            icon: '💻',
+                            color: '#3fb950',
+                            title: 'DeepSeek Coder',
+                            description: `${Object.keys(codeFiles).length} файлів створено`,
+                            time: this.formatTimeAgo(lastTime),
+                            timestamp: lastTime
+                        });
+                    }
                 }
 
                 // Image активність
@@ -535,10 +511,9 @@ class DashboardManager {
                 }
             }
 
-            // Сортувати за часом (новіші зверху)
+            // Сортувати за часом
             activities.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            // Повернути останні 10
             return activities.slice(0, 10);
 
         } catch (error) {
@@ -547,15 +522,15 @@ class DashboardManager {
         }
     }
 
+    // ✅ ВИПРАВЛЕНО: Обробка null
     getLastActivity(model, lastActivityTime) {
-        if (!lastActivityTime) {
+        if (!lastActivityTime || lastActivityTime === null) {
             return 'Немає активності';
         }
         return this.formatTimeAgo(lastActivityTime);
     }
 
     calculateTrend(type, stats) {
-        // Розрахувати тренд на основі збережених даних
         const trendKey = `${type}_trend`;
         const previousValue = parseInt(localStorage.getItem(trendKey) || '0');
         
@@ -623,7 +598,6 @@ class DashboardManager {
 
 const dashboardManager = new DashboardManager();
 
-// Автоматичне оновлення кожні 30 секунд
 setInterval(() => {
     const dashboardMode = document.getElementById('dashboardMode');
     if (dashboardMode && dashboardMode.classList.contains('active')) {
@@ -631,7 +605,6 @@ setInterval(() => {
     }
 }, 30000);
 
-// Рендерити при переключенні на dashboard
 document.addEventListener('DOMContentLoaded', () => {
     if (window.appState) {
         appState.on('mode:change', ({ newMode }) => {
@@ -641,14 +614,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Початковий рендер якщо dashboard активний
     const dashboardMode = document.getElementById('dashboardMode');
     if (dashboardMode && dashboardMode.classList.contains('active')) {
         dashboardManager.render();
     }
 });
 
-// Експорт
 window.dashboardManager = dashboardManager;
 
-console.log('✅ Dashboard Manager loaded with REAL DATA');
+console.log('✅ Dashboard Manager loaded (FIXED - Null для порожніх даних)');
