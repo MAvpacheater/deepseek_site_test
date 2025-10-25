@@ -1,4 +1,4 @@
-// ⚙️ Settings Module - ВИПРАВЛЕНО
+// ⚙️ Settings Module - ВИПРАВЛЕНО (NULL CHECKS)
 
 class SettingsManager {
     constructor() {
@@ -10,7 +10,7 @@ class SettingsManager {
     }
 
     // ========================================
-    // ЗАВАНТАЖЕННЯ НАЛАШТУВАНЬ
+    // ЗАВАНТАЖЕННЯ НАЛАШТУВАНЬ - ВИПРАВЛЕНО NULL CHECKS
     // ========================================
 
     async loadSettings() {
@@ -22,15 +22,17 @@ class SettingsManager {
             if (geminiInput) {
                 const geminiKey = typeof getGeminiApiKey === 'function' ? 
                     getGeminiApiKey() : 
-                    localStorage.getItem('gemini_api_key') || '';
-                geminiInput.value = geminiKey;
+                    localStorage.getItem('gemini_api_key');
+                // ✅ ВИПРАВЛЕНО: Перевірка на null
+                geminiInput.value = geminiKey || '';
             }
             
             if (groqInput) {
                 const groqKey = typeof getGroqApiKey === 'function' ? 
                     getGroqApiKey() : 
-                    localStorage.getItem('groq_api_key') || '';
-                groqInput.value = groqKey;
+                    localStorage.getItem('groq_api_key');
+                // ✅ ВИПРАВЛЕНО: Перевірка на null
+                groqInput.value = groqKey || '';
             }
 
             // System Prompts
@@ -38,11 +40,15 @@ class SettingsManager {
             const deepseekPromptInput = document.getElementById('deepseekSystemPrompt');
 
             if (geminiPromptInput && window.appState) {
-                geminiPromptInput.value = appState.getSetting('geminiSystemPrompt');
+                // ✅ ВИПРАВЛЕНО: Використати || '' замість прямого присвоєння
+                const prompt = appState.getSetting('geminiSystemPrompt');
+                geminiPromptInput.value = prompt || '';
             }
 
             if (deepseekPromptInput && window.appState) {
-                deepseekPromptInput.value = appState.getSetting('deepseekSystemPrompt');
+                // ✅ ВИПРАВЛЕНО: Використати || '' замість прямого присвоєння
+                const prompt = appState.getSetting('deepseekSystemPrompt');
+                deepseekPromptInput.value = prompt || '';
             }
 
             // Статистика
@@ -150,12 +156,12 @@ class SettingsManager {
                 return;
             }
 
-            // Зберегти промпти через appState
-            if (geminiPrompt && window.appState) {
+            // ✅ ВИПРАВЛЕНО: Перевірка на null/undefined перед збереженням
+            if (geminiPrompt !== null && geminiPrompt !== undefined && window.appState) {
                 appState.setSetting('geminiSystemPrompt', geminiPrompt);
             }
 
-            if (deepseekPrompt && window.appState) {
+            if (deepseekPrompt !== null && deepseekPrompt !== undefined && window.appState) {
                 appState.setSetting('deepseekSystemPrompt', deepseekPrompt);
             }
 
@@ -172,7 +178,7 @@ class SettingsManager {
     }
 
     // ========================================
-    // СТАТИСТИКА
+    // СТАТИСТИКА - ВИПРАВЛЕНО NULL CHECKS
     // ========================================
 
     updateStats() {
@@ -180,6 +186,7 @@ class SettingsManager {
 
         const stats = appState.getStats();
 
+        // ✅ ВИПРАВЛЕНО: Перевірка на існування кожного елемента
         const elements = {
             statGemini: stats.geminiRequests,
             statDeepseek: stats.deepseekRequests,
@@ -192,13 +199,17 @@ class SettingsManager {
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
-                element.textContent = typeof value === 'number' ? 
-                    value.toLocaleString() : value;
+                // ✅ ВИПРАВЛЕНО: Перевірка на null/undefined
+                const displayValue = (value !== null && value !== undefined) ? 
+                    (typeof value === 'number' ? value.toLocaleString() : value) : 
+                    '0';
+                element.textContent = displayValue;
             }
         });
     }
 
     calculateDaysUsed(firstUse) {
+        // ✅ ВИПРАВЛЕНО: Перевірка на null
         if (!firstUse) return 1;
         const days = Math.floor((Date.now() - firstUse) / (1000 * 60 * 60 * 24));
         return days + 1;
@@ -376,19 +387,20 @@ class SettingsManager {
 
             let info = '💾 ІНФОРМАЦІЯ ПРО СХОВИЩЕ\n\n';
             info += `📊 Збережено:\n`;
-            info += `  • Розмови: ${stats.conversations}\n`;
-            info += `  • Код проекти: ${stats.codeFiles}\n`;
-            info += `  • Спогади: ${stats.memories}\n`;
-            info += `  • Плани: ${stats.plans}\n`;
-            info += `  • Cache: ${stats.cache}\n\n`;
+            info += `  • Розмови: ${stats.conversations || 0}\n`;
+            info += `  • Код проекти: ${stats.codeFiles || 0}\n`;
+            info += `  • Спогади: ${stats.memories || 0}\n`;
+            info += `  • Плани: ${stats.plans || 0}\n`;
+            info += `  • Cache: ${stats.cache || 0}\n\n`;
 
-            if (stats.usage !== undefined) {
+            // ✅ ВИПРАВЛЕНО: Перевірка на undefined
+            if (stats.usage !== undefined && stats.usage !== null) {
                 const usageMB = (stats.usage / (1024 * 1024)).toFixed(2);
                 const quotaMB = (stats.quota / (1024 * 1024)).toFixed(2);
                 info += `💿 Використання:\n`;
                 info += `  • Зайнято: ${usageMB} MB\n`;
                 info += `  • Доступно: ${quotaMB} MB\n`;
-                info += `  • Використано: ${stats.usagePercent}%\n`;
+                info += `  • Використано: ${stats.usagePercent || 0}%\n`;
             }
 
             alert(info);
@@ -398,36 +410,115 @@ class SettingsManager {
             alert('❌ Помилка отримання інформації');
         }
     }
+
+    // ========================================
+    // ВАЛІДАЦІЯ ДАНИХ
+    // ========================================
+
+    validateSettingsInputs() {
+        const inputs = {
+            geminiKey: document.getElementById('geminiApiKey'),
+            groqKey: document.getElementById('groqApiKey'),
+            geminiPrompt: document.getElementById('geminiSystemPrompt'),
+            deepseekPrompt: document.getElementById('deepseekSystemPrompt')
+        };
+
+        let isValid = true;
+        const errors = [];
+
+        // ✅ ВИПРАВЛЕНО: Перевірка кожного поля на null
+        if (inputs.geminiKey && inputs.geminiKey.value) {
+            if (inputs.geminiKey.value.length < 30) {
+                errors.push('Gemini API ключ занадто короткий');
+                isValid = false;
+            }
+        }
+
+        if (inputs.groqKey && inputs.groqKey.value) {
+            if (inputs.groqKey.value.length < 40) {
+                errors.push('Groq API ключ занадто короткий');
+                isValid = false;
+            }
+        }
+
+        return { isValid, errors };
+    }
+
+    // ========================================
+    // БЕЗПЕЧНІ GETTERI
+    // ========================================
+
+    safeGetInputValue(id, defaultValue = '') {
+        const element = document.getElementById(id);
+        if (!element) return defaultValue;
+        
+        const value = element.value;
+        // ✅ ВИПРАВЛЕНО: Перевірка на null/undefined
+        return (value !== null && value !== undefined) ? value.trim() : defaultValue;
+    }
+
+    safeSetInputValue(id, value) {
+        const element = document.getElementById(id);
+        if (!element) return false;
+        
+        // ✅ ВИПРАВЛЕНО: Перевірка на null/undefined
+        element.value = (value !== null && value !== undefined) ? value : '';
+        return true;
+    }
 }
 
 // ========================================
-// ІНІЦІАЛІЗАЦІЯ
+// ІНІЦІАЛІЗАЦІЯ - ВИПРАВЛЕНО RACE CONDITION
 // ========================================
 
 let settingsManager = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    settingsManager = new SettingsManager();
-    
-    // Завантажити налаштування
-    await settingsManager.loadSettings();
+// ✅ ВИПРАВЛЕНО: Перевірка стану документа
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        settingsManager = new SettingsManager();
+        
+        // Завантажити налаштування
+        await settingsManager.loadSettings();
 
-    // Оновлювати статистику кожні 10 секунд
-    setInterval(() => {
-        settingsManager.updateStats();
-    }, 10000);
+        // Оновлювати статистику кожні 10 секунд
+        setInterval(() => {
+            settingsManager.updateStats();
+        }, 10000);
 
-    // Експортувати функції для сумісності
-    window.saveSettings = () => settingsManager.saveSettings();
-    window.loadSettings = () => settingsManager.loadSettings();
-    window.clearAllData = () => settingsManager.clearAllData();
-    window.resetStats = () => settingsManager.resetStats();
-    window.exportAllData = () => settingsManager.exportAllData();
-    window.importData = () => settingsManager.importData();
-    window.showStorageInfo = () => settingsManager.showStorageInfo();
+        // Експортувати функції для сумісності
+        window.saveSettings = () => settingsManager.saveSettings();
+        window.loadSettings = () => settingsManager.loadSettings();
+        window.clearAllData = () => settingsManager.clearAllData();
+        window.resetStats = () => settingsManager.resetStats();
+        window.exportAllData = () => settingsManager.exportAllData();
+        window.importData = () => settingsManager.importData();
+        window.showStorageInfo = () => settingsManager.showStorageInfo();
 
-    console.log('✅ Settings module loaded (FIXED)');
-});
+        console.log('✅ Settings module loaded (FIXED - Null Checks + Race Condition)');
+    });
+} else {
+    // Документ вже завантажений
+    (async () => {
+        settingsManager = new SettingsManager();
+        
+        await settingsManager.loadSettings();
+
+        setInterval(() => {
+            settingsManager.updateStats();
+        }, 10000);
+
+        window.saveSettings = () => settingsManager.saveSettings();
+        window.loadSettings = () => settingsManager.loadSettings();
+        window.clearAllData = () => settingsManager.clearAllData();
+        window.resetStats = () => settingsManager.resetStats();
+        window.exportAllData = () => settingsManager.exportAllData();
+        window.importData = () => settingsManager.importData();
+        window.showStorageInfo = () => settingsManager.showStorageInfo();
+
+        console.log('✅ Settings module loaded immediately (FIXED - Null Checks + Race Condition)');
+    })();
+}
 
 // Експорт класу
 window.SettingsManager = SettingsManager;
