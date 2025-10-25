@@ -1,4 +1,4 @@
-// 🧠 Agent Memory System - LIST VIEW (2025 version)
+// 🧠 Agent Memory System - LIST VIEW (2025 version) - ВИПРАВЛЕНО
 
 class MemoryManager {
     constructor() {
@@ -78,7 +78,7 @@ class MemoryManager {
     }
 
     // ========================================
-    // ВІДОБРАЖЕННЯ СПОГАДІВ - ВИПРАВЛЕНО НА СПИСОК
+    // ВІДОБРАЖЕННЯ СПОГАДІВ - СПИСОК
     // ========================================
 
     displayMemories() {
@@ -106,7 +106,7 @@ class MemoryManager {
         // Сортувати за датою
         const sorted = [...memories].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-        // ВИПРАВЛЕНО: Створюємо список замість карток
+        // Створюємо список
         list.innerHTML = `
             <div class="memory-list-container">
                 ${sorted.map(memory => this.createMemoryListItem(memory)).join('')}
@@ -117,7 +117,7 @@ class MemoryManager {
     }
 
     // ========================================
-    // СТВОРЕННЯ ЕЛЕМЕНТА СПИСКУ - НОВИЙ МЕТОД
+    // СТВОРЕННЯ ЕЛЕМЕНТА СПИСКУ
     // ========================================
 
     createMemoryListItem(memory) {
@@ -215,7 +215,7 @@ class MemoryManager {
             // Зберегти в IndexedDB
             await window.storageManager?.saveMemory?.(memory);
             
-            // ДОДАНО: Зберегти в localStorage як backup
+            // Зберегти в localStorage як backup
             await this.saveToLocalStorage();
 
             this.updateMemoryStats();
@@ -257,32 +257,36 @@ class MemoryManager {
         memory.important = !memory.important;
         await window.storageManager?.update?.(window.storageManager.stores.memories, memory);
         
-        // ДОДАНО: Зберегти в localStorage
+        // Зберегти в localStorage
         await this.saveToLocalStorage();
 
         this.updateMemoryStats();
         this.displayMemories();
     }
 
+    // ========================================
+    // ВИДАЛЕННЯ - ВИПРАВЛЕНО! confirm → delete
+    // ========================================
+
     async deleteMemory(id) {
-        // ВИПРАВЛЕНО: Спочатку підтвердження, потім видалення
+        // ✅ ВИПРАВЛЕНО: Спочатку знайти спогад
         const memories = window.appState?.getMemories?.() || [];
         const memory = memories.find(m => m.id === id);
         
         if (!memory) {
-            console.warn('Memory not found:', id);
+            console.warn('❌ Memory not found:', id);
             return;
         }
 
-        // Показати підтвердження з назвою спогаду
+        // ✅ ВИПРАВЛЕНО: Показати підтвердження з назвою спогаду
         const confirmMessage = `⚠️ Видалити спогад "${memory.title}"?\n\nЦю дію не можна скасувати!`;
         
         if (!confirm(confirmMessage)) {
-            console.log('Видалення скасовано користувачем');
-            return; // Користувач скасував - НЕ видаляємо
+            console.log('ℹ️ Видалення скасовано користувачем');
+            return; // ❌ Користувач скасував - НЕ видаляємо!
         }
 
-        // Тільки ПІСЛЯ підтвердження видаляємо
+        // ✅ ВИПРАВЛЕНО: Тільки ПІСЛЯ підтвердження - видаляємо
         try {
             const arr = window.appState?.agent?.memory || [];
             const i = arr.findIndex(m => m.id === id);
@@ -485,7 +489,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.exportMemories = () => memoryManager.exportMemories();
     window.addTestMemories = () => memoryManager.addTestMemories();
 
-    console.log('✅ Memory module loaded (WITH PERSISTENCE)');
+    console.log('✅ Memory module loaded (FIXED: confirm → delete)');
 });
 
 // Автоматичне збереження кожні 30 секунд
