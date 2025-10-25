@@ -1,4 +1,4 @@
-// 📦 App State Manager - ПОВНІСТЮ ВИПРАВЛЕНО (БЕЗ TIMESTAMP)
+// 📦 App State Manager - ВИПРАВЛЕНО (TIMESTAMP для UI)
 
 class AppState {
     constructor() {
@@ -16,12 +16,12 @@ class AppState {
         // Chat State
         this.chat = {
             gemini: {
-                history: [],
-                messages: []
+                history: [],      // Для API (БЕЗ timestamp)
+                messages: []      // ✅ НОВИЙ: Для UI (З timestamp)
             },
             deepseek: {
-                history: [],
-                messages: [],
+                history: [],      // Для API (БЕЗ timestamp)
+                messages: [],     // ✅ НОВИЙ: Для UI (З timestamp)
                 codeFiles: {},
                 codeHistory: {},
                 projectContext: null
@@ -75,16 +75,11 @@ class AppState {
 
     async init() {
         try {
-            // Завантажити збережений стан
             await this.loadState();
-            
-            // Встановити тему
             this.applyTheme();
-            
-            // Завантажити API ключі
             await this.loadApiKeys();
             
-            console.log('✅ App State initialized (БЕЗ TIMESTAMP)');
+            console.log('✅ App State initialized (FIXED - Timestamp для UI)');
         } catch (error) {
             console.error('❌ App State initialization failed:', error);
             if (window.errorHandler) {
@@ -99,7 +94,6 @@ class AppState {
     }
 
     async loadState() {
-        // Завантажити UI стан
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
             this.ui.theme = savedTheme;
@@ -110,14 +104,12 @@ class AppState {
             this.ui.isCodePanelOpen = codePanelOpen === 'true';
         }
 
-        // Завантажити статистику
         if (window.storageManager) {
             const stats = await storageManager.getSetting('user_stats');
             if (stats) {
                 this.user.stats = { ...this.user.stats, ...stats };
             }
         } else {
-            // Fallback до localStorage
             const savedStats = localStorage.getItem('user_stats');
             if (savedStats) {
                 try {
@@ -128,13 +120,11 @@ class AppState {
             }
         }
 
-        // Встановити firstUse якщо немає
         if (!this.user.stats.firstUse) {
             this.user.stats.firstUse = Date.now();
             await this.saveStats();
         }
 
-        // Завантажити налаштування
         const geminiPrompt = localStorage.getItem('gemini_system_prompt');
         if (geminiPrompt) {
             this.user.settings.geminiSystemPrompt = geminiPrompt;
@@ -147,7 +137,6 @@ class AppState {
     }
 
     async loadApiKeys() {
-        // Використати безпечні функції якщо доступні
         if (typeof getGeminiApiKey === 'function') {
             this.user.apiKeys.gemini = getGeminiApiKey();
         } else {
@@ -224,75 +213,120 @@ class AppState {
     }
 
     // ========================================
-    // CHAT STATE MANAGEMENT - БЕЗ TIMESTAMP
+    // CHAT STATE - GEMINI - ВИПРАВЛЕНО
     // ========================================
 
-    // Gemini - БЕЗ TIMESTAMP (Gemini API його не приймає!)
     addGeminiMessage(role, content) {
-        const message = {
+        const timestamp = Date.now();
+        
+        // ✅ Повідомлення для API (БЕЗ timestamp - Gemini API його не приймає!)
+        const apiMessage = {
             role: role,
             parts: [{ text: content }]
-            // Gemini API НЕ потребує і НЕ приймає timestamp в історії!
         };
-
-        this.chat.gemini.history.push(message);
+        this.chat.gemini.history.push(apiMessage);
         
-        // Обмежити історію
+        // ✅ НОВИЙ: Повідомлення для UI (З timestamp для сортування!)
+        const uiMessage = {
+            role: role,
+            parts: [{ text: content }],
+            timestamp: timestamp,  // Для UI відображення та сортування
+            created: new Date(timestamp).toISOString()
+        };
+        this.chat.gemini.messages.push(uiMessage);
+        
+        // Обмежити історію API
         if (this.chat.gemini.history.length > 20) {
             this.chat.gemini.history = this.chat.gemini.history.slice(-20);
         }
+        
+        // Обмежити історію UI
+        if (this.chat.gemini.messages.length > 100) {
+            this.chat.gemini.messages = this.chat.gemini.messages.slice(-100);
+        }
 
-        this.notify('gemini:message', { message });
+        this.notify('gemini:message', { message: uiMessage });
         
         // Оновити статистику
         if (role === 'user') {
             this.incrementStat('geminiRequests');
         }
 
-        return message;
+        return uiMessage;
     }
 
     getGeminiHistory() {
+        // ✅ Повертати історію для API (БЕЗ timestamp)
         return this.chat.gemini.history;
+    }
+
+    getGeminiMessages() {
+        // ✅ НОВИЙ: Повертати повідомлення для UI (З timestamp)
+        return this.chat.gemini.messages;
     }
 
     clearGeminiHistory() {
         this.chat.gemini.history = [];
+        this.chat.gemini.messages = [];
         this.notify('gemini:clear');
         return this;
     }
 
-    // DeepSeek - БЕЗ TIMESTAMP (Groq також не потребує)
+    // ========================================
+    // CHAT STATE - DEEPSEEK - ВИПРАВЛЕНО
+    // ========================================
+
     addDeepSeekMessage(role, content) {
-        const message = {
+        const timestamp = Date.now();
+        
+        // ✅ Повідомлення для API (БЕЗ timestamp - Groq також не потребує)
+        const apiMessage = {
             role: role,
             content: content
-            // Groq (DeepSeek) теж не потребує timestamp в історії API
         };
-
-        this.chat.deepseek.history.push(message);
+        this.chat.deepseek.history.push(apiMessage);
         
-        // Обмежити історію
+        // ✅ НОВИЙ: Повідомлення для UI (З timestamp)
+        const uiMessage = {
+            role: role,
+            content: content,
+            timestamp: timestamp,
+            created: new Date(timestamp).toISOString()
+        };
+        this.chat.deepseek.messages.push(uiMessage);
+        
+        // Обмежити історію API
         if (this.chat.deepseek.history.length > 40) {
             this.chat.deepseek.history = this.chat.deepseek.history.slice(-40);
         }
-
-        this.notify('deepseek:message', { message });
         
-        // Оновити статистику
+        // Обмежити історію UI
+        if (this.chat.deepseek.messages.length > 100) {
+            this.chat.deepseek.messages = this.chat.deepseek.messages.slice(-100);
+        }
+
+        this.notify('deepseek:message', { message: uiMessage });
+        
         if (role === 'user') {
             this.incrementStat('deepseekRequests');
         }
 
-        return message;
+        return uiMessage;
     }
 
     getDeepSeekHistory() {
+        // ✅ Повертати історію для API (БЕЗ timestamp)
         return this.chat.deepseek.history;
+    }
+
+    getDeepSeekMessages() {
+        // ✅ НОВИЙ: Повертати повідомлення для UI (З timestamp)
+        return this.chat.deepseek.messages;
     }
 
     clearDeepSeekHistory() {
         this.chat.deepseek.history = [];
+        this.chat.deepseek.messages = [];
         this.chat.deepseek.codeFiles = {};
         this.chat.deepseek.codeHistory = {};
         this.chat.deepseek.projectContext = null;
@@ -300,7 +334,10 @@ class AppState {
         return this;
     }
 
-    // Code Files
+    // ========================================
+    // CODE FILES
+    // ========================================
+
     setCodeFile(filename, fileData) {
         this.chat.deepseek.codeFiles[filename] = {
             ...fileData,
@@ -330,7 +367,6 @@ class AppState {
         return this;
     }
 
-    // Code History (для undo/redo)
     addCodeHistory(filename, code) {
         if (!this.chat.deepseek.codeHistory[filename]) {
             this.chat.deepseek.codeHistory[filename] = [];
@@ -341,7 +377,6 @@ class AppState {
             timestamp: Date.now()
         });
 
-        // Обмежити історію до 10 версій
         if (this.chat.deepseek.codeHistory[filename].length > 10) {
             this.chat.deepseek.codeHistory[filename] = 
                 this.chat.deepseek.codeHistory[filename].slice(-10);
@@ -354,7 +389,6 @@ class AppState {
         return this.chat.deepseek.codeHistory[filename] || [];
     }
 
-    // Project Context
     setProjectContext(context) {
         this.chat.deepseek.projectContext = context;
         this.notify('project:context', { context });
@@ -365,11 +399,14 @@ class AppState {
         return this.chat.deepseek.projectContext;
     }
 
-    // Images - З timestamp (для UI відображення)
+    // ========================================
+    // IMAGES
+    // ========================================
+
     addImage(imageData) {
         this.chat.image.gallery.push({
             ...imageData,
-            timestamp: Date.now() // Тут timestamp потрібен для сортування в UI
+            timestamp: Date.now()
         });
         this.incrementStat('imagesGenerated');
         this.notify('image:add', { imageData });
@@ -407,7 +444,10 @@ class AppState {
         return this.user.settings[key];
     }
 
-    // Statistics
+    // ========================================
+    // STATISTICS
+    // ========================================
+
     incrementStat(statName, amount = 1) {
         if (this.user.stats.hasOwnProperty(statName)) {
             this.user.stats[statName] += amount;
@@ -491,11 +531,10 @@ class AppState {
     addMemory(memory) {
         this.agent.memory.unshift({
             ...memory,
-            id: Date.now(),
-            timestamp: Date.now()
+            id: memory.id || Date.now(),
+            timestamp: memory.timestamp || Date.now()
         });
 
-        // Обмежити до 100 спогадів
         if (this.agent.memory.length > 100) {
             this.agent.memory = this.agent.memory.slice(0, 100);
         }
@@ -511,8 +550,8 @@ class AppState {
     addPlan(plan) {
         this.agent.plans.push({
             ...plan,
-            id: Date.now(),
-            createdAt: Date.now()
+            id: plan.id || Date.now(),
+            createdAt: plan.createdAt || Date.now()
         });
         this.notify('plan:add', { plan });
         return this;
@@ -551,7 +590,6 @@ class AppState {
         }
         this.listeners.get(event).push(callback);
         
-        // Повернути функцію для відписки
         return () => this.off(event, callback);
     }
 
@@ -640,13 +678,12 @@ class AppState {
         return true;
     }
 
-    // Debug helper
     debug() {
         console.group('🔍 App State Debug');
         console.log('UI:', this.ui);
         console.log('Chat:', {
-            gemini: `${this.chat.gemini.history.length} messages (NO TIMESTAMP)`,
-            deepseek: `${this.chat.deepseek.history.length} messages, ${Object.keys(this.chat.deepseek.codeFiles).length} files`,
+            gemini: `${this.chat.gemini.history.length} API messages, ${this.chat.gemini.messages.length} UI messages`,
+            deepseek: `${this.chat.deepseek.history.length} API messages, ${this.chat.deepseek.messages.length} UI messages, ${Object.keys(this.chat.deepseek.codeFiles).length} files`,
             image: `${this.chat.image.gallery.length} images`
         });
         console.log('Stats:', this.user.stats);
@@ -666,11 +703,9 @@ class AppState {
 // ========================================
 
 const appState = new AppState();
-
-// Експортувати в window
 window.appState = appState;
 
-// Compatibility layer
+// ✅ ОНОВЛЕНО: Compatibility layer з новими методами
 Object.defineProperty(window, 'geminiHistory', {
     get: () => appState.getGeminiHistory(),
     set: (value) => {
@@ -733,9 +768,8 @@ appState.on('mode:change', ({ newMode }) => {
     }
 });
 
-// Auto-save stats кожні 30 секунд
 setInterval(() => {
     appState.saveStats();
 }, 30000);
 
-console.log('✅ App State Manager initialized (БЕЗ TIMESTAMP - ВИПРАВЛЕНО)');
+console.log('✅ App State Manager initialized (FIXED - Timestamp для UI + API)');
