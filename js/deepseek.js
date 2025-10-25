@@ -280,44 +280,176 @@ class DeepSeekCoder {
             appState.getProjectContext() :
             null;
 
+        // ✅ ОБМЕЖЕННЯ: максимальний розмір контексту (приблизно 15000 токенів = 60000 символів)
+        const MAX_CONTEXT_LENGTH = 50000; // символів (залишаємо запас для відповіді)
+        const MAX_FILE_PREVIEW = 2000; // символів на файл
+        const MAX_FILES_TO_INCLUDE = 5; // максимум повних файлів
+
         // Якщо є завантажений проект, додати контекст
         if (projectContext && Object.keys(files).length > 0) {
-            context += '\n\n--- КОНТЕКСТ ПРОЕКТУ ---\n';
+            let projectInfo = '\n\n--- КОНТЕКСТ ПРОЕКТУ ---\n';
             
             if (projectContext.repo) {
-                context += `Репозиторій: ${projectContext.owner}/${projectContext.repo}\n`;
+                projectInfo += `Репозиторій: ${projectContext.owner}/${projectContext.repo}\n`;
             }
             
-            context += `Файлів: ${Object.keys(files).length}\n\n`;
+            projectInfo += `Файлів: ${Object.keys(files).length}\n\n`;
             
-            // Додати структуру файлів
-            context += 'Структура:\n';
-            Object.keys(files).slice(0, 20).forEach(filename => {
+            // Додати структуру файлів (завжди невелика)
+            projectInfo += 'Структура:\n';
+            Object.keys(files).slice(0, 30).forEach(filename => {
                 const file = files[filename];
-                context += `• ${filename} (${file.language || 'unknown'})${file.modified ? ' [змінено]' : ''}\n`;
+                const size = file.code ? `${(file.code.length / 1024).toFixed(1)}KB` : '0KB';
+                projectInfo += `• ${filename} (${file.language || 'unknown'}, ${size})${file.modified ? ' [змінено]' : ''}\n`;
             });
             
-            // Додати згадані файли
-            const mentionedFiles = Object.keys(files).filter(filename => 
-                userMessage.toLowerCase().includes(filename.toLowerCase()) ||
-                userMessage.toLowerCase().includes(filename.split('/').pop().toLowerCase())
-            );
+            if (Object.keys(files).length > 30) {
+                projectInfo += `... та ще ${Object.keys(files).length - 30} файлів\n`;
+            }
             
-            if (mentionedFiles.length > 0 && mentionedFiles.length <= 3) {
-                context += '\n--- ЗГАДАНІ ФАЙЛИ ---\n';
-                mentionedFiles.forEach(filename => {
+            // Перевірити чи не перевищуємо ліміт після структури
+            if ((context + projectInfo).length > MAX_CONTEXT_LENGTH) {
+                console.warn('⚠️ Context too large, truncating project structure');
+                projectInfo = projectInfo.substring(0, 2000) + '\n... (структуру скорочено)\n';
+            }
+            
+            context += projectInfo;
+            
+            // ✅ РОЗУМНИЙ ВИБІР ФАЙЛІВ для включення
+            const mentionedFiles = this.selectRelevantFiles(userMessage, files, MAX_FILES_TO_INCLUDE);
+            
+            if (mentionedFiles.length > 0) {
+                context += '\n--- РЕЛЕВАНТНІ ФАЙЛИ ---\n';
+                
+                let filesAdded = 0;
+                for (const filename of mentionedFiles) {
                     const file = files[filename];
-                    context += `\n// FILE: ${filename}\n`;
-                    const code = file.code || '';
-                    context += code.substring(0, 3000);
-                    if (code.length > 3000) {
-                        context += '\n... (скорочено)';
+                    if (!file || !file.code) continue;
+                    
+                    let fileContent = `\n// FILE: ${filename}\n`;
+                    
+                    // ✅ ОБМЕЖЕННЯ розміру файлу
+                    const code = file.code;
+                    if (code.length > MAX_FILE_PREVIEW) {
+                        // Взяти початок і кінець файлу
+                        const half = Math.floor(MAX_FILE_PREVIEW / 2);
+                        fileContent += code.substring(0, half);
+                        fileContent += '\n\n... (середину скорочено) ...\n\n';
+                        fileContent += code.substring(code.length - half);
+                        fileContent += `\n// Повний розмір: ${(code.length / 1024).toFixed(1)}KB`;
+                    } else {
+                        fileContent += code;
                     }
-                });
+                    
+                    // ✅ ПЕРЕВІРКА: чи не перевищимо ліміт?
+                    if ((context + fileContent).length > MAX_CONTEXT_LENGTH) {
+                        context += `\n// Файл ${filename} пропущено (ліміт контексту)\n`;
+                        console.warn(`⚠️ Skipping file ${filename} - context limit reached`);
+                        break;
+                    }
+                    
+                    context += fileContent;
+                    filesAdded++;
+                    
+                    if (filesAdded >= MAX_FILES_TO_INCLUDE) {
+                        if (mentionedFiles.length > filesAdded) {
+                            context += `\n// Ще ${mentionedFiles.length - filesAdded} файлів доступні (запитай конкретно)\n`;
+                        }
+                        break;
+                    }
+                }
+                
+                if (filesAdded > 0) {
+                    console.log(`✅ Added ${filesAdded} files to context (${context.length} chars)`);
+                }
             }
         }
         
+        // ✅ ФІНАЛЬНА ПЕРЕВІРКА
+        if (context.length > MAX_CONTEXT_LENGTH) {
+            console.warn(`⚠️ Context too large (${context.length} chars), truncating...`);
+            context = context.substring(0, MAX_CONTEXT_LENGTH);
+            context += '\n\n... (контекст обрізано через ліміт токенів)\n';
+        }
+        
         return context;
+    }
+
+    // ✅ РОЗУМНИЙ ВИБІР РЕЛЕВАНТНИХ ФАЙЛІВ
+    selectRelevantFiles(userMessage, files, maxFiles) {
+        const messageLower = userMessage.toLowerCase();
+        const fileEntries = Object.entries(files);
+        
+        // Пріоритети файлів
+        const scoredFiles = fileEntries.map(([filename, file]) => {
+            let score = 0;
+            const filenameLower = filename.toLowerCase();
+            const basename = filename.split('/').pop().toLowerCase();
+            
+            // 1. Прямо згаданий у повідомленні (найвищий пріоритет)
+            if (messageLower.includes(filenameLower)) {
+                score += 100;
+            } else if (messageLower.includes(basename)) {
+                score += 80;
+            }
+            
+            // 2. Згадані ключові слова з файлу
+            const keywords = ['main', 'index', 'app', 'core', 'config', 'api', 'component'];
+            for (const keyword of keywords) {
+                if (filenameLower.includes(keyword)) {
+                    score += 30;
+                    break;
+                }
+            }
+            
+            // 3. Файл був змінений (може бути актуальний)
+            if (file.modified) {
+                score += 20;
+            }
+            
+            // 4. Тип файлу відповідає запиту
+            if (messageLower.includes('html') && filename.endsWith('.html')) score += 40;
+            if (messageLower.includes('css') && filename.endsWith('.css')) score += 40;
+            if (messageLower.includes('js') && filename.endsWith('.js')) score += 40;
+            if (messageLower.includes('style') && filename.endsWith('.css')) score += 40;
+            if (messageLower.includes('script') && filename.endsWith('.js')) score += 40;
+            
+            // 5. Менші файли легше обробляти
+            const fileSize = file.code ? file.code.length : 0;
+            if (fileSize < 5000) {
+                score += 10;
+            } else if (fileSize > 20000) {
+                score -= 10; // Штраф за великі файли
+            }
+            
+            return { filename, score, size: fileSize };
+        });
+        
+        // Сортувати за пріоритетом
+        scoredFiles.sort((a, b) => b.score - a.score);
+        
+        // Взяти топ файли
+        const selected = scoredFiles
+            .filter(f => f.score > 0) // Тільки релевантні
+            .slice(0, maxFiles)
+            .map(f => f.filename);
+        
+        // Якщо нічого не знайдено, взяти активний файл або перші файли
+        if (selected.length === 0) {
+            const activeFile = window.appState ? appState.ui.activeFile : null;
+            if (activeFile && files[activeFile]) {
+                selected.push(activeFile);
+            } else {
+                // Взяти перші 2 найменші файли
+                selected.push(...scoredFiles.slice(0, 2).map(f => f.filename));
+            }
+        }
+        
+        if (selected.length > 0) {
+            console.log(`📋 Selected files for context:`, selected);
+        }
+        
+        return selected;
     }
 
     extractAndApplyCode(text) {
