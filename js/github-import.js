@@ -1,4 +1,4 @@
-// 🐙 GitHub Import - ВИПРАВЛЕНО
+// 🐙 GitHub Import - ВИПРАВЛЕНО (ROBUST)
 
 let githubToken = null;
 let currentRepo = null;
@@ -73,7 +73,9 @@ async function importFromGitHub() {
         
         updateLoadingOverlay(`Завантаження ${filesToLoad.length} файлів...`);
         
-        // ✅ ВИПРАВЛЕНО: Використати метод saveCodeFile через deepseekCoder
+        // ✅ ВИПРАВЛЕНО: ROBUST STORAGE з FALLBACK
+        let savedCount = 0;
+        
         for (let i = 0; i < filesToLoad.length; i++) {
             const file = filesToLoad[i];
             updateLoadingOverlay(`Завантаження ${i + 1}/${filesToLoad.length}: ${file.path}`);
@@ -91,39 +93,97 @@ async function importFromGitHub() {
                 const ext = file.path.split('.').pop();
                 const language = getLanguageFromExtension(ext);
                 
-                // ✅ ВИПРАВЛЕНО: Використати deepseekCoder.saveCodeFile
-                if (window.deepseekCoder) {
-                    deepseekCoder.saveCodeFile(file.path, content, language);
-                } else if (window.appState) {
-                    appState.setCodeFile(file.path, {
-                        language: language,
-                        code: content,
-                        size: content.length,
-                        modified: false
-                    });
+                // ✅ ВИПРАВЛЕНО: Спробувати всі доступні методи збереження
+                const saved = await saveCodeFileSafely(file.path, content, language);
+                if (saved) {
+                    savedCount++;
                 }
             }
         }
         
-        currentRepo = { owner, repo, files: filesToLoad.length };
+        // ✅ ВИПРАВЛЕНО: Перевірка чи були збережені файли
+        if (savedCount === 0) {
+            throw new Error('Не вдалося зберегти жодного файлу');
+        }
+        
+        currentRepo = { owner, repo, files: savedCount };
         
         hideLoadingOverlay();
         
         switchMode('deepseek');
         
-        // ✅ ВИПРАВЛЕНО: Викликати через deepseekCoder
-        if (window.deepseekCoder) {
-            deepseekCoder.displayCodeFiles();
-        }
+        // ✅ ВИПРАВЛЕНО: Відобразити файли через найкращий доступний метод
+        displayCodeFilesSafely();
         
-        addGitHubImportMessage(owner, repo, filesToLoad.length);
+        addGitHubImportMessage(owner, repo, savedCount);
         
-        alert(`✅ Репозиторій успішно завантажено!\n\n📁 Завантажено ${filesToLoad.length} файлів`);
+        alert(`✅ Репозиторій успішно завантажено!\n\n📁 Завантажено ${savedCount} файлів`);
         
     } catch (error) {
         hideLoadingOverlay();
         console.error('Помилка:', error);
         alert('❌ Помилка імпорту: ' + error.message);
+    }
+}
+
+// ✅ НОВИЙ: БЕЗПЕЧНЕ ЗБЕРЕЖЕННЯ ФАЙЛУ З FALLBACK
+async function saveCodeFileSafely(filename, content, language) {
+    try {
+        // Метод 1: DeepSeekCoder (найкращий)
+        if (window.deepseekCoder && typeof deepseekCoder.saveCodeFile === 'function') {
+            deepseekCoder.saveCodeFile(filename, content, language);
+            return true;
+        }
+        
+        // Метод 2: AppState (другий найкращий)
+        if (window.appState && typeof appState.setCodeFile === 'function') {
+            appState.setCodeFile(filename, {
+                language: language,
+                code: content,
+                size: content.length,
+                modified: false
+            });
+            return true;
+        }
+        
+        // Метод 3: Пряме присвоєння до window.codeFiles (fallback)
+        if (!window.codeFiles) {
+            window.codeFiles = {};
+        }
+        window.codeFiles[filename] = {
+            language: language,
+            code: content,
+            size: content.length,
+            modified: false
+        };
+        return true;
+        
+    } catch (error) {
+        console.error(`❌ Не вдалося зберегти ${filename}:`, error);
+        return false;
+    }
+}
+
+// ✅ НОВИЙ: БЕЗПЕЧНЕ ВІДОБРАЖЕННЯ ФАЙЛІВ
+function displayCodeFilesSafely() {
+    try {
+        // Метод 1: DeepSeekCoder.displayCodeFiles
+        if (window.deepseekCoder && typeof deepseekCoder.displayCodeFiles === 'function') {
+            deepseekCoder.displayCodeFiles();
+            return;
+        }
+        
+        // Метод 2: Глобальна функція displayCodeFiles
+        if (typeof displayCodeFiles === 'function') {
+            displayCodeFiles();
+            return;
+        }
+        
+        // Метод 3: Показати успіх без відображення
+        console.log('✅ Файли збережено, але displayCodeFiles недоступний');
+        
+    } catch (error) {
+        console.error('❌ Помилка відображення файлів:', error);
     }
 }
 
@@ -221,7 +281,9 @@ function showLoadingOverlay(message) {
         document.body.appendChild(overlay);
     }
     
-    document.getElementById('loading-title').textContent = message;
+    const title = document.getElementById('loading-title');
+    if (title) title.textContent = message;
+    
     overlay.style.display = 'flex';
 }
 
@@ -281,4 +343,4 @@ if (document.readyState === 'loading') {
 window.importFromGitHub = importFromGitHub;
 window.setupGitHubToken = setupGitHubToken;
 
-console.log('✅ GitHub Import loaded (FIXED)');
+console.log('✅ GitHub Import loaded (FIXED - ROBUST with FALLBACK)');
