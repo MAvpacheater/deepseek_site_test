@@ -1,4 +1,4 @@
-/* 🔘 Button Components - Professional Design */
+/* 🔘 Button Components - Professional Design (FIXED) */
 
 /* ========================================
    BASE BUTTON
@@ -9,20 +9,22 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--btn-padding-base);
+  padding: 12px 24px;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  line-height: 1;
+  line-height: 1.2;
   text-align: center;
   text-decoration: none;
   white-space: nowrap;
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   cursor: pointer;
   user-select: none;
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  min-height: 44px;
+  min-width: 120px;
 }
 
 .btn::before {
@@ -49,6 +51,10 @@
   outline-offset: 2px;
 }
 
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 /* ========================================
    BUTTON VARIANTS
    ======================================== */
@@ -57,7 +63,7 @@
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
@@ -67,21 +73,21 @@
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Secondary Button */
 .btn-secondary {
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--border-primary);
+  border: 2px solid var(--border-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--bg-hover);
   border-color: var(--accent-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .btn-secondary:active:not(:disabled) {
@@ -131,12 +137,12 @@
 .btn-ghost {
   background: transparent;
   color: var(--text-primary);
-  border: 1px solid transparent;
+  border: 2px solid transparent;
 }
 
 .btn-ghost:hover:not(:disabled) {
   background: rgba(59, 130, 246, 0.1);
-  border-color: var(--border-primary);
+  border-color: var(--accent-primary);
 }
 
 /* Link Button */
@@ -146,6 +152,7 @@
   padding: var(--space-2);
   text-decoration: none;
   border: none;
+  min-width: auto;
 }
 
 .btn-link:hover:not(:disabled) {
@@ -158,15 +165,19 @@
    ======================================== */
 
 .btn-sm {
-  padding: var(--btn-padding-sm);
+  padding: 8px 16px;
   font-size: var(--font-size-sm);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
+  min-height: 36px;
+  min-width: 100px;
 }
 
 .btn-lg {
-  padding: var(--btn-padding-lg);
+  padding: 16px 32px;
   font-size: var(--font-size-lg);
-  border-radius: var(--radius-xl);
+  border-radius: 14px;
+  min-height: 52px;
+  min-width: 140px;
 }
 
 /* ========================================
@@ -185,10 +196,10 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin: -0.625rem 0 0 -0.625rem;
-  border: 2px solid transparent;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 3px solid transparent;
   border-top-color: currentColor;
   border-radius: var(--radius-full);
   animation: spin 0.6s linear infinite;
@@ -204,21 +215,26 @@
    ======================================== */
 
 .btn-icon {
-  width: var(--height-md);
-  height: var(--height-md);
+  width: 44px;
+  height: 44px;
   padding: 0;
   flex-shrink: 0;
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
+  min-width: 44px;
 }
 
 .btn-icon.btn-sm {
-  width: var(--height-sm);
-  height: var(--height-sm);
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
 }
 
 .btn-icon.btn-lg {
-  width: var(--height-lg);
-  height: var(--height-lg);
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 14px;
 }
 
 /* ========================================
@@ -228,7 +244,7 @@
 .btn-group {
   display: inline-flex;
   gap: 0;
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -238,17 +254,17 @@
 }
 
 .btn-group .btn:first-child {
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border-radius: 12px 0 0 12px;
 }
 
 .btn-group .btn:last-child {
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  border-right-width: 1px;
+  border-radius: 0 12px 12px 0;
+  border-right-width: 2px;
 }
 
 .btn-group .btn:only-child {
-  border-radius: var(--radius-lg);
-  border-right-width: 1px;
+  border-radius: 12px;
+  border-right-width: 2px;
 }
 
 /* ========================================
@@ -276,7 +292,7 @@
 .btn-outline-primary:hover:not(:disabled) {
   background: var(--accent-primary);
   color: white;
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-outline-danger {
@@ -288,6 +304,7 @@
 .btn-outline-danger:hover:not(:disabled) {
   background: var(--error);
   color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* Gradient Hover Effect */
@@ -319,22 +336,24 @@
   position: fixed;
   bottom: var(--space-8);
   right: var(--space-8);
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 60px;
+  height: 60px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: var(--shadow-2xl);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
   z-index: var(--z-fixed);
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 24px;
+  min-width: 60px;
+  min-height: 60px;
 }
 
 .btn-fab:hover:not(:disabled) {
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.1);
   box-shadow: 0 12px 40px rgba(59, 130, 246, 0.6);
 }
 
@@ -344,8 +363,10 @@
 
 @media (max-width: 768px) {
   .btn {
-    padding: var(--btn-padding-sm);
+    padding: 10px 20px;
     font-size: var(--font-size-sm);
+    min-height: 40px;
+    min-width: 100px;
   }
   
   .btn-block-mobile {
@@ -356,9 +377,17 @@
   .btn-fab {
     bottom: var(--space-5);
     right: var(--space-5);
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.25rem;
+    width: 52px;
+    height: 52px;
+    font-size: 20px;
+    min-width: 52px;
+    min-height: 52px;
+  }
+
+  .btn-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
   }
 }
 
