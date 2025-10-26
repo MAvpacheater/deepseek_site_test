@@ -1,4 +1,4 @@
-// 💻 DeepSeek Chat - Логіка чату (без роботи з кодом)
+// 💻 DeepSeek Chat - ПОВНИЙ ВИПРАВЛЕНИЙ ФАЙЛ
 
 class DeepSeekChat {
     constructor() {
@@ -7,18 +7,12 @@ class DeepSeekChat {
         this.isProcessing = false;
         this.abortController = null;
         
-        this.init();
+        console.log('✅ DeepSeek Chat initialized');
     }
 
     // ========================================
     // ІНІЦІАЛІЗАЦІЯ
     // ========================================
-
-    init() {
-        this.setupEventListeners();
-        this.loadHistory();
-        console.log('✅ DeepSeek Chat initialized');
-    }
 
     setupEventListeners() {
         const input = document.getElementById('deepseekInput');
@@ -160,36 +154,19 @@ class DeepSeekChat {
                 top_p: 0.95
             };
 
-            let response;
-            if (window.errorHandler) {
-                response = await errorHandler.fetchWithRetry(
-                    this.apiEndpoint,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestBody),
-                        signal: this.abortController.signal,
-                        timeout: 45000
-                    }
-                );
-            } else {
-                response = await fetch(this.apiEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody),
-                    signal: this.abortController.signal
-                });
+            const response = await fetch(this.apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody),
+                signal: this.abortController.signal
+            });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error?.message || `API Error: ${response.status}`);
-                }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `API Error: ${response.status}`);
             }
 
             const data = await response.json();
@@ -206,15 +183,7 @@ class DeepSeekChat {
             return aiMessage;
 
         } catch (error) {
-            if (window.errorHandler) {
-                errorHandler.logError({
-                    type: 'api_error',
-                    message: 'DeepSeek API call failed',
-                    error: error.message,
-                    severity: 'high',
-                    context: 'DeepSeekChat.callAPI'
-                });
-            }
+            console.error('DeepSeek API error:', error);
             throw error;
 
         } finally {
@@ -278,25 +247,19 @@ class DeepSeekChat {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
 
-        let messageElement;
-
-        if (window.sanitizer) {
-            messageElement = sanitizer.createMessageElement(text, sender);
-        } else {
-            messageElement = document.createElement('div');
-            messageElement.className = `message ${sender}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.textContent = sender === 'user' ? '👤' : '🤖';
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            content.textContent = text;
-            
-            messageElement.appendChild(avatar);
-            messageElement.appendChild(content);
-        }
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = sender === 'user' ? '👤' : '🤖';
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        content.textContent = text;
+        
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(content);
 
         messagesDiv.appendChild(messageElement);
     }
@@ -370,14 +333,9 @@ class DeepSeekChat {
     // ========================================
 
     getApiKey() {
-        if (typeof getGroqApiKey === 'function') {
-            return getGroqApiKey();
-        }
-
         if (window.appState) {
             return appState.getApiKey('groq');
         }
-
         return localStorage.getItem('groq_api_key');
     }
 
@@ -406,16 +364,6 @@ class DeepSeekChat {
         }
 
         this.renderMessage(message, 'assistant');
-        
-        if (window.errorHandler) {
-            errorHandler.logError({
-                type: 'api_error',
-                message: 'DeepSeek API error',
-                error: error.message,
-                severity: 'high',
-                context: 'DeepSeekChat.handleError'
-            });
-        }
     }
 
     loadHistory() {
@@ -456,13 +404,21 @@ class DeepSeekChat {
 
 let deepseekChat = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        deepseekChat = new DeepSeekChat();
+
+        window.sendDeepseekMessage = () => deepseekChat.sendMessage();
+        window.clearDeepseekChat = () => deepseekChat.clearHistory();
+        window.cancelDeepseekRequest = () => deepseekChat.cancelRequest();
+    });
+} else {
     deepseekChat = new DeepSeekChat();
 
     window.sendDeepseekMessage = () => deepseekChat.sendMessage();
     window.clearDeepseekChat = () => deepseekChat.clearHistory();
     window.cancelDeepseekRequest = () => deepseekChat.cancelRequest();
-});
+}
 
 window.DeepSeekChat = DeepSeekChat;
 window.deepseekChat = deepseekChat;
