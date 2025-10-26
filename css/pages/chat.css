@@ -1,4 +1,4 @@
-/* 💬 Chat Page - No Overflow (FIXED) */
+/* 💬 Chat Page - Proper Layout (FIXED) */
 
 /* ========================================
    CHAT SECTION
@@ -12,6 +12,7 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 /* ========================================
@@ -93,6 +94,7 @@
   flex-direction: column;
   gap: 16px;
   max-width: 100%;
+  min-height: 0;
 }
 
 .messages::-webkit-scrollbar {
@@ -168,7 +170,6 @@
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
-  overflow: hidden;
 }
 
 .message.user .message-content {
