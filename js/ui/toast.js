@@ -1,4 +1,4 @@
-// 🍞 Toast Notifications - Красиві сповіщення
+// 🍞 Toast Notifications - Красиві сповіщення (ОНОВЛЕНО)
 
 class ToastManager {
     constructor() {
@@ -479,6 +479,41 @@ class ToastManager {
             persistent: config.persistent
         });
     }
+
+    // ========================================
+    // ДОДАТКОВІ МЕТОДИ
+    // ========================================
+
+    update(toastId, options = {}) {
+        const toastData = this.toasts.get(toastId);
+        if (!toastData) return false;
+
+        const { element } = toastData;
+        const content = element.querySelector('.toast-content');
+        const icon = element.querySelector('.toast-icon');
+
+        if (options.message && content) {
+            content.textContent = options.message;
+        }
+
+        if (options.icon && icon) {
+            icon.textContent = options.icon;
+        }
+
+        if (options.type) {
+            element.className = `toast ${options.type}`;
+        }
+
+        return true;
+    }
+
+    getActiveCount() {
+        return this.toasts.size;
+    }
+
+    hasToast(toastId) {
+        return this.toasts.has(toastId);
+    }
 }
 
 // ========================================
@@ -502,5 +537,6 @@ window.showWarningToast = (message, duration) => toastManager.warning(message, d
 window.showInfoToast = (message, duration) => toastManager.info(message, duration);
 window.showLoadingToast = (message) => toastManager.loading(message);
 window.removeToast = (id) => toastManager.remove(id);
+window.updateToast = (id, options) => toastManager.update(id, options);
 
-console.log('✅ Toast Manager initialized');
+console.log('✅ Toast Manager initialized (Full Updated)');
