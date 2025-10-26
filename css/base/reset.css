@@ -27,6 +27,7 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  position: fixed;
 }
 
 body {
@@ -41,104 +42,59 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  position: fixed;
   transition: background-color var(--transition-base),
               color var(--transition-base);
 }
 
 /* ========================================
-   APP STRUCTURE - CRITICAL LAYOUT
+   APP STRUCTURE - CRITICAL
    ======================================== */
 
-.app-container {
-  display: flex;
-  width: 100vw;
+#app {
+  width: 100%;
   height: 100vh;
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
   overflow: hidden;
-  position: relative;
 }
 
-.sidebar {
-  width: var(--sidebar-width, 280px);
-  flex-shrink: 0;
+.app-container {
+  width: calc(100% - var(--sidebar-width));
   height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
 .main-content {
   flex: 1;
-  width: calc(100vw - var(--sidebar-width, 280px));
-  height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
   min-width: 0;
+  overflow: hidden;
 }
 
 /* CRITICAL: Page container MUST have overflow */
 .page-container {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
   position: relative;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-width: 100vw;
 }
 
-/* ========================================
-   CHAT SECTIONS - CRITICAL
-   ======================================== */
-
-.chat-section {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px;
-}
-
-.input-area {
-  flex-shrink: 0;
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-top: 2px solid var(--border-primary);
-}
-
-/* ========================================
-   CODE SECTION - CRITICAL
-   ======================================== */
-
-.code-section {
-  width: 45%;
-  flex-shrink: 0;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border-left: 2px solid var(--border-primary);
-  background: var(--bg-primary);
-}
-
-.code-section.collapsed {
-  display: none;
-}
-
-.code-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* ========================================
-   SCROLLBAR - PAGE CONTAINER
-   ======================================== */
-
+/* Scrollbar for page-container */
 .page-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -656,19 +612,17 @@ div {
    ======================================== */
 
 @media (max-width: 768px) {
-  .sidebar {
-    width: 80px;
-  }
-  
-  .main-content {
-    width: calc(100vw - 80px);
-  }
-  
-  .code-section {
-    position: fixed;
-    top: 0;
-    right: 0;
+  .app-container {
+    margin-left: 0;
     width: 100%;
-    z-index: 1000;
+  }
+  
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
   }
 }
