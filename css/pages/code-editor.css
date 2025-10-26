@@ -1,4 +1,4 @@
-/* 💻 Code Editor - Minimal Professional Design */
+/* 💻 Code Editor - Complete Fixed Version */
 
 /* ========================================
    CODE SECTION
@@ -11,6 +11,8 @@
   flex-direction: column;
   border-left: 1px solid var(--border-primary);
   transition: all var(--transition-base);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .code-section.collapsed {
@@ -25,41 +27,51 @@
    ======================================== */
 
 .code-header {
-  padding: var(--space-4) var(--space-5);
+  padding: 10px 12px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  min-height: 48px;
+  gap: 8px;
 }
 
 .code-header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
 }
 
 .code-header h2 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-btn {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
@@ -70,20 +82,22 @@
 
 .code-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .code-actions button {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  padding: var(--space-2) var(--space-3);
+  padding: 6px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
   white-space: nowrap;
+  min-height: 28px;
 }
 
 .code-actions button:hover {
@@ -97,14 +111,15 @@
    ======================================== */
 
 .file-navigation {
-  padding: var(--space-3) var(--space-4);
+  padding: 8px 12px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .file-nav-header {
   display: flex;
-  gap: var(--space-2);
+  gap: 6px;
   align-items: center;
 }
 
@@ -112,15 +127,16 @@
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .nav-btn:hover:not(:disabled) {
@@ -136,14 +152,18 @@
 
 .file-selector {
   flex: 1;
-  padding: var(--space-2) var(--space-3);
+  padding: 6px 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   cursor: pointer;
   transition: all var(--transition-base);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-selector:hover {
@@ -166,22 +186,37 @@
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
   overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.file-tabs::-webkit-scrollbar {
+  height: 3px;
+}
+
+.file-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-tabs::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
 }
 
 .file-tab {
-  padding: var(--space-2) var(--space-4);
+  padding: 6px 12px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .file-tab:hover {
@@ -196,8 +231,8 @@
 }
 
 .file-tab .modified-indicator {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: var(--radius-full);
   background: var(--warning);
 }
@@ -207,9 +242,10 @@
    ======================================== */
 
 .version-control {
-  padding: var(--space-2) var(--space-4);
+  padding: 6px 12px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .version-header {
@@ -220,13 +256,13 @@
 
 .version-label {
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-medium);
 }
 
 .version-buttons {
   display: flex;
-  gap: var(--space-2);
+  gap: 6px;
   align-items: center;
 }
 
@@ -234,15 +270,16 @@
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .version-btn:hover:not(:disabled) {
@@ -257,8 +294,8 @@
 
 .version-info {
   color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
-  min-width: 60px;
+  font-size: 10px;
+  min-width: 50px;
   text-align: center;
 }
 
@@ -269,8 +306,27 @@
 .code-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0;
   background: var(--bg-primary);
+  max-width: 100%;
+}
+
+.code-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.code-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-content::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+}
+
+.code-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .code-file {
@@ -289,42 +345,49 @@
 
 .code-block-header {
   background: var(--bg-secondary);
-  padding: var(--space-3) var(--space-4);
+  padding: 8px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-primary);
+  gap: 8px;
 }
 
 .code-block-info {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .code-block-lang {
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
 }
 
 .code-block-name {
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .code-block-header button {
   background: var(--accent-primary);
   color: white;
   border: none;
-  padding: var(--space-2) var(--space-3);
+  padding: 4px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-base);
+  flex-shrink: 0;
 }
 
 .code-block-header button:hover {
@@ -337,16 +400,30 @@
 
 pre {
   margin: 0;
-  padding: var(--space-4);
+  padding: 12px;
   overflow-x: auto;
   background: var(--bg-primary) !important;
+  max-width: 100%;
+}
+
+pre::-webkit-scrollbar {
+  height: 4px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
 }
 
 code {
   color: var(--code-text);
   font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* ========================================
@@ -372,34 +449,40 @@ code {
 }
 
 .preview-header {
-  padding: var(--space-4);
+  padding: 12px;
   background: var(--bg-secondary);
   color: var(--text-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-primary);
+  gap: 8px;
 }
 
 .preview-header h3 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .preview-header button {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 16px;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .preview-header button:hover {
@@ -411,6 +494,8 @@ code {
   flex: 1;
   border: none;
   background: #ffffff;
+  width: 100%;
+  height: 100%;
 }
 
 /* ========================================
@@ -426,6 +511,7 @@ code {
     height: 100vh;
     transition: top var(--transition-base);
     z-index: 500;
+    border-left: none;
   }
   
   .code-section.mobile-open {
@@ -438,10 +524,32 @@ code {
   }
   
   .code-header {
-    padding: var(--space-3) var(--space-4);
+    padding: 8px 10px;
   }
   
   .file-navigation {
-    padding: var(--space-2) var(--space-3);
+    padding: 6px 10px;
+  }
+
+  .code-actions {
+    gap: 4px;
+  }
+
+  .code-actions button {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .code-section,
+  .preview-panel,
+  .icon-btn,
+  .nav-btn {
+    transition: none;
   }
 }
