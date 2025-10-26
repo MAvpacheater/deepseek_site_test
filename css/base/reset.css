@@ -1,4 +1,4 @@
-/* 🔄 CSS Reset - Modern Minimal (FIXED - No Overflow) */
+/* 🔄 CSS Reset - Modern Minimal (FIXED - Proper Overflow) */
 
 /* ========================================
    BOX SIZING
@@ -38,6 +38,8 @@ body {
   background: var(--bg-primary);
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   transition: background-color var(--transition-base),
               color var(--transition-base);
@@ -45,15 +47,19 @@ body {
 
 #app {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  height: 100vh;
   display: flex;
+  position: relative;
+  overflow: hidden;
 }
 
 .app-container {
   width: 100%;
   height: 100%;
+  margin-left: var(--sidebar-width);
   display: flex;
+  flex-direction: column;
+  position: relative;
   overflow: hidden;
 }
 
@@ -61,17 +67,21 @@ body {
   flex: 1;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .page-container {
   width: 100%;
   height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -567,4 +577,23 @@ div {
   max-width: 100%;
   overflow-wrap: break-word;
   word-wrap: break-word;
+}
+
+/* ========================================
+   RESPONSIVE LAYOUT
+   ======================================== */
+
+@media (max-width: 768px) {
+  .app-container {
+    margin-left: 0;
+  }
+  
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+  }
+  
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
