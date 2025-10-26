@@ -1,4 +1,4 @@
-/* ⚙️ Settings - Minimal Professional Design */
+/* ⚙️ Settings - Complete Fixed Version */
 
 /* ========================================
    SETTINGS CONTAINER
@@ -6,18 +6,39 @@
 
 .settings-container {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
   background: var(--bg-primary);
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+.settings-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-container::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+}
+
+.settings-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .settings-header {
-  padding: var(--space-6);
+  padding: var(--space-4);
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
 }
 
 .settings-header h1 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--space-2);
   color: var(--text-primary);
@@ -29,9 +50,11 @@
 }
 
 .settings-content {
-  padding: var(--space-6);
+  padding: var(--space-4);
   max-width: 800px;
   margin: 0 auto;
+  padding-bottom: var(--space-10);
+  width: 100%;
 }
 
 /* ========================================
@@ -42,8 +65,9 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  max-width: 100%;
 }
 
 .settings-section h2 {
@@ -84,6 +108,7 @@
   font-size: var(--font-size-sm);
   font-family: inherit;
   transition: all var(--transition-base);
+  max-width: 100%;
 }
 
 .setting-item input[type="password"] {
@@ -95,11 +120,13 @@
 .setting-item textarea:focus {
   outline: none;
   border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .setting-item textarea {
   min-height: 80px;
   resize: vertical;
+  max-height: 200px;
 }
 
 .setting-item small {
@@ -129,11 +156,13 @@
   display: flex;
   gap: var(--space-3);
   margin-top: var(--space-5);
+  flex-wrap: wrap;
 }
 
 .save-btn,
 .clear-btn {
   flex: 1;
+  min-width: 120px;
   padding: var(--space-3) var(--space-4);
   border: none;
   border-radius: var(--radius-md);
@@ -150,6 +179,8 @@
 
 .save-btn:hover {
   background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .clear-btn {
@@ -161,6 +192,7 @@
 .clear-btn:hover {
   background: var(--error);
   color: white;
+  transform: translateY(-1px);
 }
 
 /* ========================================
@@ -169,18 +201,18 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
 
 .stat-card {
   background: var(--bg-primary);
-  padding: var(--space-4);
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   border: 1px solid var(--border-primary);
   transition: all var(--transition-base);
 }
@@ -188,12 +220,13 @@
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
+  border-color: var(--text-tertiary);
 }
 
 .stat-icon {
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -209,15 +242,18 @@
 
 .stat-label {
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   margin-bottom: var(--space-1);
   text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-value {
   color: var(--text-primary);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   line-height: 1;
 }
@@ -247,27 +283,77 @@
 
 @media (max-width: 768px) {
   .settings-header {
-    padding: var(--space-4);
+    padding: var(--space-3);
+  }
+
+  .settings-header h1 {
+    font-size: var(--font-size-lg);
   }
 
   .settings-content {
-    padding: var(--space-4);
+    padding: var(--space-3);
+    padding-bottom: var(--space-8);
   }
 
   .settings-section {
-    padding: var(--space-4);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .settings-section h2 {
+    font-size: var(--font-size-base);
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  .stat-card {
+    padding: var(--space-2);
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .stat-value {
+    font-size: var(--font-size-base);
   }
 
   .settings-actions {
     flex-direction: column;
+    gap: var(--space-2);
   }
 
   .save-btn,
   .clear-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card,
+  .save-btn,
+  .clear-btn {
+    transition: none;
+  }
+  
+  .stat-card:hover,
+  .save-btn:hover,
+  .clear-btn:hover {
+    transform: none;
   }
 }
