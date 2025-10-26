@@ -1,4 +1,4 @@
-/* 🎨 Sidebar - Minimal Professional Design */
+/* 🎨 Sidebar - Minimal Professional Design (FIXED) */
 
 /* ========================================
    SIDEBAR CONTAINER
@@ -20,12 +20,29 @@
   overflow-x: hidden;
 }
 
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
 /* ========================================
    SIDEBAR HEADER
    ======================================== */
 
 .sidebar-header {
-  padding: var(--space-6) var(--space-5);
+  padding: 24px 20px;
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;
   background: var(--bg-secondary);
@@ -34,21 +51,25 @@
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin: 0 0 var(--space-2) 0;
+  margin: 0 0 8px 0;
 }
 
 .logo-icon {
-  font-size: 1.5em;
+  font-size: 28px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .logo-text {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-subtitle {
@@ -56,6 +77,9 @@
   color: var(--text-tertiary);
   font-weight: var(--font-weight-medium);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ========================================
@@ -64,21 +88,39 @@
 
 .sidebar-menu {
   flex: 1;
-  padding: var(--space-3);
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .menu-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: 12px;
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   font-size: var(--font-size-sm);
@@ -86,21 +128,30 @@
   text-align: left;
   transition: all var(--transition-base);
   width: 100%;
+  min-height: 44px;
+  position: relative;
+  overflow: hidden;
 }
 
 .menu-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+  transform: translateX(4px);
 }
 
 .menu-btn.active {
   background: var(--accent-primary);
   color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.menu-btn.active:hover {
+  transform: translateX(0);
 }
 
 .menu-icon {
-  font-size: 1.25em;
-  width: 1.5rem;
+  font-size: 20px;
+  width: 24px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -116,14 +167,15 @@
 .menu-btn .badge {
   background: white;
   color: var(--accent-primary);
-  padding: 0.125rem 0.5rem;
+  padding: 2px 8px;
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   line-height: 1.4;
   margin-left: auto;
-  min-width: 1.5rem;
+  min-width: 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .menu-btn.active .badge {
@@ -135,26 +187,27 @@
    ======================================== */
 
 .agent-status {
-  padding: var(--space-4);
-  margin: var(--space-3);
+  padding: 16px;
+  margin: 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
-  margin-bottom: var(--space-2);
+  margin-bottom: 8px;
 }
 
 .pulse {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 8px;
+  height: 8px;
   border-radius: var(--radius-full);
   background: var(--success);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -169,8 +222,11 @@
 .status-info div {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: 8px;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-info span {
@@ -183,7 +239,7 @@
    ======================================== */
 
 .sidebar-footer {
-  padding: var(--space-3);
+  padding: 12px;
   border-top: 1px solid var(--border-primary);
   background: var(--bg-secondary);
   flex-shrink: 0;
@@ -191,22 +247,24 @@
 
 .theme-toggle {
   width: 100%;
-  padding: var(--space-3);
+  padding: 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  font-size: 1.25rem;
+  border-radius: 12px;
+  font-size: 20px;
   cursor: pointer;
   transition: all var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
+  min-height: 44px;
 }
 
 .theme-toggle:hover {
   background: var(--bg-hover);
   border-color: var(--text-tertiary);
+  transform: scale(1.05);
 }
 
 /* ========================================
@@ -233,11 +291,11 @@
 
 .sidebar.collapsed .menu-btn {
   justify-content: center;
-  padding: var(--space-3);
+  padding: 12px;
 }
 
 .sidebar.collapsed .agent-status {
-  padding: var(--space-2);
+  padding: 8px;
 }
 
 .sidebar.collapsed .status-info,
@@ -278,27 +336,6 @@
 }
 
 /* ========================================
-   SCROLLBAR
-   ======================================== */
-
-.sidebar-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-menu::-webkit-scrollbar-thumb {
-  background: var(--bg-hover);
-  border-radius: var(--radius-full);
-}
-
-.sidebar-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
-}
-
-/* ========================================
    ANIMATIONS
    ======================================== */
 
@@ -308,5 +345,22 @@
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .menu-btn,
+  .theme-toggle {
+    transition: none;
+  }
+  
+  .menu-btn:hover,
+  .theme-toggle:hover {
+    transform: none;
+  }
+  
+  .pulse {
+    animation: none;
   }
 }
