@@ -1,0 +1,282 @@
+/* ⚙️ Settings Page Styles - (~250 lines) */
+
+/* ========================================
+   SETTINGS CONTAINER
+   ======================================== */
+
+.settings-container {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.settings-header {
+  padding: var(--space-6) var(--space-8);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.settings-header h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-2);
+  color: var(--accent-primary);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.settings-header p {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.settings-content {
+  padding: var(--space-8);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   SETTINGS SECTION
+   ======================================== */
+
+.settings-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-section h2 {
+  color: var(--accent-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* ========================================
+   SETTING ITEM
+   ======================================== */
+
+.setting-item {
+  margin-bottom: var(--space-5);
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-item label {
+  display: block;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.setting-item input,
+.setting-item textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.setting-item input[type="password"] {
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.setting-item input:focus,
+.setting-item textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.setting-item textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.setting-item small {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-2);
+  line-height: var(--line-height-relaxed);
+}
+
+.setting-item small a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.setting-item small a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ========================================
+   SETTINGS ACTIONS
+   ======================================== */
+
+.settings-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.save-btn,
+.clear-btn {
+  flex: 1;
+  padding: var(--space-3) var(--space-5);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
+}
+
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+}
+
+.clear-btn {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.clear-btn:hover {
+  background: rgba(248, 81, 73, 0.25);
+  border-color: var(--error);
+}
+
+/* ========================================
+   STATISTICS GRID
+   ======================================== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.stat-card {
+  background: var(--bg-primary);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-fast);
+}
+
+.stat-card:hover {
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+}
+
+.stat-icon {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(88, 166, 255, 0.15);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.stat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-medium);
+}
+
+.stat-value {
+  color: var(--text-primary);
+  font-size: 1.375rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.reset-stats-btn {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+}
+
+.reset-stats-btn:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: var(--error-bg);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .settings-header {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .settings-content {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .settings-section {
+    padding: var(--space-5);
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+  }
+
+  .save-btn,
+  .clear-btn {
+    width: 100%;
+  }
+}
