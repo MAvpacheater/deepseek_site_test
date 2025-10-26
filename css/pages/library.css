@@ -1,4 +1,4 @@
-/* 📚 Library - Minimal Professional Design */
+/* 📚 Library - Minimal Professional Design (FIXED) */
 
 /* ========================================
    LIBRARY CONTAINER
@@ -9,6 +9,9 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ========================================
@@ -22,6 +25,7 @@
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-primary);
   overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .filter-btn {
@@ -75,11 +79,13 @@
 .library-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-6);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
   align-content: start;
+  max-width: 100%;
 }
 
 /* ========================================
@@ -93,6 +99,7 @@
   border: 1px solid var(--border-primary);
   transition: all var(--transition-base);
   cursor: pointer;
+  max-width: 100%;
 }
 
 .library-item:hover {
@@ -114,6 +121,8 @@
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .library-item-meta {
@@ -231,6 +240,7 @@
   display: flex;
   flex-direction: column;
   z-index: 1;
+  overflow: hidden;
 }
 
 .preview-modal-header {
@@ -279,6 +289,7 @@
 .preview-modal-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-5);
   color: var(--text-primary);
 }
@@ -359,6 +370,10 @@
    ======================================== */
 
 @media (max-width: 768px) {
+  .library-filters {
+    padding: var(--space-3) var(--space-4);
+  }
+
   .library-content {
     grid-template-columns: 1fr;
     padding: var(--space-4);
