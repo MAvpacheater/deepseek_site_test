@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - ВИПРАВЛЕНО (ВСІ ПОМИЛКИ)
+// ✨ Gemini Chat - ПОВНИЙ ВИПРАВЛЕНИЙ ФАЙЛ
 
 class GeminiChat {
     constructor() {
@@ -7,17 +7,12 @@ class GeminiChat {
         this.isProcessing = false;
         this.abortController = null;
         
-        this.init();
+        console.log('✅ Gemini Chat initialized');
     }
 
     // ========================================
     // ІНІЦІАЛІЗАЦІЯ
     // ========================================
-
-    init() {
-        // НЕ викликаємо setupEventListeners тут - тільки після того як DOM готовий
-        console.log('✅ Gemini Chat initialized (FIXED)');
-    }
 
     setupEventListeners() {
         const input = document.getElementById('geminiInput');
@@ -415,18 +410,16 @@ class GeminiChat {
 
 let geminiChat = null;
 
-// ✅ КРИТИЧНО: Ініціалізувати лише коли DOM готовий
+// Ініціалізувати лише коли DOM готовий
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         geminiChat = new GeminiChat();
         
-        // Експортувати функції для сумісності
         window.sendGeminiMessage = () => geminiChat.sendMessage();
         window.clearGeminiChat = () => geminiChat.clearHistory();
         window.cancelGeminiRequest = () => geminiChat.cancelRequest();
     });
 } else {
-    // DOM вже готовий
     geminiChat = new GeminiChat();
     
     window.sendGeminiMessage = () => geminiChat.sendMessage();
@@ -434,8 +427,7 @@ if (document.readyState === 'loading') {
     window.cancelGeminiRequest = () => geminiChat.cancelRequest();
 }
 
-// Експорт класу
 window.GeminiChat = GeminiChat;
 window.geminiChat = geminiChat;
 
-console.log('✅ Gemini Chat module loaded (ALL BUGS FIXED)');
+console.log('✅ Gemini Chat module loaded');
