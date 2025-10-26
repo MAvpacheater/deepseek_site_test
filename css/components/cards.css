@@ -1,4 +1,4 @@
-/* 🃏 Card Components - (~180 lines) */
+/* 🃏 Card Components - Professional Design */
 
 /* ========================================
    BASE CARD
@@ -107,7 +107,7 @@
 
 .card-outlined:hover {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 /* Interactive Card */
