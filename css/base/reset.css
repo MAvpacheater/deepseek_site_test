@@ -1,4 +1,4 @@
-/* 🔄 CSS Reset - Modern Minimal */
+/* 🔄 CSS Reset - Modern Minimal (FIXED - No Overflow) */
 
 /* ========================================
    BOX SIZING
@@ -24,6 +24,9 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -33,10 +36,42 @@ body {
   line-height: var(--line-height-base);
   color: var(--text-primary);
   background: var(--bg-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   transition: background-color var(--transition-base),
               color var(--transition-base);
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -55,6 +90,8 @@ h1, h2, h3, h4, h5, h6 {
   line-height: var(--line-height-tight);
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-tight);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 h1 { font-size: var(--font-size-4xl); }
@@ -66,12 +103,16 @@ h6 { font-size: var(--font-size-base); }
 
 p {
   margin: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 a {
   color: var(--accent-primary);
   text-decoration: none;
   transition: color var(--transition-base);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 a:hover {
@@ -99,6 +140,8 @@ small {
 code, kbd, samp, pre {
   font-family: var(--font-mono);
   font-size: 0.875em;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 code {
@@ -116,6 +159,7 @@ pre {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   line-height: 1.6;
+  max-width: 100%;
 }
 
 pre code {
@@ -129,6 +173,8 @@ blockquote {
   padding-left: var(--space-4);
   border-left: 2px solid var(--border-primary);
   color: var(--text-secondary);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 hr {
@@ -148,6 +194,8 @@ ul, ol {
 
 li {
   margin: var(--space-1) 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 ul[class],
@@ -198,6 +246,7 @@ select {
   color: var(--text-primary);
   transition: border-color var(--transition-base),
               box-shadow var(--transition-base);
+  max-width: 100%;
 }
 
 input:focus,
@@ -225,6 +274,7 @@ select:disabled {
 textarea {
   resize: vertical;
   min-height: 100px;
+  overflow-y: auto;
 }
 
 select {
@@ -303,6 +353,8 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 th,
@@ -310,6 +362,8 @@ td {
   padding: var(--space-3);
   text-align: left;
   border-bottom: 1px solid var(--border-primary);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 th {
@@ -450,6 +504,7 @@ dialog {
   border: none;
   padding: 0;
   background: transparent;
+  max-width: 100%;
 }
 
 dialog::backdrop {
@@ -488,8 +543,28 @@ input[type='search']::-webkit-search-cancel-button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
+}
+
+.word-break {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 [hidden] {
   display: none !important;
+}
+
+/* ========================================
+   PREVENT OVERFLOW
+   ======================================== */
+
+.container,
+.section,
+.content,
+div {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
