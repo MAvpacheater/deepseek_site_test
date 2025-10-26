@@ -131,7 +131,9 @@
     <!-- Modal Container -->
     <div id="modalContainer" class="modal-container"></div>
     
-    <!-- External Libraries -->
+    <!-- ========================================
+         EXTERNAL LIBRARIES
+         ======================================== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -139,70 +141,98 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
-    <!-- Core Scripts -->
-    <script src="js/core/app.js" defer></script>
-    <script src="js/core/state-manager.js" defer></script>
-    <script src="js/core/chat-state.js" defer></script>
-    <script src="js/core/event-bus.js" defer></script>
+    <!-- ========================================
+         CORE SCRIPTS (ПЕРШИМИ!)
+         ======================================== -->
+    <script src="js/core/event-bus.js"></script>
+    <script src="js/core/state-manager.js"></script>
+    <script src="js/core/chat-state.js"></script>
     
-    <!-- Services -->
-    <script src="js/services/api/gemini-api.js" defer></script>
-    <script src="js/services/api/groq-api.js" defer></script>
-    <script src="js/services/api/image-api.js" defer></script>
+    <!-- ========================================
+         SERVICES (ДРУГИМИ!)
+         ======================================== -->
+    <!-- API Services -->
+    <script src="js/services/api/gemini-api.js"></script>
+    <script src="js/services/api/groq-api.js"></script>
+    <script src="js/services/api/image-api.js"></script>
     
-    <script src="js/services/storage/indexeddb.js" defer></script>
-    <script src="js/services/storage/migration.js" defer></script>
-    <script src="js/services/storage/cache.js" defer></script>
+    <!-- Storage Services -->
+    <script src="js/services/storage/indexeddb.js"></script>
+    <script src="js/services/storage/cache.js"></script>
+    <script src="js/services/storage/migration.js"></script>
     
-    <script src="js/services/security/encryption.js" defer></script>
-    <script src="js/services/security/sanitizer.js" defer></script>
-    <script src="js/services/security/validator.js" defer></script>
+    <!-- Security Services -->
+    <script src="js/services/security/encryption.js"></script>
+    <script src="js/services/security/sanitizer.js"></script>
+    <script src="js/services/security/validator.js"></script>
     
-    <!-- Features -->
-    <script src="js/features/chat/gemini-chat.js" defer></script>
-    <script src="js/features/chat/gemini-ui.js" defer></script>
-    <script src="js/features/chat/deepseek-chat.js" defer></script>
-    <script src="js/features/chat/message-renderer.js" defer></script>
+    <!-- ========================================
+         FEATURES (ТРЕТІМИ!)
+         ======================================== -->
+    <!-- Chat Features -->
+    <script src="js/features/chat/message-renderer.js"></script>
+    <script src="js/features/chat/gemini-chat.js"></script>
+    <script src="js/features/chat/gemini-ui.js"></script>
+    <script src="js/features/chat/deepseek-chat.js"></script>
     
-    <script src="js/features/code-editor/deepseek-api.js" defer></script>
-    <script src="js/features/code-editor/code-extractor.js" defer></script>
-    <script src="js/features/code-editor/file-manager.js" defer></script>
-    <script src="js/features/code-editor/ui-controller.js" defer></script>
-    <script src="js/features/code-editor/preview.js" defer></script>
+    <!-- Code Editor Features -->
+    <script src="js/features/code-editor/code-extractor.js"></script>
+    <script src="js/features/code-editor/file-manager.js"></script>
+    <script src="js/features/code-editor/preview.js"></script>
+    <script src="js/features/code-editor/ui-controller.js"></script>
     
-    <script src="js/features/image-generator/generator.js" defer></script>
-    <script src="js/features/image-generator/gallery.js" defer></script>
+    <!-- Image Generator Features -->
+    <script src="js/features/image-generator/generator.js"></script>
+    <script src="js/features/image-generator/gallery.js"></script>
     
-    <script src="js/features/planner/planner.js" defer></script>
-    <script src="js/features/planner/task-manager.js" defer></script>
-    <script src="js/features/planner/ai-subtasks.js" defer></script>
+    <!-- Planner Features -->
+    <script src="js/features/planner/planner.js"></script>
+    <script src="js/features/planner/task-manager.js"></script>
+    <script src="js/features/planner/ai-subtasks.js"></script>
     
-    <script src="js/features/memory/memory-manager.js" defer></script>
-    <script src="js/features/memory/search.js" defer></script>
+    <!-- Memory Features -->
+    <script src="js/features/memory/memory-manager.js"></script>
+    <script src="js/features/memory/search.js"></script>
     
-    <script src="js/features/library/library.js" defer></script>
-    <script src="js/features/library/preview-modal.js" defer></script>
-    <script src="js/features/library/filters.js" defer></script>
+    <!-- Library Features -->
+    <script src="js/features/library/library.js"></script>
+    <script src="js/features/library/preview-modal.js"></script>
+    <script src="js/features/library/filters.js"></script>
     
-    <script src="js/features/dashboard/dashboard.js" defer></script>
-    <script src="js/features/dashboard/stats.js" defer></script>
+    <!-- Dashboard Features -->
+    <script src="js/features/dashboard/dashboard.js"></script>
+    <script src="js/features/dashboard/stats.js"></script>
     
-    <!-- UI Components -->
-    <script src="js/ui/modal-manager.js" defer></script>
-    <script src="js/ui/toast.js" defer></script>
-    <script src="js/ui/loading.js" defer></script>
-    <script src="js/ui/theme-switcher.js" defer></script>
+    <!-- ========================================
+         UI COMPONENTS (ЧЕТВЕРТИМИ!)
+         ======================================== -->
+    <script src="js/ui/modal-manager.js"></script>
+    <script src="js/ui/toast.js"></script>
+    <script src="js/ui/loading.js"></script>
+    <script src="js/ui/theme-switcher.js"></script>
     
-    <!-- Utils -->
-    <script src="js/utils/helpers.js" defer></script>
-    <script src="js/utils/date-formatter.js" defer></script>
-    <script src="js/utils/file-utils.js" defer></script>
-    <script src="js/utils/code-analyzer.js" defer></script>
+    <!-- ========================================
+         UTILS (П'ЯТИМИ!)
+         ======================================== -->
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/date-formatter.js"></script>
+    <script src="js/utils/file-utils.js"></script>
+    <script src="js/utils/code-analyzer.js"></script>
     
-    <!-- Integrations -->
-    <script src="js/integrations/github.js" defer></script>
-    <script src="js/integrations/export.js" defer></script>
+    <!-- ========================================
+         INTEGRATIONS (ШОСТИМИ!)
+         ======================================== -->
+    <script src="js/integrations/github.js"></script>
+    <script src="js/integrations/export.js"></script>
     
+    <!-- ========================================
+         APP ENTRY POINT (ОСТАННІМ!)
+         ======================================== -->
+    <script src="js/core/app.js"></script>
+    
+    <!-- ========================================
+         INITIALIZATION
+         ======================================== -->
     <script>
         // Remove preload class after page loads
         window.addEventListener('load', () => {
