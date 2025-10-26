@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Assistant Hub - Розумний автономний асистент з Gemini, DeepSeek та генерацією зображень">
+    <meta name="description" content="AI Assistant Hub - Розумний автономний асістент з Gemini, DeepSeek та генерацією зображень">
     <meta name="theme-color" content="#0d1117">
     <title>🤖 AI Assistant Hub</title>
     
@@ -42,10 +42,107 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://generativelanguage.googleapis.com">
     <link rel="preconnect" href="https://api.groq.com">
+    
+    <style>
+        /* КРИТИЧНО: Фіксуємо розташування */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            width: calc(100vw - 280px);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .page-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        /* Виправлення для chat sections */
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .input-area {
+            flex-shrink: 0;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--border-primary);
+        }
+        
+        /* Виправлення для DeepSeek code section */
+        .code-section {
+            width: 45%;
+            flex-shrink: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .code-section.collapsed {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+            }
+            
+            .main-content {
+                width: calc(100vw - 80px);
+            }
+            
+            .code-section {
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 100%;
+                z-index: 1000;
+            }
+        }
+    </style>
 </head>
 <body class="preload">
     <!-- Main Container -->
-    <div id="app" class="app-container" style="display: flex; width: 100%; height: 100vh;">
+    <div class="app-container">
         
         <!-- Sidebar Navigation -->
         <aside id="sidebar" class="sidebar">
@@ -54,7 +151,7 @@
                     <span class="logo-icon">🤖</span>
                     <span class="logo-text">AI Hub</span>
                 </h1>
-                <p class="sidebar-subtitle">Розумний автономний асистент</p>
+                <p class="sidebar-subtitle">Розумний автономний асістент</p>
             </div>
             
             <nav class="sidebar-menu">
@@ -120,9 +217,8 @@
         </aside>
         
         <!-- Main Content Area -->
-        <main id="mainContent" class="main-content" style="flex: 1; overflow: hidden;">
-            <!-- Content буде динамічно завантажуватись тут -->
-            <div id="pageContainer" class="page-container" style="width: 100%; height: 100%;"></div>
+        <main class="main-content">
+            <div id="pageContainer" class="page-container"></div>
         </main>
         
     </div>
