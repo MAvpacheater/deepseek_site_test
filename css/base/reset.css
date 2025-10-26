@@ -1,4 +1,4 @@
-/* 🔄 CSS Reset - Modern Minimal (FIXED - Proper Overflow) */
+/* 🔄 CSS Reset - CRITICAL OVERFLOW FIX */
 
 /* ========================================
    BOX SIZING
@@ -13,7 +13,7 @@
 }
 
 /* ========================================
-   ROOT & BODY
+   ROOT & BODY - CRITICAL FIX
    ======================================== */
 
 html {
@@ -27,6 +27,7 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  position: fixed;
 }
 
 body {
@@ -41,21 +42,28 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  position: fixed;
   transition: background-color var(--transition-base),
               color var(--transition-base);
 }
+
+/* ========================================
+   APP STRUCTURE - CRITICAL
+   ======================================== */
 
 #app {
   width: 100%;
   height: 100vh;
   display: flex;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
   overflow: hidden;
 }
 
 .app-container {
-  width: 100%;
-  height: 100%;
+  width: calc(100% - var(--sidebar-width));
+  height: 100vh;
   margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
@@ -74,14 +82,34 @@ body {
   overflow: hidden;
 }
 
+/* CRITICAL: Page container MUST have overflow */
 .page-container {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-width: 100vw;
+}
+
+/* Scrollbar for page-container */
+.page-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.page-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-container::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+}
+
+.page-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -403,8 +431,8 @@ details > summary::-webkit-details-marker {
    ======================================== */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -586,6 +614,7 @@ div {
 @media (max-width: 768px) {
   .app-container {
     margin-left: 0;
+    width: 100%;
   }
   
   .sidebar {
