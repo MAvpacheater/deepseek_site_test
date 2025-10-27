@@ -1,9 +1,9 @@
-/* 🎨 CSS VARIABLES - PROFESSIONAL DARK THEME */
+/* 🎨 CSS VARIABLES - PURPLE ACCENT DARK THEME */
 /* FILE: css/base/variables.css */
 
 :root {
   /* ========================================
-     COLORS - DEEP DARK PALETTE
+     COLORS - DEEP DARK PALETTE WITH PURPLE ACCENTS
      ======================================== */
   
   /* Backgrounds */
@@ -23,12 +23,12 @@
   --text-muted: #4a4a4a;
   --text-inverse: #0a0a0a;
   
-  /* Accent Colors - Blue Gradient */
-  --accent-primary: #3b82f6;
-  --accent-secondary: #2563eb;
-  --accent-hover: #60a5fa;
-  --accent-active: #1d4ed8;
-  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  /* Accent Colors - Purple Gradient */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-hover: #a78bfa;
+  --accent-active: #6d28d9;
+  --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   
   /* Status Colors */
   --success: #10b981;
@@ -43,15 +43,15 @@
   --error-hover: #dc2626;
   --error-bg: rgba(239, 68, 68, 0.1);
   
-  --info: #3b82f6;
-  --info-hover: #2563eb;
-  --info-bg: rgba(59, 130, 246, 0.1);
+  --info: #8b5cf6;
+  --info-hover: #7c3aed;
+  --info-bg: rgba(139, 92, 246, 0.1);
   
   /* Borders */
   --border-primary: #2a2a2a;
   --border-secondary: #1f1f1f;
   --border-subtle: #1a1a1a;
-  --border-focus: #3b82f6;
+  --border-focus: #8b5cf6;
   
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
@@ -59,8 +59,8 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8);
   --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.9);
   --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.95);
-  --shadow-glow: 0 0 32px rgba(59, 130, 246, 0.2);
-  --shadow-glow-strong: 0 0 48px rgba(59, 130, 246, 0.3);
+  --shadow-glow: 0 0 32px rgba(139, 92, 246, 0.3);
+  --shadow-glow-strong: 0 0 48px rgba(139, 92, 246, 0.5);
   
   /* Overlay */
   --overlay-light: rgba(0, 0, 0, 0.6);
@@ -203,6 +203,11 @@ body.light-theme {
   --text-tertiary: #737373;
   --text-muted: #a3a3a3;
   
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-hover: #a78bfa;
+  --accent-active: #6d28d9;
+  
   --border-primary: #e5e5e5;
   --border-secondary: #f0f0f0;
   --border-subtle: #f5f5f5;
@@ -213,21 +218,21 @@ body.light-theme {
 }
 
 /* ========================================
-   CODE SYNTAX COLORS
+   CODE SYNTAX COLORS - Purple Theme
    ======================================== */
 
 :root {
   --code-background: var(--bg-code);
   --code-text: #d4d4d4;
   --code-comment: #6b6b6b;
-  --code-keyword: #3b82f6;
-  --code-function: #a78bfa;
+  --code-keyword: #a78bfa;
+  --code-function: #c4b5fd;
   --code-string: #10b981;
   --code-number: #f59e0b;
-  --code-operator: #3b82f6;
+  --code-operator: #8b5cf6;
   --code-punctuation: #d4d4d4;
-  --code-class: #f59e0b;
-  --code-variable: #60a5fa;
+  --code-class: #ddd6fe;
+  --code-variable: #a78bfa;
 }
 
 /* ========================================
