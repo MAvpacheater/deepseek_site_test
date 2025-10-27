@@ -1,4 +1,4 @@
-/* 🔘 BUTTONS - PROFESSIONAL ROUNDED DESIGN */
+/* 🔘 BUTTONS - PURPLE THEME DESIGN */
 /* FILE: css/components/buttons.css */
 
 /* ========================================
@@ -34,7 +34,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.1), transparent);
   opacity: 0;
   transition: opacity var(--transition-base);
   border-radius: inherit;
@@ -61,35 +61,36 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 .btn:focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 2px solid #a78bfa;
   outline-offset: 2px;
 }
 
 /* ========================================
-   BUTTON VARIANTS
+   BUTTON VARIANTS - PURPLE THEME
    ======================================== */
 
-/* Primary Button - Gradient Blue */
+/* Primary Button - Purple Gradient */
 .btn-primary,
 #geminiSendBtn,
 #deepseekSendBtn,
 #imageSendBtn,
 .save-btn,
 .modal-actions button:first-child {
-  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.6);
 }
 
 .btn-primary:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
 /* Secondary Button */
@@ -104,14 +105,14 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--bg-hover);
-  border-color: var(--accent-primary);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 /* Danger Button - Red Gradient */
 .btn-danger,
 .clear-btn {
-  background: linear-gradient(135deg, var(--error) 0%, var(--error-hover) 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -124,7 +125,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 /* Success Button - Green Gradient */
 .btn-success {
-  background: linear-gradient(135deg, var(--success) 0%, var(--success-hover) 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
   border: 1px solid rgba(16, 185, 129, 0.2);
@@ -137,7 +138,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 /* Warning Button - Orange Gradient */
 .btn-warning {
-  background: linear-gradient(135deg, var(--warning) 0%, var(--warning-hover) 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
   border: 1px solid rgba(245, 158, 11, 0.2);
@@ -156,14 +157,14 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: var(--accent-primary);
+  background: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
 }
 
 /* Link Button */
 .btn-link {
   background: transparent;
-  color: var(--accent-primary);
+  color: #a78bfa;
   padding: var(--space-2);
   text-decoration: none;
   border: none;
@@ -172,7 +173,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 .btn-link:hover:not(:disabled) {
-  color: var(--accent-hover);
+  color: #c4b5fd;
   text-decoration: underline;
   transform: none;
 }
@@ -227,10 +228,10 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 .header-btn:hover,
 .nav-btn:hover:not(:disabled) {
   background: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--accent-primary);
+  color: #a78bfa;
+  border-color: #8b5cf6;
   transform: scale(1.05);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .btn-icon:active,
@@ -319,17 +320,17 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   width: 100%;
 }
 
-/* Outline Buttons */
+/* Outline Buttons - Purple */
 .btn-outline-primary {
   background: transparent;
-  color: var(--accent-primary);
-  border: 2px solid var(--accent-primary);
+  color: #a78bfa;
+  border: 2px solid #8b5cf6;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  background: var(--accent-primary);
+  background: #8b5cf6;
   color: white;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
 .btn-outline-danger {
@@ -357,7 +358,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.3), transparent);
   transition: left 0.5s ease;
 }
 
@@ -377,9 +378,9 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   height: 60px;
   min-width: 60px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
-  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
   z-index: var(--z-fixed);
   padding: 0;
   display: flex;
@@ -393,7 +394,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 .btn-fab:hover:not(:disabled) {
   transform: scale(1.1);
-  box-shadow: 0 12px 48px rgba(59, 130, 246, 0.6);
+  box-shadow: 0 12px 48px rgba(139, 92, 246, 0.7);
 }
 
 .btn-fab:active {
@@ -423,14 +424,66 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 .message-action-btn:hover {
   background: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--accent-primary);
+  color: #a78bfa;
+  border-color: #8b5cf6;
   transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
 .message-action-btn.success {
   color: var(--success);
   border-color: var(--success);
+}
+
+/* ========================================
+   CHAT CARD BUTTON (для Dashboard)
+   ======================================== */
+
+.chat-card-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.chat-card-btn:hover {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+}
+
+/* ========================================
+   QUICK ACTION BUTTON (для Dashboard)
+   ======================================== */
+
+.quick-action-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
 }
 
 /* ========================================
