@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ (БЕЗ ДУБЛЮВАННЯ)
+// ✨ Gemini Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ
 
 class GeminiChat {
     constructor() {
@@ -18,20 +18,16 @@ class GeminiChat {
     init() {
         console.log('🔄 Initializing Gemini Chat...');
 
-        // ЗАВЖДИ переініціалізувати
         this.initialized = false;
-        
-        // Очистити старі обробники якщо є
         this.cleanup();
-
         this.setupEventListeners();
         this.loadHistory();
         this.initialized = true;
+        
         console.log('✅ Gemini Chat initialized');
     }
 
     cleanup() {
-        // Очистити старі підписки
         if (window.chatState && this.messageListener) {
             chatState.off('gemini:message', this.messageListener);
             chatState.off('gemini:clear', this.clearListener);
@@ -45,13 +41,11 @@ class GeminiChat {
         console.log('🔗 Setting up event listeners...', { input: !!input, sendBtn: !!sendBtn });
 
         if (input) {
-            // Auto-resize
             input.addEventListener('input', () => {
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 150) + 'px';
             });
 
-            // Ctrl+Enter для відправки
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.ctrlKey && !this.isProcessing) {
                     e.preventDefault();
@@ -62,11 +56,9 @@ class GeminiChat {
         }
 
         if (sendBtn) {
-            // Видалити старі обробники
             const newBtn = sendBtn.cloneNode(true);
             sendBtn.parentNode.replaceChild(newBtn, sendBtn);
             
-            // Додати новий обробник
             newBtn.addEventListener('click', () => {
                 if (!this.isProcessing) {
                     console.log('📤 Sending message via button click');
@@ -77,9 +69,7 @@ class GeminiChat {
             console.log('✅ Send button handler attached');
         }
 
-        // Підписатися на зміни в chatState
         if (window.chatState) {
-            // Зберегти посилання на listeners
             this.messageListener = ({ message }) => {
                 console.log('📨 New message received:', message);
                 this.renderMessage(message);
@@ -94,8 +84,6 @@ class GeminiChat {
             chatState.on('gemini:clear', this.clearListener);
 
             console.log('✅ ChatState listeners attached');
-        } else {
-            console.warn('⚠️ ChatState not available');
         }
     }
 
@@ -143,7 +131,6 @@ class GeminiChat {
             return;
         }
 
-        // Валідація
         if (window.sanitizer) {
             const validation = sanitizer.validateInput(message, {
                 maxLength: 10000,
@@ -159,17 +146,13 @@ class GeminiChat {
             }
         }
 
-        // Очистити input
         input.value = '';
         input.style.height = 'auto';
 
         console.log('✅ Adding user message to chatState');
 
-        // Додати повідомлення користувача через chatState (викличе рендеринг через listener)
         if (window.chatState) {
             chatState.addGeminiMessage('user', message);
-        } else {
-            console.error('❌ ChatState not available!');
         }
 
         this.setLoading(true);
@@ -179,14 +162,11 @@ class GeminiChat {
             const response = await this.callAPI(apiKey, message);
             console.log('✅ API response received');
             
-            // Додати відповідь AI через chatState (викличе рендеринг через listener)
-            // НЕ рендерити тут напряму - тільки через chatState!
             if (window.chatState) {
                 chatState.addGeminiMessage('model', response);
                 console.log('✅ AI message added to chatState');
             }
 
-            // Оновити статистику
             if (window.appState) {
                 appState.incrementStat('geminiRequests');
                 appState.incrementStat('totalTokens', this.estimateTokens(message + response));
@@ -200,21 +180,15 @@ class GeminiChat {
         }
     }
 
-    // ========================================
-    // API CALL
-    // ========================================
-
     async callAPI(apiKey, message) {
         this.isProcessing = true;
         this.abortController = new AbortController();
 
         try {
-            // Отримати історію через chatState
             const history = window.chatState ? 
                 chatState.getGeminiHistory() : 
                 [];
 
-            // System prompt
             const systemPrompt = window.appState ?
                 appState.getSetting('geminiSystemPrompt') :
                 'Ти корисний AI асістент. Говори українською мовою.';
@@ -287,7 +261,6 @@ class GeminiChat {
         const messagesDiv = document.getElementById('geminiMessages');
         if (!messagesDiv) return;
 
-        // Видалити empty state якщо є
         const emptyState = messagesDiv.querySelector('.empty-state');
         if (emptyState) {
             emptyState.remove();
@@ -316,7 +289,6 @@ class GeminiChat {
 
         messagesDiv.appendChild(messageElement);
 
-        // Анімація появи
         requestAnimationFrame(() => {
             messageElement.style.transition = 'all 0.3s ease';
             messageElement.style.opacity = '1';
@@ -359,7 +331,6 @@ class GeminiChat {
     clearUI() {
         const messagesDiv = document.getElementById('geminiMessages');
         if (messagesDiv) {
-            // Анімація зникнення
             const messages = messagesDiv.querySelectorAll('.message');
             messages.forEach((msg, index) => {
                 setTimeout(() => {
@@ -369,7 +340,6 @@ class GeminiChat {
                 }, index * 30);
             });
 
-            // Після анімації показати empty state
             setTimeout(() => {
                 messagesDiv.innerHTML = `
                     <div class="empty-state" style="opacity: 0; transform: scale(0.9);">
@@ -379,7 +349,6 @@ class GeminiChat {
                     </div>
                 `;
 
-                // Анімація появи empty state
                 requestAnimationFrame(() => {
                     const emptyState = messagesDiv.querySelector('.empty-state');
                     if (emptyState) {
@@ -428,19 +397,118 @@ class GeminiChat {
     }
 
     // ========================================
+    // ЗБЕРЕЖЕННЯ РОЗМОВИ
+    // ========================================
+
+    async saveConversation() {
+        if (!window.chatState) {
+            if (window.showToast) {
+                showToast('❌ ChatState недоступний', 'error');
+            }
+            return;
+        }
+
+        const messages = chatState.getGeminiMessages();
+        
+        if (messages.length === 0) {
+            if (window.showToast) {
+                showToast('⚠️ Немає повідомлень для збереження', 'warning');
+            }
+            return;
+        }
+
+        // Запитати назву розмови
+        let title;
+        if (window.modalManager) {
+            title = await modalManager.prompt(
+                'Введіть назву для розмови:',
+                {
+                    title: '💾 Зберегти розмову',
+                    defaultValue: `Gemini Chat - ${new Date().toLocaleDateString('uk-UA')}`,
+                    placeholder: 'Назва розмови...'
+                }
+            );
+        } else {
+            title = prompt('Введіть назву для розмови:', `Gemini Chat - ${new Date().toLocaleDateString('uk-UA')}`);
+        }
+
+        if (!title) return;
+
+        try {
+            const result = await chatState.saveChat('gemini', title);
+            
+            if (result) {
+                if (window.showToast) {
+                    showToast('✅ Розмову збережено!', 'success');
+                }
+                console.log('✅ Conversation saved:', result);
+            } else {
+                throw new Error('Failed to save conversation');
+            }
+        } catch (error) {
+            console.error('Save conversation error:', error);
+            if (window.showToast) {
+                showToast('❌ Помилка збереження', 'error');
+            }
+        }
+    }
+
+    // ========================================
+    // ОЧИЩЕННЯ ЧАТУ
+    // ========================================
+
+    clearHistory() {
+        if (!window.chatState) {
+            console.error('❌ ChatState not available');
+            return;
+        }
+
+        // Підтвердження
+        let confirmed = false;
+        if (window.modalManager) {
+            modalManager.confirm('Очистити історію розмови?', {
+                title: '⚠️ Підтвердження',
+                icon: '🗑️',
+                confirmText: 'Так, очистити',
+                cancelText: 'Скасувати'
+            }).then(result => {
+                if (result) {
+                    chatState.clearGeminiChat();
+                    if (window.showToast) {
+                        showToast('🗑️ Історію очищено', 'success');
+                    }
+                }
+            });
+        } else {
+            confirmed = confirm('⚠️ Очистити історію розмови?');
+            if (confirmed) {
+                chatState.clearGeminiChat();
+                if (window.showToast) {
+                    showToast('🗑️ Історію очищено', 'success');
+                }
+            }
+        }
+    }
+
+    // ========================================
     // UTILITY
     // ========================================
 
     getApiKey() {
+        if (typeof getGeminiApiKey === 'function') {
+            return getGeminiApiKey();
+        }
+
         if (window.appState) {
             return appState.getApiKey('gemini');
         }
+
         return localStorage.getItem('gemini_api_key');
     }
 
     estimateTokens(text) {
         if (!text || typeof text !== 'string') return 0;
-        return Math.ceil(text.length / 3);
+        return Math.ceil(text.length / 3.5);
     }
 
     handleError(error) {
@@ -462,7 +530,6 @@ class GeminiChat {
             showToast(message, 'error', 7000);
         }
 
-        // Додати повідомлення про помилку в чат
         const messagesDiv = document.getElementById('geminiMessages');
         if (messagesDiv) {
             const errorMsg = document.createElement('div');
@@ -484,20 +551,6 @@ class GeminiChat {
         }
     }
 
-    clearHistory() {
-        if (!confirm('⚠️ Очистити історію розмови?')) return;
-
-        if (window.chatState) {
-            chatState.clearGeminiChat();
-        }
-
-        this.clearUI();
-
-        if (window.showToast) {
-            showToast('🗑️ Історію очищено', 'success');
-        }
-    }
-
     cancelRequest() {
         if (this.abortController) {
             this.abortController.abort();
@@ -511,16 +564,15 @@ class GeminiChat {
 }
 
 // ========================================
-// ГЛОБАЛЬНИЙ ЕКЗЕМПЛЯР ТА ЕКСПОРТ
+// ГЛОБАЛЬНИЙ ЕКЗЕМПЛЯР
 // ========================================
 
-// Створити глобальний екземпляр
 if (!window.geminiChat) {
     window.geminiChat = new GeminiChat();
     window.GeminiChat = GeminiChat;
 }
 
-// Глобальні функції для сумісності
+// Глобальні функції
 window.sendGeminiMessage = () => {
     if (window.geminiChat && window.geminiChat.initialized) {
         window.geminiChat.sendMessage();
@@ -533,4 +585,10 @@ window.clearGeminiChat = () => {
     }
 };
 
-console.log('✅ Gemini Chat module loaded (FIXED - NO DUPLICATES)');
+window.saveGeminiConversation = () => {
+    if (window.geminiChat && window.geminiChat.initialized) {
+        window.geminiChat.saveConversation();
+    }
+};
+
+console.log('✅ Gemini Chat module loaded (FIXED with Save & Clear)');
