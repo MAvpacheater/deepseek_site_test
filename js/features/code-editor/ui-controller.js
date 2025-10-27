@@ -1,4 +1,4 @@
-// 🎮 UI Controller - Управління інтерфейсом редактора коду
+// 🎮 UI Controller - Управління інтерфейсом редактора коду (FIXED)
 
 class UIController {
     constructor() {
@@ -74,6 +74,7 @@ class UIController {
     openCodePanel() {
         if (!this.codeSection || !this.chatSection) return;
 
+        this.codeSection.style.display = 'flex';
         this.codeSection.classList.remove('collapsed');
         this.chatSection.style.width = '55%';
         this.isCodePanelOpen = true;
@@ -88,6 +89,7 @@ class UIController {
     closeCodePanel() {
         if (!this.codeSection || !this.chatSection) return;
 
+        this.codeSection.style.display = 'none';
         this.codeSection.classList.add('collapsed');
         this.chatSection.style.width = '100%';
         this.isCodePanelOpen = false;
@@ -104,11 +106,14 @@ class UIController {
     // ========================================
 
     displayFiles() {
-        if (!this.codeContainer) return;
+        if (!this.codeContainer) {
+            console.error('❌ codeContainer not found');
+            return;
+        }
 
         const files = window.fileManager ? 
             fileManager.getAllFiles() : 
-            {};
+            (window.appState ? appState.getAllCodeFiles() : {});
 
         if (Object.keys(files).length === 0) {
             this.showEmptyState();
@@ -147,10 +152,24 @@ class UIController {
         const tab = document.createElement('div');
         tab.className = 'file-tab' + (isActive ? ' active' : '');
         tab.dataset.filename = filename;
+        tab.style.cssText = `
+            padding: 10px 16px;
+            background: ${isActive ? 'var(--bg-secondary)' : 'transparent'};
+            border-bottom: 2px solid ${isActive ? 'var(--accent-primary)' : 'transparent'};
+            color: ${isActive ? 'var(--accent-primary)' : 'var(--text-secondary)'};
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        `;
 
         if (file.modified) {
             const dot = document.createElement('span');
-            dot.style.color = '#f59e0b';
+            dot.style.cssText = 'color: #f59e0b; font-size: 16px;';
             dot.textContent = '● ';
             tab.appendChild(dot);
         }
@@ -202,6 +221,7 @@ class UIController {
         const fileDiv = document.createElement('div');
         fileDiv.className = 'code-file' + (isActive ? ' active' : '');
         fileDiv.dataset.filename = filename;
+        fileDiv.style.display = isActive ? 'block' : 'none';
 
         const codeBlock = this.createCodeBlock(filename, file);
         fileDiv.appendChild(codeBlock);
@@ -212,6 +232,12 @@ class UIController {
     createCodeBlock(filename, file) {
         const block = document.createElement('div');
         block.className = 'code-block';
+        block.style.cssText = `
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        `;
 
         // Header
         const header = this.createCodeBlockHeader(filename, file);
@@ -219,12 +245,26 @@ class UIController {
 
         // Code content
         const pre = document.createElement('pre');
+        pre.style.cssText = `
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+            background: var(--bg-primary);
+            max-width: 100%;
+        `;
+
         const code = document.createElement('code');
         code.className = `language-${file.language || 'plaintext'}`;
+        code.style.cssText = `
+            color: var(--text-primary);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        `;
 
-        // Highlight code
+        // Підсвітка коду
         if (window.sanitizer) {
-            code.innerHTML = sanitizer.highlightCode(file.code, file.language);
+            code.textContent = file.code;
         } else {
             code.textContent = file.code;
         }
@@ -243,25 +283,48 @@ class UIController {
     createCodeBlockHeader(filename, file) {
         const header = document.createElement('div');
         header.className = 'code-block-header';
+        header.style.cssText = `
+            background: var(--bg-secondary);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-primary);
+            gap: 12px;
+        `;
 
         // Info section
         const info = document.createElement('div');
-        info.className = 'code-block-info';
+        info.style.cssText = 'display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;';
 
         const lang = document.createElement('span');
-        lang.className = 'code-block-lang';
+        lang.style.cssText = `
+            color: var(--text-tertiary);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: var(--bg-primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+        `;
         lang.textContent = file.language || 'unknown';
         info.appendChild(lang);
 
         const name = document.createElement('span');
-        name.className = 'code-block-name';
+        name.style.cssText = `
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        `;
         name.textContent = filename;
         info.appendChild(name);
 
         if (file.modified) {
             const modified = document.createElement('span');
-            modified.style.color = '#f59e0b';
-            modified.style.fontSize = '12px';
+            modified.style.cssText = 'color: #f59e0b; font-size: 12px;';
             modified.textContent = '● змінено';
             info.appendChild(modified);
         }
@@ -269,34 +332,50 @@ class UIController {
         header.appendChild(info);
 
         // Buttons section
-        const buttons = this.createActionButtons(filename);
+        const buttons = this.createActionButtons(filename, file);
         header.appendChild(buttons);
 
         return header;
     }
 
-    createActionButtons(filename) {
+    createActionButtons(filename, file) {
         const buttons = document.createElement('div');
-        buttons.style.display = 'flex';
-        buttons.style.gap = '8px';
-        buttons.style.flexWrap = 'wrap';
+        buttons.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap;';
 
-        // Edit button
-        const editBtn = document.createElement('button');
-        editBtn.textContent = '✏️ Редагувати';
-        editBtn.addEventListener('click', () => this.editFile(filename));
-        buttons.appendChild(editBtn);
+        const buttonStyle = `
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        `;
+
+        // Preview button (ТІЛЬКИ для HTML)
+        if (filename.endsWith('.html')) {
+            const previewBtn = document.createElement('button');
+            previewBtn.textContent = '👁️ Preview';
+            previewBtn.style.cssText = buttonStyle;
+            previewBtn.onclick = () => this.previewFile(filename, file);
+            buttons.appendChild(previewBtn);
+        }
 
         // Copy button
         const copyBtn = document.createElement('button');
         copyBtn.textContent = '📋 Копіювати';
-        copyBtn.addEventListener('click', () => this.copyFile(filename));
+        copyBtn.style.cssText = buttonStyle;
+        copyBtn.onclick = () => this.copyFile(filename, file);
         buttons.appendChild(copyBtn);
 
         // Download button
         const downloadBtn = document.createElement('button');
         downloadBtn.textContent = '💾 Завантажити';
-        downloadBtn.addEventListener('click', () => this.downloadFile(filename));
+        downloadBtn.style.cssText = buttonStyle;
+        downloadBtn.onclick = () => this.downloadFile(filename, file);
         buttons.appendChild(downloadBtn);
 
         return buttons;
@@ -306,9 +385,13 @@ class UIController {
         if (!this.codeContainer) return;
 
         this.codeContainer.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">📁</div>
-                <h3>Немає файлів</h3>
+            <div class="empty-state" style="
+                text-align: center;
+                padding: 60px 20px;
+                color: var(--text-secondary);
+            ">
+                <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+                <h3 style="color: var(--text-primary); margin-bottom: 10px;">Немає файлів</h3>
                 <p>Опиши що хочеш створити</p>
             </div>
         `;
@@ -338,11 +421,17 @@ class UIController {
 
             // Оновити активні елементи
             document.querySelectorAll('.file-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.filename === filename);
+                const isActive = tab.dataset.filename === filename;
+                tab.classList.toggle('active', isActive);
+                tab.style.background = isActive ? 'var(--bg-secondary)' : 'transparent';
+                tab.style.borderBottomColor = isActive ? 'var(--accent-primary)' : 'transparent';
+                tab.style.color = isActive ? 'var(--accent-primary)' : 'var(--text-secondary)';
             });
 
             document.querySelectorAll('.code-file').forEach(file => {
-                file.classList.toggle('active', file.dataset.filename === filename);
+                const isActive = file.dataset.filename === filename;
+                file.classList.toggle('active', isActive);
+                file.style.display = isActive ? 'block' : 'none';
             });
 
             if (this.fileSelector) {
@@ -354,33 +443,23 @@ class UIController {
         }
     }
 
-    editFile(filename) {
-        const file = window.fileManager?.getFile(filename);
-        if (!file) return;
-
-        const newCode = prompt(`✏️ Редагувати ${filename}:`, file.code);
-
-        if (newCode !== null && newCode !== file.code) {
-            try {
-                fileManager.updateFile(filename, newCode);
-                this.refreshDisplay();
-                
-                if (window.showToast) {
-                    showToast('✅ Файл оновлено!', 'success');
-                }
-            } catch (error) {
-                console.error('Failed to update file:', error);
-                if (window.showToast) {
-                    showToast('❌ Помилка оновлення', 'error');
-                }
+    previewFile(filename, file) {
+        if (!filename.endsWith('.html')) {
+            if (window.showToast) {
+                showToast('⚠️ Preview доступний тільки для HTML файлів', 'warning');
             }
+            return;
+        }
+
+        // Створити preview у новому вікні
+        const previewWindow = window.open('', '_blank', 'width=1200,height=800');
+        if (previewWindow) {
+            previewWindow.document.write(file.code);
+            previewWindow.document.close();
         }
     }
 
-    copyFile(filename) {
-        const file = window.fileManager?.getFile(filename);
-        if (!file) return;
-
+    copyFile(filename, file) {
         navigator.clipboard.writeText(file.code).then(() => {
             if (window.showToast) {
                 showToast('✅ Код скопійовано!', 'success', 2000);
@@ -393,12 +472,25 @@ class UIController {
         });
     }
 
-    downloadFile(filename) {
-        if (window.fileManager) {
-            fileManager.exportFile(filename, 'download');
+    downloadFile(filename, file) {
+        try {
+            const blob = new Blob([file.code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             
             if (window.showToast) {
                 showToast('✅ Файл завантажено!', 'success', 2000);
+            }
+        } catch (error) {
+            console.error('Download failed:', error);
+            if (window.showToast) {
+                showToast('❌ Помилка завантаження', 'error');
             }
         }
     }
@@ -485,4 +577,4 @@ window.navigateToNextFile = () => uiController.navigateToNext();
 window.uiController = uiController;
 window.UIController = UIController;
 
-console.log('✅ UI Controller loaded');
+console.log('✅ UI Controller loaded (FULLY FIXED with Preview)');
