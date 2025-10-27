@@ -1,4 +1,4 @@
-// 📝 Code Extractor - Витягування коду з AI відповідей
+// 📝 Code Extractor - Витягування коду з AI відповідей (FIXED)
 
 class CodeExtractor {
     constructor() {
@@ -32,20 +32,25 @@ class CodeExtractor {
     extractAndApply(text) {
         if (!text) return 0;
 
+        console.log('📝 Extracting code from response...');
+        
         let filesCreated = 0;
 
         // Спочатку перевірити FILE: маркери
         const fileMarkers = text.match(this.fileMarkerPattern);
         
         if (fileMarkers && fileMarkers.length > 0) {
+            console.log('Found FILE: markers:', fileMarkers.length);
             filesCreated = this.extractFromFileMarkers(text, fileMarkers);
             if (filesCreated > 0) {
+                console.log(`✅ Extracted ${filesCreated} files from markers`);
                 return filesCreated;
             }
         }
 
         // Якщо немає маркерів - витягти з code blocks
         filesCreated = this.extractFromCodeBlocks(text);
+        console.log(`✅ Extracted ${filesCreated} files from code blocks`);
         
         return filesCreated;
     }
@@ -82,6 +87,7 @@ class CodeExtractor {
                 const ext = filename.split('.').pop();
                 const language = this.getLanguageFromExtension(ext);
                 
+                console.log(`Saving file: ${filename} (${language})`);
                 this.saveFile(filename, codeBlock, language);
                 filesCreated++;
             }
@@ -117,6 +123,7 @@ class CodeExtractor {
                 filename = `file_${fileIndex}.${this.getExtension(lang)}`;
             }
             
+            console.log(`Saving file: ${filename} (${lang})`);
             this.saveFile(filename, code, lang);
             filesCreated++;
         }
@@ -190,21 +197,6 @@ class CodeExtractor {
             return 'script.py';
         }
         
-        // Java
-        if (lang === 'java') {
-            const classMatch = trimmedCode.match(/public\s+class\s+(\w+)/);
-            if (classMatch) {
-                return `${classMatch[1]}.java`;
-            }
-        }
-        
-        // C/C++
-        if (lang === 'c' || lang === 'cpp') {
-            if (trimmedCode.includes('int main(')) {
-                return lang === 'cpp' ? 'main.cpp' : 'main.c';
-            }
-        }
-        
         return null;
     }
 
@@ -213,25 +205,33 @@ class CodeExtractor {
     // ========================================
 
     saveFile(filename, code, language) {
-        // Використати fileManager якщо доступний
-        if (window.fileManager) {
-            fileManager.saveFile(filename, code, language);
-            return;
-        }
-
-        // Fallback - зберегти через appState
+        console.log(`💾 Saving file: ${filename}`);
+        
+        // КРИТИЧНО: Зберегти через appState
         if (window.appState) {
-            const existing = appState.getCodeFile(filename);
-            if (existing && existing.code) {
-                appState.addCodeHistory(filename, existing.code);
-            }
-            
-            appState.setCodeFile(filename, {
-                language: language,
+            const fileData = {
+                language: language || this.getLanguageFromExtension(filename.split('.').pop()),
                 code: code,
                 size: code.length,
-                modified: true
-            });
+                modified: true,
+                created: Date.now(),
+                updated: Date.now()
+            };
+            
+            appState.setCodeFile(filename, fileData);
+            console.log(`✅ File saved to appState: ${filename}`);
+        } else {
+            console.error('❌ appState not available');
+        }
+
+        // Також зберегти через fileManager якщо доступний
+        if (window.fileManager) {
+            try {
+                fileManager.saveFile(filename, code, language);
+                console.log(`✅ File saved to fileManager: ${filename}`);
+            } catch (error) {
+                console.error('Failed to save via fileManager:', error);
+            }
         }
     }
 
@@ -272,74 +272,6 @@ class CodeExtractor {
     }
 
     // ========================================
-    // ВАЛІДАЦІЯ КОДУ
-    // ========================================
-
-    validateCode(code, language) {
-        const errors = [];
-        const warnings = [];
-
-        // Перевірка на порожній код
-        if (!code || code.trim() === '') {
-            errors.push('Код порожній');
-            return { valid: false, errors, warnings };
-        }
-
-        // Перевірка розміру
-        if (code.length > 1000000) { // 1MB
-            errors.push('Код занадто великий');
-        }
-
-        // Перевірка на небезпечні конструкції
-        if (window.sanitizer && sanitizer.containsXSS(code)) {
-            warnings.push('Виявлено потенційно небезпечний код');
-        }
-
-        return {
-            valid: errors.length === 0,
-            errors,
-            warnings
-        };
-    }
-
-    // ========================================
-    // АНАЛІЗ КОДУ
-    // ========================================
-
-    analyzeCode(code, language) {
-        const analysis = {
-            lines: 0,
-            characters: code.length,
-            functions: 0,
-            classes: 0,
-            imports: 0,
-            comments: 0
-        };
-
-        if (!code) return analysis;
-
-        // Рядки
-        analysis.lines = code.split('\n').length;
-
-        // Функції (JS/TS)
-        if (language === 'javascript' || language === 'typescript') {
-            const functionPattern = /function\s+\w+|const\s+\w+\s*=\s*\([^)]*\)\s*=>/g;
-            analysis.functions = (code.match(functionPattern) || []).length;
-            
-            const classPattern = /class\s+\w+/g;
-            analysis.classes = (code.match(classPattern) || []).length;
-            
-            const importPattern = /import\s+.*from/g;
-            analysis.imports = (code.match(importPattern) || []).length;
-            
-            const commentPattern = /\/\/.*|\/\*[\s\S]*?\*\//g;
-            analysis.comments = (code.match(commentPattern) || []).length;
-        }
-
-        return analysis;
-    }
-
-    // ========================================
     // СТАТИСТИКА
     // ========================================
 
@@ -361,4 +293,4 @@ const codeExtractor = new CodeExtractor();
 window.codeExtractor = codeExtractor;
 window.CodeExtractor = CodeExtractor;
 
-console.log('✅ Code Extractor loaded');
+console.log('✅ Code Extractor loaded (FIXED)');
