@@ -232,7 +232,6 @@ function loadDashboard(container) {
             </div>
             <div id="dashboardContent" class="dashboard-content">
                 <div style="padding: 40px; text-align: center;">
-                    <p>📊 Dashboard готовий до роботи</p>
                 </div>
             </div>
         </div>
@@ -272,9 +271,6 @@ function loadGeminiChat(container) {
                 <div class="input-wrapper">
                     <textarea id="geminiInput" placeholder="Напиши повідомлення... (Ctrl+Enter для відправки)" rows="1"></textarea>
                     <button id="geminiSendBtn">Надіслати</button>
-                </div>
-                <div class="shortcuts-hint">
-                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd> для відправки
                 </div>
             </div>
         </div>
