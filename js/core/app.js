@@ -257,7 +257,8 @@ function loadGeminiChat(container) {
                     <h1>✨ Gemini Chat</h1>
                 </div>
                 <div class="header-actions">
-                    <button onclick="if(window.clearGeminiChat) clearGeminiChat()" class="clear-chat-btn">🗑️ Очистити</button>
+                    <button onclick="if(window.saveGeminiConversation) saveGeminiConversation()" class="save-chat-btn" title="Зберегти розмову">💾 Зберегти</button>
+                    <button onclick="if(window.clearGeminiChat) clearGeminiChat()" class="clear-chat-btn" title="Очистити чат">🗑️ Очистити</button>
                 </div>
             </div>
             <div id="geminiMessages" class="messages" style="flex: 1; overflow-y: auto; padding: 20px;">
@@ -272,6 +273,9 @@ function loadGeminiChat(container) {
                     <textarea id="geminiInput" placeholder="Напиши повідомлення... (Ctrl+Enter для відправки)" rows="1"></textarea>
                     <button id="geminiSendBtn">Надіслати</button>
                 </div>
+                <div class="shortcuts-hint">
+                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd> для відправки
+                </div>
             </div>
         </div>
     `;
@@ -279,14 +283,12 @@ function loadGeminiChat(container) {
     // Ініціалізувати Gemini Chat
     if (window.geminiChat) {
         setTimeout(() => {
-            geminiChat.setupEventListeners();
-            geminiChat.loadHistory();
+            geminiChat.init();
         }, 100);
     } else {
         console.warn('⚠️ Gemini Chat not loaded');
     }
 }
-
 // ========================================
 // DEEPSEEK CODER
 // ========================================
@@ -300,8 +302,9 @@ function loadDeepSeekCoder(container) {
                         <h1>💻 DeepSeek Coder</h1>
                     </div>
                     <div class="header-actions">
-                        <button onclick="if(window.clearDeepseekChat) clearDeepseekChat()" class="clear-chat-btn">🗑️ Очистити</button>
-                        <button onclick="toggleCodeSection()" class="preview-toggle-btn">👁️ Код</button>
+                        <button onclick="if(window.saveDeepseekProject) saveDeepseekProject()" class="save-chat-btn" title="Зберегти проект">💾 Зберегти</button>
+                        <button onclick="if(window.clearDeepseekChat) clearDeepseekChat()" class="clear-chat-btn" title="Очистити чат">🗑️ Очистити</button>
+                        <button onclick="toggleCodeSection()" class="preview-toggle-btn" title="Показати/сховати код">👁️ Код</button>
                     </div>
                 </div>
                 <div id="deepseekMessages" class="messages" style="flex: 1; overflow-y: auto; padding: 20px;">
@@ -331,8 +334,7 @@ function loadDeepSeekCoder(container) {
     // Ініціалізувати DeepSeek Chat
     if (window.deepseekChat) {
         setTimeout(() => {
-            deepseekChat.setupEventListeners();
-            deepseekChat.loadHistory();
+            deepseekChat.init();
         }, 100);
     } else {
         console.warn('⚠️ DeepSeek Chat not loaded');
