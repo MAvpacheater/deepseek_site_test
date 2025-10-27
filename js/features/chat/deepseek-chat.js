@@ -1,4 +1,4 @@
-// 💻 DeepSeek Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ
+// 💻 DeepSeek Chat - ПОВНЕ ВИПРАВЛЕННЯ З ВИТЯГУВАННЯМ КОДУ
 
 class DeepSeekChat {
     constructor() {
@@ -11,16 +11,8 @@ class DeepSeekChat {
         console.log('✅ DeepSeek Chat instance created');
     }
 
-    // ========================================
-    // ІНІЦІАЛІЗАЦІЯ
-    // ========================================
-
     init() {
-        if (this.initialized) {
-            console.warn('⚠️ DeepSeek Chat already initialized');
-            return;
-        }
-
+        if (this.initialized) return;
         this.setupEventListeners();
         this.loadHistory();
         this.initialized = true;
@@ -32,27 +24,16 @@ class DeepSeekChat {
         const sendBtn = document.getElementById('deepseekSendBtn');
 
         if (input) {
-            // CRITICAL FIX: Переконатися що input активний
             input.disabled = false;
             input.readOnly = false;
             
-            // Auto-resize
             input.addEventListener('input', () => {
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 150) + 'px';
             });
 
-            // Enter для відправки (БЕЗ Shift)
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey && !this.isProcessing) {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
-            });
-            
-            // Ctrl+Enter теж працює
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.ctrlKey && !this.isProcessing) {
                     e.preventDefault();
                     this.sendMessage();
                 }
@@ -61,11 +42,8 @@ class DeepSeekChat {
 
         if (sendBtn) {
             sendBtn.disabled = false;
-            
             sendBtn.addEventListener('click', () => {
-                if (!this.isProcessing) {
-                    this.sendMessage();
-                }
+                if (!this.isProcessing) this.sendMessage();
             });
         }
 
@@ -74,67 +52,33 @@ class DeepSeekChat {
         }
     }
 
-    // ========================================
-    // SEND MESSAGE
-    // ========================================
-
     async sendMessage() {
         if (this.isProcessing) {
-            if (window.showToast) {
-                showToast('⏳ Зачекай завершення попереднього запиту', 'warning');
-            }
+            if (window.showToast) showToast('⏳ Зачекай завершення попереднього запиту', 'warning');
             return;
         }
 
         const input = document.getElementById('deepseekInput');
-        if (!input) {
-            console.error('❌ deepseekInput not found');
-            return;
-        }
+        if (!input) return;
 
         const message = input.value.trim();
         if (!message) {
-            if (window.showToast) {
-                showToast('⚠️ Опиши що створити', 'warning');
-            }
+            if (window.showToast) showToast('⚠️ Опиши що створити', 'warning');
             return;
         }
 
         const apiKey = this.getApiKey();
         if (!apiKey) {
-            if (window.showToast) {
-                showToast('🔑 Введи Groq API ключ у налаштуваннях!', 'error');
-            }
-            if (typeof switchMode === 'function') {
-                switchMode('settings');
-            }
+            if (window.showToast) showToast('🔑 Введи Groq API ключ у налаштуваннях!', 'error');
+            if (typeof switchMode === 'function') switchMode('settings');
             return;
-        }
-
-        if (window.sanitizer) {
-            const validation = sanitizer.validateInput(message, {
-                maxLength: 10000,
-                required: true,
-                allowHTML: false
-            });
-
-            if (!validation.valid) {
-                if (window.showToast) {
-                    showToast(`⚠️ ${validation.errors.join(', ')}`, 'error');
-                }
-                return;
-            }
         }
 
         input.value = '';
         input.style.height = 'auto';
 
-        // Додати повідомлення користувача
-        if (window.chatState) {
-            chatState.addDeepSeekMessage('user', message);
-        }
+        if (window.chatState) chatState.addDeepSeekMessage('user', message);
         this.renderMessage(message, 'user');
-
         this.setLoading(true);
 
         try {
@@ -143,9 +87,7 @@ class DeepSeekChat {
 
             if (window.appState) {
                 appState.incrementStat('deepseekRequests');
-                appState.incrementStat('totalTokens', this.estimateTokens(message + response));
             }
-
         } catch (error) {
             this.handleError(error);
         } finally {
@@ -158,13 +100,10 @@ class DeepSeekChat {
         this.abortController = new AbortController();
 
         try {
-            const history = window.chatState ? 
-                chatState.getDeepSeekHistory() : 
-                [];
-
+            const history = window.chatState ? chatState.getDeepSeekHistory() : [];
             const systemPrompt = window.appState ?
                 appState.getSetting('deepseekSystemPrompt') :
-                'Ти експерт-програміст. Пиши чистий код з коментарями.';
+                'Ти експерт-програміст. Пиши чистий код з коментарями. Обгортай код в блоки ```language\nкод\n```';
 
             const messages = [
                 { role: 'system', content: systemPrompt },
@@ -176,21 +115,19 @@ class DeepSeekChat {
                 messages.splice(1, 1);
             }
 
-            const requestBody = {
-                model: this.model,
-                messages: messages,
-                temperature: 0.5,
-                max_tokens: 8000,
-                top_p: 0.95
-            };
-
             const response = await fetch(this.apiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    model: this.model,
+                    messages: messages,
+                    temperature: 0.5,
+                    max_tokens: 8000,
+                    top_p: 0.95
+                }),
                 signal: this.abortController.signal
             });
 
@@ -200,67 +137,162 @@ class DeepSeekChat {
             }
 
             const data = await response.json();
-
-            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                throw new Error('Invalid API response format');
+            if (!data.choices?.[0]?.message?.content) {
+                throw new Error('Invalid API response');
             }
 
-            const aiMessage = data.choices[0].message.content;
-            if (!aiMessage) {
-                throw new Error('Empty response from API');
-            }
-
-            return aiMessage;
-
-        } catch (error) {
-            console.error('DeepSeek API error:', error);
-            throw error;
+            return data.choices[0].message.content;
         } finally {
             this.isProcessing = false;
             this.abortController = null;
         }
     }
 
-    // ========================================
-    // PROCESS RESPONSE
-    // ========================================
-
     processResponse(response) {
-        // Додати відповідь через chatState
+        console.log('📝 Processing response...');
+        console.log('Response length:', response.length);
+        
         if (window.chatState) {
             chatState.addDeepSeekMessage('assistant', response);
         }
 
         // Витягти текст без коду
         const textOnly = this.removeCodeBlocks(response);
-        
         if (textOnly.trim()) {
             this.renderMessage(textOnly, 'assistant');
         }
 
-        // Передати код в code-editor
-        if (window.codeExtractor) {
-            const filesExtracted = codeExtractor.extractAndApply(response);
+        // КРИТИЧНО: Витягти та зберегти код
+        const filesExtracted = this.extractAndSaveCode(response);
+        
+        console.log(`Files extracted: ${filesExtracted}`);
+        
+        if (filesExtracted > 0) {
+            if (window.showToast) {
+                showToast(`✅ Створено ${filesExtracted} файлів`, 'success');
+            }
             
-            if (filesExtracted > 0) {
-                if (window.showToast) {
-                    showToast(`✅ Створено ${filesExtracted} файлів`, 'success');
-                }
-                
-                // Показати вікно коду
-                const codeSection = document.getElementById('codeSection');
-                if (codeSection) {
-                    codeSection.style.display = 'flex';
-                    codeSection.classList.remove('collapsed');
-                }
-                
+            // Показати вікно коду
+            this.showCodePanel();
+            
+            // Відобразити файли
+            setTimeout(() => {
                 if (window.uiController) {
                     uiController.displayFiles();
+                } else if (typeof displayCodeFiles === 'function') {
+                    displayCodeFiles();
                 }
-            }
+            }, 100);
         }
 
         this.scrollToBottom();
+    }
+
+    extractAndSaveCode(text) {
+        let filesCreated = 0;
+        
+        // Витягти всі code blocks
+        const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)```/g;
+        let match;
+        let fileIndex = this.getExistingFilesCount();
+        
+        console.log('Searching for code blocks...');
+        
+        while ((match = codeBlockRegex.exec(text)) !== null) {
+            const lang = match[1] || 'txt';
+            const code = match[2].trim();
+            
+            console.log(`Found code block: ${lang}, length: ${code.length}`);
+            
+            if (!code) continue;
+            
+            // Визначити ім'я файлу
+            let filename = this.detectFilename(code, lang);
+            
+            if (!filename) {
+                fileIndex++;
+                const ext = this.getExtension(lang);
+                filename = `file_${fileIndex}.${ext}`;
+            }
+            
+            console.log(`Saving file: ${filename}`);
+            
+            // КРИТИЧНО: Зберегти файл
+            this.saveFile(filename, code, lang);
+            filesCreated++;
+        }
+        
+        console.log(`Total files created: ${filesCreated}`);
+        return filesCreated;
+    }
+
+    saveFile(filename, code, language) {
+        if (!window.appState) {
+            console.error('❌ appState not available');
+            return;
+        }
+
+        const fileData = {
+            language: language || 'plaintext',
+            code: code,
+            size: code.length,
+            modified: true,
+            created: Date.now(),
+            updated: Date.now()
+        };
+        
+        appState.setCodeFile(filename, fileData);
+        console.log(`✅ Saved: ${filename} (${code.length} chars)`);
+    }
+
+    detectFilename(code, lang) {
+        const trimmed = code.trim();
+        
+        // HTML
+        if (trimmed.includes('<!DOCTYPE') || trimmed.includes('<html')) {
+            return 'index.html';
+        }
+        
+        // CSS
+        if (lang === 'css' || /^[.#\w-]+\s*\{/.test(trimmed)) {
+            return 'styles.css';
+        }
+        
+        // JavaScript
+        if (lang === 'javascript' || lang === 'js') {
+            if (trimmed.includes('import React')) return 'App.jsx';
+            return 'script.js';
+        }
+        
+        // Python
+        if (lang === 'python' || lang === 'py') {
+            return 'app.py';
+        }
+        
+        return null;
+    }
+
+    getExtension(lang) {
+        const map = {
+            'javascript': 'js', 'typescript': 'ts', 'python': 'py',
+            'html': 'html', 'css': 'css', 'json': 'json'
+        };
+        return map[lang.toLowerCase()] || 'txt';
+    }
+
+    getExistingFilesCount() {
+        if (window.appState) {
+            return Object.keys(appState.getAllCodeFiles()).length;
+        }
+        return 0;
+    }
+
+    showCodePanel() {
+        const codeSection = document.getElementById('codeSection');
+        if (codeSection) {
+            codeSection.style.display = 'flex';
+            codeSection.classList.remove('collapsed');
+        }
     }
 
     removeCodeBlocks(text) {
@@ -268,34 +300,42 @@ class DeepSeekChat {
         return text.replace(/```[\s\S]*?```/g, '').trim();
     }
 
-    // ========================================
-    // UI MANAGEMENT
-    // ========================================
-
     renderMessage(text, sender) {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
 
         const emptyState = messagesDiv.querySelector('.empty-state');
-        if (emptyState) {
-            emptyState.remove();
-        }
+        if (emptyState) emptyState.remove();
 
         const messageElement = document.createElement('div');
         messageElement.className = `message ${sender}`;
+        messageElement.style.cssText = `
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: ${sender === 'user' ? 'var(--bg-secondary)' : 'transparent'};
+            border-radius: 12px;
+        `;
         
         const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
+        avatar.style.cssText = 'font-size: 24px; flex-shrink: 0;';
         avatar.textContent = sender === 'user' ? '👤' : '💻';
         
         const content = document.createElement('div');
-        content.className = 'message-content';
+        content.style.cssText = `
+            flex: 1;
+            color: var(--text-primary);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        `;
         content.textContent = text;
         
         messageElement.appendChild(avatar);
         messageElement.appendChild(content);
-
         messagesDiv.appendChild(messageElement);
+        
         this.scrollToBottom();
     }
 
@@ -304,16 +344,13 @@ class DeepSeekChat {
         if (!messagesDiv) return;
 
         messagesDiv.innerHTML = '';
-
-        const messages = window.chatState ? 
-            chatState.getDeepSeekMessages() : 
-            [];
+        const messages = window.chatState ? chatState.getDeepSeekMessages() : [];
 
         if (messages.length === 0) {
             messagesDiv.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon" style="font-size: 64px; margin-bottom: 20px;">💻</div>
-                    <h3>DeepSeek Coder</h3>
+                <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 64px; margin-bottom: 20px;">💻</div>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">DeepSeek Coder</h3>
                     <p>Опишіть що хочете створити</p>
                 </div>
             `;
@@ -323,7 +360,6 @@ class DeepSeekChat {
         messages.forEach(msg => {
             const role = msg.role === 'user' ? 'user' : 'assistant';
             const content = msg.content || '';
-            
             const textOnly = this.removeCodeBlocks(content);
             if (textOnly.trim()) {
                 this.renderMessage(textOnly, role);
@@ -337,9 +373,9 @@ class DeepSeekChat {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (messagesDiv) {
             messagesDiv.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon" style="font-size: 64px; margin-bottom: 20px;">💻</div>
-                    <h3>DeepSeek Coder</h3>
+                <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 64px; margin-bottom: 20px;">💻</div>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">DeepSeek Coder</h3>
                     <p>Опишіть що хочете створити</p>
                 </div>
             `;
@@ -359,18 +395,7 @@ class DeepSeekChat {
 
         if (sendBtn) {
             sendBtn.disabled = isLoading;
-
-            if (isLoading) {
-                sendBtn.innerHTML = `
-                    <div class="loading-dots">
-                        <div class="loading-dot"></div>
-                        <div class="loading-dot"></div>
-                        <div class="loading-dot"></div>
-                    </div>
-                `;
-            } else {
-                sendBtn.textContent = 'Створити';
-            }
+            sendBtn.textContent = isLoading ? '⏳ Генерація...' : 'Створити';
         }
 
         if (input) {
@@ -378,165 +403,67 @@ class DeepSeekChat {
         }
     }
 
-    // ========================================
-    // ЗБЕРЕЖЕННЯ РОЗМОВИ
-    // ========================================
-
     async saveConversation() {
         if (!window.chatState) {
-            if (window.showToast) {
-                showToast('❌ ChatState недоступний', 'error');
-            }
+            if (window.showToast) showToast('❌ ChatState недоступний', 'error');
             return;
         }
 
         const messages = chatState.getDeepSeekMessages();
-        
         if (messages.length === 0) {
-            if (window.showToast) {
-                showToast('⚠️ Немає повідомлень для збереження', 'warning');
-            }
+            if (window.showToast) showToast('⚠️ Немає повідомлень', 'warning');
             return;
         }
 
-        let title;
-        if (window.modalManager) {
-            title = await modalManager.prompt(
-                'Введіть назву для проекту:',
-                {
-                    title: '💾 Зберегти проект',
-                    defaultValue: `DeepSeek Project - ${new Date().toLocaleDateString('uk-UA')}`,
-                    placeholder: 'Назва проекту...'
-                }
-            );
-        } else {
-            title = prompt('Введіть назву для проекту:', `DeepSeek Project - ${new Date().toLocaleDateString('uk-UA')}`);
-        }
-
+        const title = prompt('Введіть назву проекту:', `DeepSeek - ${new Date().toLocaleDateString('uk-UA')}`);
         if (!title) return;
 
         try {
             const result = await chatState.saveChat('deepseek', title);
-            
             if (result) {
-                if (window.showToast) {
-                    showToast('✅ Проект збережено!', 'success');
-                }
-                console.log('✅ Project saved:', result);
-            } else {
-                throw new Error('Failed to save project');
+                if (window.showToast) showToast('✅ Проект збережено!', 'success');
             }
         } catch (error) {
-            console.error('Save project error:', error);
-            if (window.showToast) {
-                showToast('❌ Помилка збереження', 'error');
-            }
+            console.error('Save error:', error);
+            if (window.showToast) showToast('❌ Помилка збереження', 'error');
         }
     }
-
-    // ========================================
-    // ОЧИЩЕННЯ ЧАТУ
-    // ========================================
 
     clearHistory() {
-        if (!window.chatState) {
-            console.error('❌ ChatState not available');
-            return;
-        }
-
-        if (window.modalManager) {
-            modalManager.confirm('Очистити історію та файли?', {
-                title: '⚠️ Підтвердження',
-                icon: '🗑️',
-                confirmText: 'Так, очистити',
-                cancelText: 'Скасувати'
-            }).then(result => {
-                if (result) {
-                    chatState.clearDeepSeekChat();
-                    chatState.clearCodeFiles();
-                    
-                    this.clearUI();
-                    
-                    if (window.uiController) {
-                        uiController.displayFiles();
-                    }
-                    
-                    if (window.showToast) {
-                        showToast('🗑️ Історію очищено', 'success');
-                    }
-                }
-            });
-        } else {
-            const confirmed = confirm('⚠️ Очистити історію та файли?');
-            if (confirmed) {
-                chatState.clearDeepSeekChat();
-                chatState.clearCodeFiles();
-                
-                this.clearUI();
-                
-                if (window.uiController) {
-                    uiController.displayFiles();
-                }
-                
-                if (window.showToast) {
-                    showToast('🗑️ Історію очищено', 'success');
-                }
+        if (!window.chatState) return;
+        
+        const confirmed = confirm('⚠️ Очистити історію та файли?');
+        if (confirmed) {
+            chatState.clearDeepSeekChat();
+            chatState.clearCodeFiles();
+            this.clearUI();
+            
+            if (window.uiController) {
+                uiController.displayFiles();
             }
+            
+            if (window.showToast) showToast('🗑️ Історію очищено', 'success');
         }
     }
-
-    // ========================================
-    // UTILITY
-    // ========================================
 
     getApiKey() {
-        if (window.appState) {
-            return appState.getApiKey('groq');
-        }
+        if (window.appState) return appState.getApiKey('groq');
         return localStorage.getItem('groq_api_key');
-    }
-
-    estimateTokens(text) {
-        if (!text || typeof text !== 'string') return 0;
-        return Math.ceil(text.length / 3);
     }
 
     handleError(error) {
         let message = '❌ Помилка: ';
+        if (error.name === 'AbortError') message += 'Запит скасовано';
+        else if (error.message.includes('API key')) message += 'Невірний API ключ';
+        else message += error.message || 'Щось пішло не так';
 
-        if (error.name === 'AbortError') {
-            message += 'Запит скасовано';
-        } else if (error.message.includes('API key')) {
-            message += 'Невірний API ключ';
-        } else if (error.message.includes('quota')) {
-            message += 'Перевищено ліміт запитів';
-        } else if (error.message.includes('network')) {
-            message += 'Проблеми з інтернетом';
-        } else {
-            message += error.message || 'Щось пішло не так';
-        }
-
-        if (window.showToast) {
-            showToast(message, 'error', 7000);
-        }
-
+        if (window.showToast) showToast(message, 'error', 7000);
         this.renderMessage(message, 'assistant');
-    }
-
-    cancelRequest() {
-        if (this.abortController) {
-            this.abortController.abort();
-            this.setLoading(false);
-
-            if (window.showToast) {
-                showToast('🛑 Запит скасовано', 'info');
-            }
-        }
     }
 }
 
 // ========================================
-// ГЛОБАЛЬНИЙ ЕКЗЕМПЛЯР
+// ІНІЦІАЛІЗАЦІЯ
 // ========================================
 
 if (!window.deepseekChat) {
@@ -544,23 +471,16 @@ if (!window.deepseekChat) {
     window.DeepSeekChat = DeepSeekChat;
 }
 
-// Глобальні функції
 window.sendDeepseekMessage = () => {
-    if (window.deepseekChat && window.deepseekChat.initialized) {
-        window.deepseekChat.sendMessage();
-    }
+    if (window.deepseekChat?.initialized) window.deepseekChat.sendMessage();
 };
 
 window.clearDeepseekChat = () => {
-    if (window.deepseekChat && window.deepseekChat.initialized) {
-        window.deepseekChat.clearHistory();
-    }
+    if (window.deepseekChat?.initialized) window.deepseekChat.clearHistory();
 };
 
 window.saveDeepseekProject = () => {
-    if (window.deepseekChat && window.deepseekChat.initialized) {
-        window.deepseekChat.saveConversation();
-    }
+    if (window.deepseekChat?.initialized) window.deepseekChat.saveConversation();
 };
 
 window.toggleCodeSection = function() {
@@ -568,12 +488,9 @@ window.toggleCodeSection = function() {
     if (codeSection) {
         const isHidden = codeSection.style.display === 'none';
         codeSection.style.display = isHidden ? 'flex' : 'none';
-        if (!isHidden) {
-            codeSection.classList.add('collapsed');
-        } else {
-            codeSection.classList.remove('collapsed');
-        }
+        if (!isHidden) codeSection.classList.add('collapsed');
+        else codeSection.classList.remove('collapsed');
     }
 };
 
-console.log('✅ DeepSeek Chat module loaded (FULLY FIXED)');
+console.log('✅ DeepSeek Chat COMPLETE - Ready!');
