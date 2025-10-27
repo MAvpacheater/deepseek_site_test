@@ -1,8 +1,8 @@
-/* 🔘 BUTTONS - PURPLE THEME DESIGN */
+/* 🔘 BUTTONS - DARK PURPLE THEME */
 /* FILE: css/components/buttons.css */
 
 /* ========================================
-   BASE BUTTON - FULLY ROUNDED
+   BASE BUTTON - DARK PURPLE
    ======================================== */
 
 .btn,
@@ -25,16 +25,17 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   position: relative;
   overflow: hidden;
   min-height: var(--btn-height-base);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  color: #c4b5fd;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .btn::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.1), transparent);
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.2), transparent);
   opacity: 0;
   transition: opacity var(--transition-base);
   border-radius: inherit;
@@ -46,12 +47,13 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, #3d2766 0%, #241640 100%);
 }
 
 .btn:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .btn:disabled {
@@ -66,10 +68,10 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 /* ========================================
-   BUTTON VARIANTS - PURPLE THEME
+   BUTTON VARIANTS - DARK PURPLE THEME
    ======================================== */
 
-/* Primary Button - Purple Gradient */
+/* Primary Button - Bright Purple Gradient */
 .btn-primary,
 #geminiSendBtn,
 #deepseekSendBtn,
@@ -93,20 +95,20 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
-/* Secondary Button */
+/* Secondary Button - Dark Purple */
 .btn-secondary,
 .clear-chat-btn,
 .preview-toggle-btn,
 .save-chat-btn {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.25);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: linear-gradient(135deg, #3d2666 0%, #251540 100%);
   border-color: #8b5cf6;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 /* Danger Button - Red Gradient */
@@ -149,15 +151,15 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
 }
 
-/* Ghost Button */
+/* Ghost Button - Dark Purple */
 .btn-ghost {
   background: transparent;
-  color: var(--text-primary);
-  border: 1px solid transparent;
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(139, 92, 246, 0.15);
   border-color: #8b5cf6;
 }
 
@@ -197,7 +199,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 /* ========================================
-   ICON BUTTONS - CIRCULAR
+   ICON BUTTONS - DARK PURPLE
    ======================================== */
 
 .btn-icon,
@@ -213,25 +215,25 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: var(--radius-full);
-  color: var(--text-secondary);
+  color: #a78bfa;
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
 }
 
 .btn-icon:hover,
 .icon-btn:hover,
 .header-btn:hover,
 .nav-btn:hover:not(:disabled) {
-  background: var(--bg-hover);
-  color: #a78bfa;
+  background: linear-gradient(135deg, #3d2666 0%, #251540 100%);
+  color: #c4b5fd;
   border-color: #8b5cf6;
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .btn-icon:active,
@@ -288,7 +290,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   display: inline-flex;
   gap: 0;
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .btn-group .btn {
@@ -320,7 +322,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   width: 100%;
 }
 
-/* Outline Buttons - Purple */
+/* Outline Buttons - Dark Purple */
 .btn-outline-primary {
   background: transparent;
   color: #a78bfa;
@@ -328,7 +330,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 .btn-outline-primary:hover:not(:disabled) {
-  background: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
@@ -402,17 +404,17 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 /* ========================================
-   MESSAGE ACTION BUTTONS
+   MESSAGE ACTION BUTTONS - DARK PURPLE
    ======================================== */
 
 .message-action-btn {
   width: 32px;
   height: 32px;
   padding: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: var(--radius-full);
-  color: var(--text-tertiary);
+  color: #a78bfa;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -423,11 +425,11 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 .message-action-btn:hover {
-  background: var(--bg-hover);
-  color: #a78bfa;
+  background: linear-gradient(135deg, #3d2666 0%, #251540 100%);
+  color: #c4b5fd;
   border-color: #8b5cf6;
   transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
 .message-action-btn.success {
@@ -436,7 +438,7 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 /* ========================================
-   CHAT CARD BUTTON (для Dashboard)
+   CHAT CARD BUTTON
    ======================================== */
 
 .chat-card-btn {
@@ -459,12 +461,12 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
 }
 
 /* ========================================
-   QUICK ACTION BUTTON (для Dashboard)
+   QUICK ACTION BUTTON - DARK PURPLE
    ======================================== */
 
 .quick-action-btn {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   cursor: pointer;
@@ -474,16 +476,46 @@ button:not(.message-action-btn):not(.icon-btn):not(.modal-close) {
   align-items: center;
   gap: var(--space-2);
   text-align: center;
-  color: var(--text-primary);
+  color: #c4b5fd;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
 }
 
 .quick-action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
   border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.05);
+  background: linear-gradient(135deg, #3d2666 0%, #251540 100%);
+}
+
+/* ========================================
+   CODE ACTIONS BUTTONS - DARK PURPLE
+   ======================================== */
+
+.code-actions button,
+.library-item-actions button,
+.memory-action-btn,
+.plan-actions button,
+.plan-menu button,
+.filter-btn,
+.preview-btn-secondary,
+.reset-stats-btn {
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.code-actions button:hover,
+.library-item-actions button:hover,
+.memory-action-btn:hover,
+.plan-actions button:hover,
+.plan-menu button:hover,
+.filter-btn:hover,
+.preview-btn-secondary:hover,
+.reset-stats-btn:hover {
+  background: linear-gradient(135deg, #3d2666 0%, #251540 100%);
+  border-color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
 /* ========================================
