@@ -32,11 +32,25 @@ class DeepSeekChat {
         const sendBtn = document.getElementById('deepseekSendBtn');
 
         if (input) {
+            // CRITICAL FIX: Переконатися що input активний
+            input.disabled = false;
+            input.readOnly = false;
+            
+            // Auto-resize
             input.addEventListener('input', () => {
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 150) + 'px';
             });
 
+            // Enter для відправки (БЕЗ Shift)
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !this.isProcessing) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+            
+            // Ctrl+Enter теж працює
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.ctrlKey && !this.isProcessing) {
                     e.preventDefault();
@@ -46,10 +60,9 @@ class DeepSeekChat {
         }
 
         if (sendBtn) {
-            const newBtn = sendBtn.cloneNode(true);
-            sendBtn.parentNode.replaceChild(newBtn, sendBtn);
+            sendBtn.disabled = false;
             
-            newBtn.addEventListener('click', () => {
+            sendBtn.addEventListener('click', () => {
                 if (!this.isProcessing) {
                     this.sendMessage();
                 }
@@ -234,6 +247,13 @@ class DeepSeekChat {
                     showToast(`✅ Створено ${filesExtracted} файлів`, 'success');
                 }
                 
+                // Показати вікно коду
+                const codeSection = document.getElementById('codeSection');
+                if (codeSection) {
+                    codeSection.style.display = 'flex';
+                    codeSection.classList.remove('collapsed');
+                }
+                
                 if (window.uiController) {
                     uiController.displayFiles();
                 }
@@ -379,7 +399,6 @@ class DeepSeekChat {
             return;
         }
 
-        // Запитати назву розмови
         let title;
         if (window.modalManager) {
             title = await modalManager.prompt(
@@ -425,7 +444,6 @@ class DeepSeekChat {
             return;
         }
 
-        // Підтвердження
         if (window.modalManager) {
             modalManager.confirm('Очистити історію та файли?', {
                 title: '⚠️ Підтвердження',
@@ -545,4 +563,17 @@ window.saveDeepseekProject = () => {
     }
 };
 
-console.log('✅ DeepSeek Chat module loaded (FIXED with Save & Clear)');
+window.toggleCodeSection = function() {
+    const codeSection = document.getElementById('codeSection');
+    if (codeSection) {
+        const isHidden = codeSection.style.display === 'none';
+        codeSection.style.display = isHidden ? 'flex' : 'none';
+        if (!isHidden) {
+            codeSection.classList.add('collapsed');
+        } else {
+            codeSection.classList.remove('collapsed');
+        }
+    }
+};
+
+console.log('✅ DeepSeek Chat module loaded (FULLY FIXED)');
