@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - ВИПРАВЛЕНА ВЕРСІЯ
+// ✨ Gemini Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ
 
 class GeminiChat {
     constructor() {
@@ -16,19 +16,33 @@ class GeminiChat {
     // ========================================
 
     init() {
-        if (this.initialized) {
-            console.warn('⚠️ Gemini Chat already initialized');
-            return;
-        }
+        console.log('🔄 Initializing Gemini Chat...');
+
+        // ЗАВЖДИ переініціалізувати
+        this.initialized = false;
+        
+        // Очистити старі обробники якщо є
+        this.cleanup();
 
         this.setupEventListeners();
+        this.loadHistory();
         this.initialized = true;
         console.log('✅ Gemini Chat initialized');
+    }
+
+    cleanup() {
+        // Очистити старі підписки
+        if (window.chatState && this.messageListener) {
+            chatState.off('gemini:message', this.messageListener);
+            chatState.off('gemini:clear', this.clearListener);
+        }
     }
 
     setupEventListeners() {
         const input = document.getElementById('geminiInput');
         const sendBtn = document.getElementById('geminiSendBtn');
+
+        console.log('🔗 Setting up event listeners...', { input: !!input, sendBtn: !!sendBtn });
 
         if (input) {
             // Auto-resize
@@ -41,6 +55,7 @@ class GeminiChat {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.ctrlKey && !this.isProcessing) {
                     e.preventDefault();
+                    console.log('📤 Sending message via Ctrl+Enter');
                     this.sendMessage();
                 }
             });
@@ -54,14 +69,33 @@ class GeminiChat {
             // Додати новий обробник
             newBtn.addEventListener('click', () => {
                 if (!this.isProcessing) {
+                    console.log('📤 Sending message via button click');
                     this.sendMessage();
                 }
             });
+
+            console.log('✅ Send button handler attached');
         }
 
         // Підписатися на зміни в chatState
         if (window.chatState) {
-            chatState.on('gemini:clear', () => this.clearUI());
+            // Зберегти посилання на listeners
+            this.messageListener = ({ message }) => {
+                console.log('📨 New message received:', message);
+                this.renderMessage(message);
+            };
+
+            this.clearListener = () => {
+                console.log('🗑️ Clear event received');
+                this.clearUI();
+            };
+
+            chatState.on('gemini:message', this.messageListener);
+            chatState.on('gemini:clear', this.clearListener);
+
+            console.log('✅ ChatState listeners attached');
+        } else {
+            console.warn('⚠️ ChatState not available');
         }
     }
 
@@ -70,7 +104,10 @@ class GeminiChat {
     // ========================================
 
     async sendMessage() {
+        console.log('📤 sendMessage called, isProcessing:', this.isProcessing);
+
         if (this.isProcessing) {
+            console.warn('⚠️ Already processing');
             if (window.showToast) {
                 showToast('⏳ Зачекай завершення попереднього запиту', 'warning');
             }
@@ -84,6 +121,8 @@ class GeminiChat {
         }
 
         const message = input.value.trim();
+        console.log('📝 Message:', message);
+
         if (!message) {
             if (window.showToast) {
                 showToast('⚠️ Введи повідомлення', 'warning');
@@ -92,6 +131,8 @@ class GeminiChat {
         }
 
         const apiKey = this.getApiKey();
+        console.log('🔑 API Key present:', !!apiKey);
+
         if (!apiKey) {
             if (window.showToast) {
                 showToast('🔑 Введи Gemini API ключ у налаштуваннях!', 'error');
@@ -122,19 +163,26 @@ class GeminiChat {
         input.value = '';
         input.style.height = 'auto';
 
+        console.log('✅ Adding user message to chatState');
+
         // Додати повідомлення користувача через chatState
         if (window.chatState) {
             chatState.addGeminiMessage('user', message);
+        } else {
+            console.error('❌ ChatState not available!');
         }
 
         this.setLoading(true);
 
         try {
+            console.log('🚀 Calling API...');
             const response = await this.callAPI(apiKey, message);
+            console.log('✅ API response received');
             
             // Додати відповідь AI через chatState
             if (window.chatState) {
                 chatState.addGeminiMessage('model', response);
+                console.log('✅ AI message added to chatState');
             }
 
             // Оновити статистику
@@ -144,6 +192,7 @@ class GeminiChat {
             }
 
         } catch (error) {
+            console.error('❌ API error:', error);
             this.handleError(error);
         } finally {
             this.setLoading(false);
@@ -233,7 +282,7 @@ class GeminiChat {
     // UI MANAGEMENT
     // ========================================
 
-    renderMessage(text, sender) {
+    renderMessage(msgData) {
         const messagesDiv = document.getElementById('geminiMessages');
         if (!messagesDiv) return;
 
@@ -243,12 +292,19 @@ class GeminiChat {
             emptyState.remove();
         }
 
+        const role = msgData.role === 'user' ? 'user' : 'assistant';
+        const text = msgData.parts?.[0]?.text || '';
+
+        if (!text) return;
+
         const messageElement = document.createElement('div');
-        messageElement.className = `message ${sender}`;
+        messageElement.className = `message ${role}`;
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(20px)';
         
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
-        avatar.textContent = sender === 'user' ? '👤' : '✨';
+        avatar.textContent = role === 'user' ? '👤' : '✨';
         
         const content = document.createElement('div');
         content.className = 'message-content';
@@ -258,6 +314,14 @@ class GeminiChat {
         messageElement.appendChild(content);
 
         messagesDiv.appendChild(messageElement);
+
+        // Анімація появи
+        requestAnimationFrame(() => {
+            messageElement.style.transition = 'all 0.3s ease';
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateY(0)';
+        });
+
         this.scrollToBottom();
     }
 
@@ -282,12 +346,10 @@ class GeminiChat {
             return;
         }
 
-        messages.forEach(msg => {
-            const role = msg.role === 'user' ? 'user' : 'assistant';
-            const content = msg.parts?.[0]?.text || '';
-            if (content) {
-                this.renderMessage(content, role);
-            }
+        messages.forEach((msg, index) => {
+            setTimeout(() => {
+                this.renderMessage(msg);
+            }, index * 50);
         });
 
         this.scrollToBottom();
@@ -296,20 +358,46 @@ class GeminiChat {
     clearUI() {
         const messagesDiv = document.getElementById('geminiMessages');
         if (messagesDiv) {
-            messagesDiv.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon" style="font-size: 64px; margin-bottom: 20px;">✨</div>
-                    <h3>Gemini Chat</h3>
-                    <p>Почніть розмову з AI асистентом</p>
-                </div>
-            `;
+            // Анімація зникнення
+            const messages = messagesDiv.querySelectorAll('.message');
+            messages.forEach((msg, index) => {
+                setTimeout(() => {
+                    msg.style.transition = 'all 0.3s ease';
+                    msg.style.opacity = '0';
+                    msg.style.transform = 'translateY(-20px)';
+                }, index * 30);
+            });
+
+            // Після анімації показати empty state
+            setTimeout(() => {
+                messagesDiv.innerHTML = `
+                    <div class="empty-state" style="opacity: 0; transform: scale(0.9);">
+                        <div class="empty-state-icon" style="font-size: 64px; margin-bottom: 20px;">✨</div>
+                        <h3>Gemini Chat</h3>
+                        <p>Почніть розмову з AI асистентом</p>
+                    </div>
+                `;
+
+                // Анімація появи empty state
+                requestAnimationFrame(() => {
+                    const emptyState = messagesDiv.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.style.transition = 'all 0.3s ease';
+                        emptyState.style.opacity = '1';
+                        emptyState.style.transform = 'scale(1)';
+                    }
+                });
+            }, messages.length * 30 + 100);
         }
     }
 
     scrollToBottom() {
         const messagesDiv = document.getElementById('geminiMessages');
         if (messagesDiv) {
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            messagesDiv.scrollTo({
+                top: messagesDiv.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }
 
@@ -373,7 +461,26 @@ class GeminiChat {
             showToast(message, 'error', 7000);
         }
 
-        this.renderMessage(message, 'assistant');
+        // Додати повідомлення про помилку в чат
+        const messagesDiv = document.getElementById('geminiMessages');
+        if (messagesDiv) {
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'message assistant';
+            errorMsg.style.opacity = '0';
+            errorMsg.innerHTML = `
+                <div class="message-avatar">❌</div>
+                <div class="message-content" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">${message}</div>
+            `;
+            
+            messagesDiv.appendChild(errorMsg);
+            
+            requestAnimationFrame(() => {
+                errorMsg.style.transition = 'all 0.3s ease';
+                errorMsg.style.opacity = '1';
+            });
+
+            this.scrollToBottom();
+        }
     }
 
     clearHistory() {
@@ -425,4 +532,4 @@ window.clearGeminiChat = () => {
     }
 };
 
-console.log('✅ Gemini Chat module loaded');
+console.log('✅ Gemini Chat module loaded (FIXED)');
