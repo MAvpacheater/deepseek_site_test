@@ -272,9 +272,6 @@ function loadGeminiChat(container) {
                     <textarea id="geminiInput" placeholder="Напиши повідомлення... (Ctrl+Enter для відправки)" rows="1"></textarea>
                     <button id="geminiSendBtn">Надіслати</button>
                 </div>
-                <div class="shortcuts-hint">
-                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd> для відправки
-                </div>
             </div>
         </div>
     `;
