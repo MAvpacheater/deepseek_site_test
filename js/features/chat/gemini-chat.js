@@ -1,4 +1,4 @@
-// ✨ Gemini Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ
+// ✨ Gemini Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ (БЕЗ ДУБЛЮВАННЯ)
 
 class GeminiChat {
     constructor() {
@@ -165,7 +165,7 @@ class GeminiChat {
 
         console.log('✅ Adding user message to chatState');
 
-        // Додати повідомлення користувача через chatState
+        // Додати повідомлення користувача через chatState (викличе рендеринг через listener)
         if (window.chatState) {
             chatState.addGeminiMessage('user', message);
         } else {
@@ -179,7 +179,8 @@ class GeminiChat {
             const response = await this.callAPI(apiKey, message);
             console.log('✅ API response received');
             
-            // Додати відповідь AI через chatState
+            // Додати відповідь AI через chatState (викличе рендеринг через listener)
+            // НЕ рендерити тут напряму - тільки через chatState!
             if (window.chatState) {
                 chatState.addGeminiMessage('model', response);
                 console.log('✅ AI message added to chatState');
@@ -532,4 +533,4 @@ window.clearGeminiChat = () => {
     }
 };
 
-console.log('✅ Gemini Chat module loaded (FIXED)');
+console.log('✅ Gemini Chat module loaded (FIXED - NO DUPLICATES)');
