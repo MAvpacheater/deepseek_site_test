@@ -1,4 +1,4 @@
-// 💻 DeepSeek Chat - ВИПРАВЛЕНА ВЕРСІЯ
+// 💻 DeepSeek Chat - ПОВНІСТЮ ВИПРАВЛЕНА ВЕРСІЯ
 
 class DeepSeekChat {
     constructor() {
@@ -22,6 +22,7 @@ class DeepSeekChat {
         }
 
         this.setupEventListeners();
+        this.loadHistory();
         this.initialized = true;
         console.log('✅ DeepSeek Chat initialized');
     }
@@ -45,11 +46,9 @@ class DeepSeekChat {
         }
 
         if (sendBtn) {
-            // Видалити старі обробники
             const newBtn = sendBtn.cloneNode(true);
             sendBtn.parentNode.replaceChild(newBtn, sendBtn);
             
-            // Додати новий обробник
             newBtn.addEventListener('click', () => {
                 if (!this.isProcessing) {
                     this.sendMessage();
@@ -57,7 +56,6 @@ class DeepSeekChat {
             });
         }
 
-        // Підписатися на зміни в chatState
         if (window.chatState) {
             chatState.on('deepseek:clear', () => this.clearUI());
         }
@@ -100,7 +98,6 @@ class DeepSeekChat {
             return;
         }
 
-        // Валідація
         if (window.sanitizer) {
             const validation = sanitizer.validateInput(message, {
                 maxLength: 10000,
@@ -116,14 +113,14 @@ class DeepSeekChat {
             }
         }
 
-        // Очистити input
         input.value = '';
         input.style.height = 'auto';
 
-        // Додати повідомлення через chatState
+        // Додати повідомлення користувача
         if (window.chatState) {
             chatState.addDeepSeekMessage('user', message);
         }
+        this.renderMessage(message, 'user');
 
         this.setLoading(true);
 
@@ -131,7 +128,6 @@ class DeepSeekChat {
             const response = await this.callAPI(apiKey, message);
             this.processResponse(response);
 
-            // Оновити статистику
             if (window.appState) {
                 appState.incrementStat('deepseekRequests');
                 appState.incrementStat('totalTokens', this.estimateTokens(message + response));
@@ -143,10 +139,6 @@ class DeepSeekChat {
             this.setLoading(false);
         }
     }
-
-    // ========================================
-    // API CALL
-    // ========================================
 
     async callAPI(apiKey, message) {
         this.isProcessing = true;
@@ -166,7 +158,6 @@ class DeepSeekChat {
                 ...history
             ];
 
-            // Обрізати якщо занадто великий
             const MAX_CONTEXT = 24000;
             while (JSON.stringify(messages).length > MAX_CONTEXT && messages.length > 2) {
                 messages.splice(1, 1);
@@ -243,7 +234,6 @@ class DeepSeekChat {
                     showToast(`✅ Створено ${filesExtracted} файлів`, 'success');
                 }
                 
-                // Відобразити файли через uiController
                 if (window.uiController) {
                     uiController.displayFiles();
                 }
@@ -266,7 +256,6 @@ class DeepSeekChat {
         const messagesDiv = document.getElementById('deepseekMessages');
         if (!messagesDiv) return;
 
-        // Видалити empty state якщо є
         const emptyState = messagesDiv.querySelector('.empty-state');
         if (emptyState) {
             emptyState.remove();
@@ -287,6 +276,7 @@ class DeepSeekChat {
         messageElement.appendChild(content);
 
         messagesDiv.appendChild(messageElement);
+        this.scrollToBottom();
     }
 
     loadHistory() {
@@ -369,6 +359,115 @@ class DeepSeekChat {
     }
 
     // ========================================
+    // ЗБЕРЕЖЕННЯ РОЗМОВИ
+    // ========================================
+
+    async saveConversation() {
+        if (!window.chatState) {
+            if (window.showToast) {
+                showToast('❌ ChatState недоступний', 'error');
+            }
+            return;
+        }
+
+        const messages = chatState.getDeepSeekMessages();
+        
+        if (messages.length === 0) {
+            if (window.showToast) {
+                showToast('⚠️ Немає повідомлень для збереження', 'warning');
+            }
+            return;
+        }
+
+        // Запитати назву розмови
+        let title;
+        if (window.modalManager) {
+            title = await modalManager.prompt(
+                'Введіть назву для проекту:',
+                {
+                    title: '💾 Зберегти проект',
+                    defaultValue: `DeepSeek Project - ${new Date().toLocaleDateString('uk-UA')}`,
+                    placeholder: 'Назва проекту...'
+                }
+            );
+        } else {
+            title = prompt('Введіть назву для проекту:', `DeepSeek Project - ${new Date().toLocaleDateString('uk-UA')}`);
+        }
+
+        if (!title) return;
+
+        try {
+            const result = await chatState.saveChat('deepseek', title);
+            
+            if (result) {
+                if (window.showToast) {
+                    showToast('✅ Проект збережено!', 'success');
+                }
+                console.log('✅ Project saved:', result);
+            } else {
+                throw new Error('Failed to save project');
+            }
+        } catch (error) {
+            console.error('Save project error:', error);
+            if (window.showToast) {
+                showToast('❌ Помилка збереження', 'error');
+            }
+        }
+    }
+
+    // ========================================
+    // ОЧИЩЕННЯ ЧАТУ
+    // ========================================
+
+    clearHistory() {
+        if (!window.chatState) {
+            console.error('❌ ChatState not available');
+            return;
+        }
+
+        // Підтвердження
+        if (window.modalManager) {
+            modalManager.confirm('Очистити історію та файли?', {
+                title: '⚠️ Підтвердження',
+                icon: '🗑️',
+                confirmText: 'Так, очистити',
+                cancelText: 'Скасувати'
+            }).then(result => {
+                if (result) {
+                    chatState.clearDeepSeekChat();
+                    chatState.clearCodeFiles();
+                    
+                    this.clearUI();
+                    
+                    if (window.uiController) {
+                        uiController.displayFiles();
+                    }
+                    
+                    if (window.showToast) {
+                        showToast('🗑️ Історію очищено', 'success');
+                    }
+                }
+            });
+        } else {
+            const confirmed = confirm('⚠️ Очистити історію та файли?');
+            if (confirmed) {
+                chatState.clearDeepSeekChat();
+                chatState.clearCodeFiles();
+                
+                this.clearUI();
+                
+                if (window.uiController) {
+                    uiController.displayFiles();
+                }
+                
+                if (window.showToast) {
+                    showToast('🗑️ Історію очищено', 'success');
+                }
+            }
+        }
+    }
+
+    // ========================================
     // UTILITY
     // ========================================
 
@@ -406,25 +505,6 @@ class DeepSeekChat {
         this.renderMessage(message, 'assistant');
     }
 
-    clearHistory() {
-        if (!confirm('⚠️ Очистити історію та файли?')) return;
-
-        if (window.chatState) {
-            chatState.clearDeepSeekChat();
-            chatState.clearCodeFiles();
-        }
-
-        this.clearUI();
-
-        if (window.uiController) {
-            uiController.displayFiles();
-        }
-
-        if (window.showToast) {
-            showToast('🗑️ Історію очищено', 'success');
-        }
-    }
-
     cancelRequest() {
         if (this.abortController) {
             this.abortController.abort();
@@ -438,16 +518,15 @@ class DeepSeekChat {
 }
 
 // ========================================
-// ГЛОБАЛЬНИЙ ЕКЗЕМПЛЯР ТА ЕКСПОРТ
+// ГЛОБАЛЬНИЙ ЕКЗЕМПЛЯР
 // ========================================
 
-// Створити глобальний екземпляр
 if (!window.deepseekChat) {
     window.deepseekChat = new DeepSeekChat();
     window.DeepSeekChat = DeepSeekChat;
 }
 
-// Глобальні функції для сумісності
+// Глобальні функції
 window.sendDeepseekMessage = () => {
     if (window.deepseekChat && window.deepseekChat.initialized) {
         window.deepseekChat.sendMessage();
@@ -460,4 +539,10 @@ window.clearDeepseekChat = () => {
     }
 };
 
-console.log('✅ DeepSeek Chat module loaded');
+window.saveDeepseekProject = () => {
+    if (window.deepseekChat && window.deepseekChat.initialized) {
+        window.deepseekChat.saveConversation();
+    }
+};
+
+console.log('✅ DeepSeek Chat module loaded (FIXED with Save & Clear)');
